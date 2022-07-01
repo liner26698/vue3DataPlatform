@@ -1,0 +1,110 @@
+.home {
+	width: 100%;
+	height: 100%;
+	position: relative;
+	overflow: hidden;
+}
+.video-main {
+	position: absolute;
+	width: 100%;
+	height: 100%;
+	box-sizing: border-box;
+	z-index: 10;
+	video {
+		object-fit: cover;
+		opacity: 1;
+		width: 1792px;
+		height: 1008px;
+	}
+}
+.content-main {
+	width: 100%;
+	height: 100%;
+
+	z-index: 11;
+	.el-carousel__item h3 {
+		color: #475669;
+		opacity: 0.75;
+		line-height: 200px;
+		margin: 0;
+		text-align: center;
+	}
+
+	.el-carousel__item:nth-child(2n) {
+		background-color: #99a9bf;
+	}
+
+	.el-carousel__item:nth-child(2n + 1) {
+		background-color: #d3dce6;
+	}
+	.ys-box {
+		position: absolute;
+		bottom: 0px;
+		width: 100%;
+		box-sizing: border-box;
+		.ys-download-pc {
+			flex-shrink: 0;
+			margin-bottom: 20px;
+			height: 125px;
+		}
+		.ys-download-pc__box--download {
+			display: flex;
+			justify-content: space-between;
+			margin: 0 auto;
+			width: 540px;
+			height: 100%;
+			align-items: center;
+		}
+		.ys-download-pc__qr {
+			position: relative;
+			width: 102px;
+			height: 102px;
+			margin-right: 5px;
+			img {
+				width: 100%;
+				height: 100%;
+				object-fit: cover;
+			}
+		}
+		.ys-download-pc__qr__code {
+			width: 100%;
+			display: block;
+		}
+		.ys-download-pc__group {
+			display: flex;
+			flex-direction: column;
+			justify-content: space-between;
+			align-items: center;
+			height: 112px;
+			padding: 3px 0;
+			img {
+				width: 100%;
+				height: 100%;
+				object-fit: cover;
+			}
+			.ys-download-pc__box--download .ys-download-pc__btn--sm {
+				width: 160px;
+				height: 52px;
+			}
+			.ys-download-pc__box--download .ys-download-pc__btn {
+				display: block;
+				cursor: pointer;
+				flex-shrink: 0;
+			}
+			.ys-download-pc__box--download .ys-download-pc__btn :first-child {
+				display: block;
+			}
+		}
+		.ys-download-pc__box--download .ys-download-pc-btn--lg {
+			width: 111px;
+			height: 111px;
+		}
+		.ys-download-pc__box--download .ys-download-pc__btn :first-child {
+			display: block;
+
+			&:hover {
+				filter: drop-shadow(1px 1px 1px rgba(255, 255, 255, 0.5));
+			}
+		}
+	}
+}
