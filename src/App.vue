@@ -8,7 +8,7 @@
 import { reactive, computed } from "vue";
 import { GlobalStore } from "@/store";
 
-// 配置element中英文
+// 配置element中英文 test
 import zhCn from "element-plus/lib/locale/lang/zh-cn";
 import en from "element-plus/lib/locale/lang/en";
 
