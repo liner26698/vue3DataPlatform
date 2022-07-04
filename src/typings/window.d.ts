@@ -6,4 +6,9 @@ declare global {
 	}
 }
 
+// 和风天气插件
+declare interface Window {
+	WIDGET: any;
+}
+
 export {};

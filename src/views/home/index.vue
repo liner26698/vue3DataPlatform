@@ -8,6 +8,8 @@
 		</div>
 
 		<div class="content-main">
+			<!-- <Card /> -->
+			<Weather />
 			<div class="ys-box">
 				<div class="ys-download-pc">
 					<div class="ys-download-pc__box--download">
@@ -73,9 +75,34 @@
 		</div>
 	</div>
 </template>
-<script setup lang="ts">
-let BACKGROUNDVIDEO = new URL("./components/yuanshenVideo.mp4", import.meta.url).href;
+
+<script setup lang="ts" name="home">
+import { getDailySentence } from "@/api/modules/myhome";
+import Weather from "./components/Weather.vue"; // 和风天气
+// import Card from "./components/Card.vue"; // 魔术卡
+let BACKGROUNDVIDEO = new URL("./components/video/yuanshenVideo.mp4", import.meta.url).href;
+let dailySentenceInfo = reactive({
+	caption: "", // 标题
+	note: "", // 每日一句内容
+	time: "" // 时间
+});
+
+const getDailySentenceFn = async () => {
+	try {
+		const res = await getDailySentence();
+		if (!res.data) return;
+		const { caption, note, title: time } = res.data.data || {};
+		dailySentenceInfo.caption = caption;
+		dailySentenceInfo.note = note;
+		dailySentenceInfo.time = time;
+	} catch (error) {
+		console.log(error);
+	}
+};
+
+getDailySentenceFn();
 </script>
+
 <style scoped lang="scss">
 @import "./index.scss";
 </style>
