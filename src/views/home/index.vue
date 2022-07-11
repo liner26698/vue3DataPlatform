@@ -8,6 +8,7 @@
 		</div>
 
 		<div class="content-main">
+			<Text :content="'abcdefghijklmnopqrstuvwxyz'" :fontWehght="'bold'" :color="'yellow'" :fontSize="'40'" />
 			<!-- <Card /> -->
 			<Weather />
 			<div class="ys-box">
@@ -80,6 +81,7 @@
 import { getDailySentence } from "@/api/modules/myhome";
 import Weather from "./components/Weather.vue"; // 和风天气
 // import Card from "./components/Card.vue"; // 魔术卡
+import Text from "./components/text.vue"; //
 let BACKGROUNDVIDEO = new URL("./components/video/yuanshenVideo.mp4", import.meta.url).href;
 let dailySentenceInfo = reactive({
 	caption: "", // 标题
