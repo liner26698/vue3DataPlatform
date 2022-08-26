@@ -25,6 +25,7 @@ export default defineConfig((mode: ConfigEnv): UserConfig => {
 				"vue-i18n": "vue-i18n/dist/vue-i18n.cjs.js"
 			}
 		},
+		base: "./",
 		// global css
 		css: {
 			preprocessorOptions: {
@@ -116,7 +117,7 @@ export default defineConfig((mode: ConfigEnv): UserConfig => {
 				// delete console/debugger
 				compress: {
 					drop_console: viteEnv.VITE_DROP_CONSOLE,
-					drop_debugger: true
+					drop_debugger: false
 				}
 			},
 			rollupOptions: {

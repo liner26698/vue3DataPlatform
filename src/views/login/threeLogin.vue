@@ -13,7 +13,7 @@
 <script lang="ts">
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
-import Stats from "three/examples/jsm/libs/stats.module.js";
+// import Stats from "three/examples/jsm/libs/stats.module.js";
 import { defineComponent, onMounted, onUnmounted } from "vue";
 import _ from "lodash";
 
@@ -70,7 +70,7 @@ export default defineComponent({
 		// 声明云流动的渲染函数1
 		let renderCloudMove_second: any;
 		// 声明性能监控
-		let stats: any = new Stats();
+		// let stats: any = new Stats();
 		// 声明渲染器
 		let renderer: any;
 		onUnmounted(() => {
@@ -140,7 +140,7 @@ export default defineComponent({
 
 		// 初始化背景（盒模型背景，视角在盒子里面，看到的是盒子内部）
 		const initSceneBg = () => {
-			new THREE.TextureLoader().load(IMAGES_SKY, texture => {
+			new THREE.TextureLoader().load(IMAGES_SKY, (texture: any) => {
 				const geometry = new THREE.BoxGeometry(width, height, depth); // 创建一个球形几何体 SphereGeometry
 				const material = new THREE.MeshBasicMaterial({ map: texture, side: THREE.BackSide }); // 创建基础为网格基础材料
 				const mesh = new THREE.Mesh(geometry, material);
@@ -385,7 +385,7 @@ export default defineComponent({
 			renderer.shadowMap.enabled = true;
 			renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 			container.appendChild(renderer.domElement);
-			container.appendChild(stats.dom);
+			// container.appendChild(stats.dom);
 			renderCloudMove_first = initCloudMove(cloudParameter_first, 0.0002);
 			renderCloudMove_second = initCloudMove(cloudParameter_second, 0.0008, 0.001);
 		};
@@ -418,7 +418,7 @@ export default defineComponent({
 		z-index: 9999;
 		width: 600px;
 		height: 500px;
-		background-image: url("@/assets/images/login_border.png");
+		background-image: url("../../assets/images/login_border.png");
 		background-repeat: no-repeat;
 		background-size: 100% 100%;
 		top: 50%;
@@ -499,7 +499,7 @@ export default defineComponent({
 		z-index: 9998;
 		width: 100%;
 		height: 400px;
-		background-image: url("@/assets/images/ground.png");
+		background-image: url("../../assets/images/ground.png");
 		background-repeat: no-repeat;
 		background-size: 100% 100%;
 		bottom: 0;

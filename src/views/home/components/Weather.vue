@@ -9,7 +9,8 @@
 const showWeather = ref(false);
 const getWeather = () => {
 	//  已在此定义 == window.d.ts
-	window.WIDGET = {
+	// window.widget = {}
+	(window as any).WIDGET = {
 		CONFIG: {
 			layout: "1",
 			width: "450",

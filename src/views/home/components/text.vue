@@ -17,16 +17,16 @@
 
 <script setup lang="ts" name="home">
 interface textProps {
-	content: string; // 内容
-	fontSize?: number | string; // 字体大小
+	content: any; // 内容
+	fontSize?: string; // 字体大小
 	color?: string; // 字体颜色
-	fontWeight?: number | string; // 字体粗细
-	textAlign?: string; // 字体对齐方式
+	fontWeight?: any; // 字体粗细
+	textAlign?: any; // 字体对齐方式
 }
 
 const textObject = withDefaults(defineProps<textProps>(), {
 	content: "",
-	fontSize: 30,
+	fontSize: "30",
 	color: "#333",
 	fontWeight: 500,
 	textAlign: "left"

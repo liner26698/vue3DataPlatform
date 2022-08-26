@@ -82,7 +82,7 @@ onMounted(() => {
 	const { userInfo } = globalStore;
 	if (userInfo) {
 		loginForm.username = userInfo.userName;
-		loginForm.password = "123456";
+		loginForm.password = "";
 	}
 });
 const loading = ref<boolean>(false);

@@ -567,7 +567,7 @@ export default defineComponent({
 		z-index: 9999;
 		width: 600px;
 		height: 500px;
-		background-image: url("@/assets/images/login_border.png");
+		background-image: url("../../assets/images/login_border.png");
 		background-repeat: no-repeat;
 		background-size: 100% 100%;
 		top: 50%;
@@ -648,7 +648,7 @@ export default defineComponent({
 		z-index: 9998;
 		width: 100%;
 		height: 400px;
-		background-image: url("@/assets/images/ground.png");
+		background-image: url("../../assets/images/ground.png");
 		background-repeat: no-repeat;
 		background-size: 100% 100%;
 		bottom: 0;
