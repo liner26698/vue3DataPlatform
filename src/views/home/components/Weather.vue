@@ -42,7 +42,6 @@ onMounted(() => {
 .weather_box {
 	width: 450px;
 	height: 150px;
-	padding: 16px 20px;
 	background: rgb(0 0 0 / 23%);
 	border-radius: 15px;
 	user-select: none;

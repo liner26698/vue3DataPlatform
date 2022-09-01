@@ -28,6 +28,8 @@ import router from "@/routers/index";
 import I18n from "@/language/index";
 // pinia store
 import pinia from "@/store/index";
+// tailwindcss
+import "@/assets/css/tailwind.css";
 
 const app = createApp(App);
 
