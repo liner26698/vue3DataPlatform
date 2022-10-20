@@ -38,3 +38,18 @@ export interface UserInfoState {
 	userName: string;
 	userPwd: string;
 }
+
+/* bookInfo */
+export interface BookInfoState {
+	searchInfo: {
+		key: string;
+		page: number;
+		siteid: string;
+	};
+}
+
+export interface BookInfoStateParams {
+	key: string;
+	page: number;
+	siteid: string;
+}

@@ -24,6 +24,7 @@ declare module 'vue' {
     ElDropdown: typeof import('element-plus/es')['ElDropdown']
     ElDropdownItem: typeof import('element-plus/es')['ElDropdownItem']
     ElDropdownMenu: typeof import('element-plus/es')['ElDropdownMenu']
+    ElEmpty: typeof import('element-plus/es')['ElEmpty']
     ElFooter: typeof import('element-plus/es')['ElFooter']
     ElForm: typeof import('element-plus/es')['ElForm']
     ElFormItem: typeof import('element-plus/es')['ElFormItem']
@@ -52,12 +53,14 @@ declare module 'vue' {
     ElTreeSelect: typeof import('element-plus/es')['ElTreeSelect']
     ElUpload: typeof import('element-plus/es')['ElUpload']
     ImportExcel: typeof import('./src/components/ImportExcel/index.vue')['default']
+    InfiniteScroll: typeof import('element-plus/es')['ElInfiniteScroll']
     Loading: typeof import('element-plus/es')['ElLoadingDirective']
     Pagination: typeof import('./src/components/Pagination/index.vue')['default']
     ProTable: typeof import('./src/components/ProTable/index.vue')['default']
     SearchForm: typeof import('./src/components/SearchForm/index.vue')['default']
     SearchFormItem: typeof import('./src/components/SearchForm/components/SearchFormItem.vue')['default']
     SelectIcon: typeof import('./src/components/SelectIcon/index.vue')['default']
+    SvgIcon: typeof import('./src/components/SvgIcon/SvgIcon.vue')['default']
     SwitchDark: typeof import('./src/components/SwitchDark/index.vue')['default']
   }
 }

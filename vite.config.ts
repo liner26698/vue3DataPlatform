@@ -44,9 +44,22 @@ export default defineConfig((mode: ConfigEnv): UserConfig => {
 			// 代理跨域（mock 不需要配置，这里只是个事列）
 			proxy: {
 				"/api": {
+					secure: false,
 					target: "https://mock.mengxuegu.com/mock/62a4f85212c141642463062a", // easymock 测试地址
 					changeOrigin: true,
 					rewrite: path => path.replace(/^\/api/, "")
+				},
+				"/bookApi": {
+					secure: false,
+					target: "https://sou.jiaston.com",
+					changeOrigin: true,
+					rewrite: path => path.replace(/^\/bookApi/, "")
+				},
+				"/bookApi2": {
+					secure: false,
+					target: "http://shuapi.jiaston.com",
+					changeOrigin: true,
+					rewrite: path => path.replace(/^\/bookApi2/, "")
 				}
 			}
 		},
