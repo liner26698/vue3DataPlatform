@@ -26,7 +26,7 @@ export const GlobalStore = defineStore({
 			// 默认 primary 主题颜色
 			primary: "#409eff",
 			// 是否开启深色模式
-			isDark: true
+			isDark: false
 		}
 	}),
 	getters: {},

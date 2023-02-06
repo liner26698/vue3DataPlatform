@@ -1,6 +1,6 @@
 <template>
 	<!--  content -->
-	<div class="content w-full h-full flex flex-col">
+	<div class="rightContent-content w-full h-full flex flex-col">
 		<div class="content-header flex flex-row items-center">
 			<div class="title mr-16 text-c3c text-xl">{{ title }}</div>
 			<el-tabs v-model="activeName" @tab-click="handleClick">
@@ -24,7 +24,7 @@
 				<template v-if="bookList.length != 0">
 					<div class="book-item" v-for="(bookItem, bookIndex) in bookList" :key="bookIndex" @click="showDetail(bookItem)">
 						<div class="book-img w-full h-2/4 relative">
-							<el-image :src="bookItem.Img" fit="cover" class="rounded-t-lg">
+							<el-image :src="bookItem.Img" fit="cover" class="rounded-lg">
 								<template #error>
 									<div class="image-slot">
 										<img src="@/assets/images/404.png" alt="加载失败" />
@@ -57,22 +57,44 @@
 							<p class="text-center text-base text-c3c font-black">{{ currentDetail.name }}</p>
 							<p class="flex justify-evenly items-center text-xs">
 								<b>作者:{{ currentDetail.author }}</b>
-								<b>更新时间:{{ currentDetail.updateTime }}</b>
-								<b>最新章节:{{ currentDetail.lastChapter }}</b>
+								<b>更新时间:{{ format(currentDetail.updateTime) }}</b>
+								<!-- <b>最新章节:{{ currentDetail.lastChapter }}</b> -->
 							</p>
 						</div>
 					</template>
 					<template #default>
-						<div class="chapter-list">
-							<div class="chapter-item"></div>
+						<div class="directory-main w-full h-5/6 flex flex-col">
+							<div class="tabs flex justify-center">
+								<el-tabs v-model="directoryName" @tab-click="directoryClick">
+									<el-tab-pane
+										:label="tabItem.label"
+										:name="tabItem.label"
+										v-for="(tabItem, tabIndex) in directoryTabs"
+										:key="tabIndex"
+									>
+									</el-tab-pane>
+								</el-tabs>
+							</div>
+
+							<!-- 简介 | 最新章节 | 相关推荐 -->
+							<workInformation
+								v-if="directoryName == '作品信息'"
+								@relatedimg-change="relatedimgChange"
+								:currentDetail="currentDetail"
+								:relatedList="relatedList"
+								:otherInfo="otherInfo"
+							></workInformation>
+
+							<!-- 章节列表 -->
+							<chapterList v-else :id="currentDetail.id"></chapterList>
 						</div>
 					</template>
-					<template #footer>
+					<!-- <template #footer>
 						<div style="flex: auto">
 							<el-button @click="cancelClick">cancel</el-button>
 							<el-button type="primary" @click="confirmClick">confirm</el-button>
 						</div>
-					</template>
+					</template> -->
 				</el-drawer>
 			</div>
 		</div>
@@ -80,12 +102,15 @@
 </template>
 
 <script setup lang="ts">
-import { getBooks, getBookCatalogs } from "@/api/modules/mybook";
+import { getBooks } from "@/api/modules/mybook";
 import { BookStore } from "@/store/modules/book";
+import workInformation from "./workInformation.vue";
+import chapterList from "./chapterList.vue";
 
 const bookStore = BookStore();
 const title = "全部资源";
 const activeName = ref("最新");
+let directoryName = ref("作品信息");
 const tabs = [
 	{
 		label: "最新",
@@ -108,13 +133,44 @@ const tabs = [
 		value: "recommend"
 	}
 ];
+const directoryTabs = [
+	{
+		label: "作品信息",
+		value: "bookInfo"
+	},
+	{
+		label: "目录",
+		value: "directory"
+	}
+];
 let bookList = reactive([] as any);
+let relatedList = reactive([] as any);
+let otherInfo = reactive({
+	Name: "",
+	Author: "",
+	Desc: ""
+});
 const handleClick = (): void => {};
+const directoryClick = (tab: any): void => {
+	if (tab.name === "目录") {
+		directoryName = tab.value;
+	}
+};
+// 搜索
 const pushBookList = (data: any): void => {
-	if (data && data.data?.length) {
+	if (data?.data?.length) {
 		bookList.push(...data.data);
 	}
 };
+// 时间去除时分秒
+const format = (date: string): string => {
+	const d = new Date(date);
+	const year = d.getFullYear();
+	const month = d.getMonth() + 1;
+	const day = d.getDate();
+	return `${year}-${month}-${day}`;
+};
+
 const load = async () => {
 	bookStore.searchInfo.page++;
 	let res = await getBooks(bookStore.searchInfo);
@@ -127,29 +183,73 @@ const currentDetail = reactive({
 	name: "",
 	author: "",
 	lastChapter: "",
-	updateTime: ""
+	updateTime: "",
+	desc: "",
+	type: "",
+	status: ""
 });
 const drawerClose = (): void => {
 	drawer.value = false;
 };
 
-const cancelClick = (): void => {
-	drawer.value = false;
-};
-const confirmClick = (): void => {
-	drawer.value = false;
-};
+// const cancelClick = (): void => {
+// 	drawer.value = false;
+// };
+// const confirmClick = (): void => {
+// 	drawer.value = false;
+// };
 // 异步详情
+// const showDetail = async (item: any) => {
+// 	const { Name, Author, LastChapter, UpdateTime, Desc, CName, BookStatus } = item;
+// 	drawer.value = true;
+// 	currentDetail.id = item.Id;
+// 	currentDetail.name = Name;
+// 	currentDetail.author = Author;
+// 	currentDetail.lastChapter = LastChapter;
+// 	currentDetail.updateTime = UpdateTime;
+// 	currentDetail.desc = Desc;
+// 	currentDetail.type = CName;
+// 	currentDetail.status = BookStatus;
+// 	directoryName.value = "作品信息";
+// 	getRelatedList();
+// };
 const showDetail = async (item: any) => {
-	const { Name, Author, LastChapter, UpdateTime } = item;
 	drawer.value = true;
-	currentDetail.id = item.Id;
-	currentDetail.name = Name;
-	currentDetail.author = Author;
-	currentDetail.lastChapter = LastChapter;
-	currentDetail.updateTime = UpdateTime;
-	let res = await getBookCatalogs(currentDetail.id);
-	console.log(res);
+	directoryName.value = "作品信息";
+	Object.assign(currentDetail, {
+		id: item.Id,
+		name: item.Name,
+		author: item.Author,
+		lastChapter: item.LastChapter,
+		updateTime: item.UpdateTime,
+		desc: item.Desc,
+		type: item.CName,
+		status: item.BookStatus
+	});
+	getRelatedList();
+};
+// 获取相关书籍列表
+const getRelatedList = async () => {
+	relatedList.length = 0;
+	let res: any;
+	res = await getBooks({
+		key: currentDetail.name,
+		page: 1,
+		siteid: "app2"
+	});
+	if (res?.data?.length) {
+		relatedList.push(...res.data.slice(1, 6));
+		relatedimgChange(0);
+	}
+};
+
+// 走马灯切换显示文书信息
+const relatedimgChange = (index: number) => {
+	if (relatedList[index] === undefined) return;
+	const { Name, Author, Desc } = relatedList[index];
+	otherInfo.Name = Name;
+	otherInfo.Author = Author;
+	otherInfo.Desc = Desc;
 };
 
 onMounted(async () => {
@@ -175,7 +275,12 @@ watch(
 );
 </script>
 <style lang="scss">
-.content {
+@import "../index.scss";
+
+.rightContent-content {
+	.el-drawer__body {
+		overflow: hidden;
+	}
 	.el-tabs__nav-wrap::after {
 		display: none;
 	}
@@ -193,8 +298,20 @@ watch(
 	.el-divider__text {
 		color: #3c4248 !important;
 	}
+	.el-carousel__item h3 {
+		color: #475669;
+		opacity: 0.75;
+		line-height: 200px;
+		margin: 0;
+		text-align: center;
+	}
+
+	.el-carousel__item:nth-child(2n) {
+		background-color: #99a9bf;
+	}
+
+	.el-carousel__item:nth-child(2n + 1) {
+		background-color: #d3dce6;
+	}
 }
-</style>
-<style lang="scss" scoped>
-@import "../index.scss";
 </style>

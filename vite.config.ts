@@ -55,11 +55,11 @@ export default defineConfig((mode: ConfigEnv): UserConfig => {
 					changeOrigin: true,
 					rewrite: path => path.replace(/^\/bookApi/, "")
 				},
-				"/bookApi2": {
-					secure: false,
+				"/shuapi": {
+					secure: false, // * 是否开启https
 					target: "http://shuapi.jiaston.com",
 					changeOrigin: true,
-					rewrite: path => path.replace(/^\/bookApi2/, "")
+					rewrite: path => path.replace(/^\/shuapi/, "")
 				}
 			}
 		},
