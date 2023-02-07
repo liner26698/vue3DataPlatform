@@ -26,7 +26,10 @@ const testVal = reactive({
 onMounted(() => {
 	console.clear();
 	console.log("%c初始化完成...", "color:red;font-weight:bold;");
-	console.log("%c此项目使用 # Vue 3.2 + TypeScript + Pinia + Vite2 + Element-Plus + ThreeJs !", "color:red;font-weight:bold;");
+	console.log(
+		"%c此项目使用技术栈包括 # Vue 3.2 + TypeScript + Pinia + Vite2 + Element-Plus + ThreeJs + Koa2 + mysql. --SSR服务端渲染待开发中... ",
+		"color:red;font-weight:bold;"
+	);
 });
 </script>
 

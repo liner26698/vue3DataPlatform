@@ -46,6 +46,7 @@ export interface BookInfoState {
 		page: number;
 		siteid: string;
 	};
+	bookInfo: any;
 }
 
 export interface BookInfoStateParams {

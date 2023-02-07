@@ -45,20 +45,27 @@
 
 <script setup lang="ts" name="chapterList">
 import { ElNotification } from "element-plus";
-import { getBookCatalogs } from "@/api/modules/mybook";
-import { getBookContent } from "@/api/modules/mybook";
+import { getBookCatalogs } from "@/api/book/modules/mybook";
+import { getBookContent } from "@/api/book/modules/mybook";
+import { BookStore } from "@/store/modules/book";
 
 interface chapterListProps {
 	id: string;
 }
 
+const bookStore = BookStore();
 const props = withDefaults(defineProps<chapterListProps>(), {
 	id: ""
 });
 let pieceList = ref([
 	{
 		name: "",
-		list: []
+		list: [
+			{
+				name: "",
+				id: ""
+			}
+		]
 	}
 ]);
 let currentList = ref([
@@ -80,7 +87,7 @@ let loading = ref(false);
 // 获取篇章列表
 const getPieceList = async () => {
 	let data: any = null;
-	data = await getBookCatalogs(props.id);
+	data = await getBookCatalogs({ id: props.id });
 	if (data) {
 		data = JSON.parse(data.replace(/},]/g, "}]"));
 		if (data.info === "success") {
@@ -96,9 +103,16 @@ const tabPaneChange = (tab: number) => {
 };
 
 const getChapterContent = async (item: any) => {
-	const { data } = await getBookContent(props.id, item.id);
-	if (data?.content) {
-		console.log("data :>> ", data.content);
+	let data: any = null;
+	let params = {
+		bookid: props.id,
+		chapterid: item.id
+	};
+	data = await getBookContent(params);
+	if (data?.data?.content) {
+		debugger;
+		console.log("data :>> ", data.data.content);
+		bookStore.setBookDetail(data.data);
 	} else {
 		ElNotification({
 			title: "提示",
@@ -130,10 +144,21 @@ const numberToChinese = (num: number | string) => {
 	}
 	loading.value = false;
 	// 章节搜索参数接收为数字,比如: 103 => 第一百零三
-	return str
+	let _str = str
 		.replace(/零(十|百|千|万)/g, "零")
 		.replace(/(零)+/g, "零")
 		.replace(/零$/, "");
+	if (_str == "一十") {
+		_str = "十";
+	} else if (_str == "一百") {
+		_str = "百";
+	} else if (_str == "一千") {
+		_str = "千";
+	} else if (_str == "一万") {
+		_str = "万";
+	}
+	// console.log("_str :>> ", _str);
+	return _str;
 };
 
 const remoteMethod = (query: string) => {

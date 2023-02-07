@@ -102,7 +102,7 @@
 </template>
 
 <script setup lang="ts">
-import { getBooks } from "@/api/modules/mybook";
+import { getBooks } from "@/api/book/modules/mybook";
 import { BookStore } from "@/store/modules/book";
 import workInformation from "./workInformation.vue";
 import chapterList from "./chapterList.vue";
@@ -173,7 +173,7 @@ const format = (date: string): string => {
 
 const load = async () => {
 	bookStore.searchInfo.page++;
-	let res = await getBooks(bookStore.searchInfo);
+	let res = await getBooks(bookStore.searchInfo, false);
 	pushBookList(res);
 };
 const drawer = ref(false);
@@ -232,11 +232,14 @@ const showDetail = async (item: any) => {
 const getRelatedList = async () => {
 	relatedList.length = 0;
 	let res: any;
-	res = await getBooks({
-		key: currentDetail.name,
-		page: 1,
-		siteid: "app2"
-	});
+	res = await getBooks(
+		{
+			key: currentDetail.name,
+			page: 1,
+			siteid: "app2"
+		},
+		true
+	);
 	if (res?.data?.length) {
 		relatedList.push(...res.data.slice(1, 6));
 		relatedimgChange(0);
@@ -255,7 +258,7 @@ const relatedimgChange = (index: number) => {
 onMounted(async () => {
 	bookStore.searchInfo.page = 1;
 	bookStore.searchInfo.key = " ";
-	let res = await getBooks(bookStore.searchInfo);
+	let res = await getBooks(bookStore.searchInfo, false);
 	pushBookList(res);
 });
 
@@ -268,7 +271,7 @@ watch(
 	async () => {
 		bookList.length = 0;
 		bookStore.searchInfo.page = 1;
-		let res = await getBooks(bookStore.searchInfo);
+		let res = await getBooks(bookStore.searchInfo, false);
 		pushBookList(res);
 	},
 	{ deep: true }

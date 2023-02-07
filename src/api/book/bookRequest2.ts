@@ -1,9 +1,9 @@
 import axios, { AxiosInstance, AxiosError, AxiosRequestConfig, AxiosResponse } from "axios";
 import { showFullScreenLoading, tryHideFullScreenLoading } from "@/config/serviceLoading";
-import { AxiosCanceler } from "./helper/axiosCancel";
+import { AxiosCanceler } from "../helper/axiosCancel";
 import { ResultData } from "@/api/interface";
 import { ResultEnum } from "@/enums/httpEnum";
-import { checkStatus } from "./helper/checkStatus";
+import { checkStatus } from "../helper/checkStatus";
 import { ElMessage } from "element-plus";
 import { GlobalStore } from "@/store";
 
