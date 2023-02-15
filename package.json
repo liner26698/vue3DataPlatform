@@ -6,7 +6,7 @@
   "author": "Kris <263416985@qq.com>",
   "scripts": {
     "dev:frontend": "vite",
-    "dev:backend": "node koaapp.js",
+    "dev:backend": "nodemon koaapp.js",
     "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
     "serve": "vite",
     "build": "vue-tsc --noEmit && vite build --mode development",

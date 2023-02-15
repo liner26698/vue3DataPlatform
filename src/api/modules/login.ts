@@ -8,7 +8,8 @@ import http from "@/api";
  */
 // * 用户登录接口
 export const loginApi = (params: Login.ReqLoginForm) => {
-	return http.post<Login.ResLogin>(PORT1 + `/login`, params);
+	return http.post<Login.ResLogin>(`/login`, params);
+	// return http.post<Login.ResLogin>(PORT1 + `/login`, params);
 };
 
 // * 获取按钮权限

@@ -5,7 +5,8 @@
 import { BookStore } from "@/store/modules/book";
 
 const bookStore = BookStore();
-const content = computed(() => bookStore.content);
+// const content = computed(() => bookStore.content);
+const content = ref("123");
 console.log("bookStore :>> ", bookStore);
 </script>
 <style lang="scss">

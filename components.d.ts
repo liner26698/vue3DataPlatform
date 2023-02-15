@@ -9,7 +9,6 @@ declare module 'vue' {
     500: typeof import('./src/components/ErrorMessage/500.vue')['default']
     ColSetting: typeof import('./src/components/ProTable/components/ColSetting.vue')['default']
     ElAside: typeof import('element-plus/es')['ElAside']
-    ElBacktop: typeof import('element-plus/es')['ElBacktop']
     ElBreadcrumb: typeof import('element-plus/es')['ElBreadcrumb']
     ElBreadcrumbItem: typeof import('element-plus/es')['ElBreadcrumbItem']
     ElButton: typeof import('element-plus/es')['ElButton']

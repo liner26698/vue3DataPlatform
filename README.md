@@ -15,6 +15,7 @@
 - 🚀 常用自定义指令开发（复制、水印、拖拽、节流、防抖、长按……）
 - 🚀 使用 Prettier 统一格式化代码，集成 Eslint、Stylelint 代码校验规范（STANDARD.md 文件）
 - 🚀 使用 husky、lint-staged、commitlint、commitizen、cz-git 规范提交信息（STANDARD.md 文件）
+- 🚀 使用 Koa2 + mysql 完成后台接口开发
 
 - **Run：**
 
@@ -57,7 +58,7 @@ lint:stylelint
 npm run commit
 ```
 
-## 文件资源目录 
+## 文件资源目录
 
 ```text
 Vue3DataPlatform
@@ -117,8 +118,73 @@ Vue3DataPlatform
 | :-----------------------------------------------------------------------: | :-----------------------------------------------------------------------------: | :---------------------------------------------------------------------------: | :---------------------------------------------------------------------------: |
 |                              last 2 versions                              |                                 last 2 versions                                 |                                last 2 versions                                |                                last 2 versions                                |
 
-## 项目后台接口 
+## 项目后台接口
 
 > 项目后台接口完全采用 Mock 数据  
 > 推荐一个在线 Mock 平台： https://mock.mengxuegu.com/mock/62a4f85212c141642463062a
- 
+
+## package.json 配置
+
+> 1. concurrently 用于同时启动多个命令, 例如：`concurrently "npm run dev" "node app.js"`
+> 2. nodemon 用于监听文件变化，自动重启 node 服务(热更新 nodeJs 无需重启服务)
+
+## Linux 服务器 nginx 部署
+
+> 1. sudo yum install nginx (安装 nginx)
+> 2. vim /etc/nginx/nginx.conf (修改 nginx 配置)
+> 3. sudo nginx -s reload (重启 nginx)
+> 4. sudo nginx -s stop (停止 nginx)
+> 5. sudo nginx (启动 nginx)
+
+> 其他命令和基本配置
+> % whereis nginx(查看 nginx 安装路径)
+> % ps -ef|grep "nginx"(查看 nginx 进程)
+> % ./nginx -s reload (重启 nginx)
+> % curl http://localhost:3000 (查看 nginx 是否启动)
+> % 修改 nginx 配置(基础配置,需要注意前端项目配置的 base: "/", nginx 配置的 location /)
+
+```nginx.conf
+server {
+        listen 3000;
+
+        # vue3大数据平台
+					location / {
+						root /home/dataPlatform/dist;
+						try_files $uri $uri/ /index.html;
+						index  index.html index.htm;
+					}
+    }
+```
+
+## Linux 服务器(CentOS) mysql 部署
+
+# 基本操作
+
+> sudo yum install mysql-server (安装 mysql)
+> sudo service mysqld start (启动 mysql 如果服务正在运行，您将看到一条类似于以下的输出：Active: active (running) 这意味着 MySQL 已成功安装并启动)
+> sudo service mysqld stop (停止 mysql)
+> sudo service mysqld restart (重启 mysql)
+> sudo service mysqld status (查看 mysql 状态)
+> mysql -u root -p (登录 mysql)
+> quit (退出 mysql)
+
+# 修改数据库配置(修改后需要重启 mysql 服务 )
+
+> sudo vim /etc/my.cnf (配置文件)
+> 在[mysqld]下面添加配置
+
+```
+  port = 9534 # 自定义端口号(需要在服务器开放端口号)
+  bind-address = 0.0.0.0 # 绑定地址
+  max_connect_errors = 1000 # 最大连接错误
+```
+
+> use mysql; (查看端口号)
+> SHOW VARIABLES LIKE 'port';
+> +---------------+-------+
+> | Variable_name | Value |
+> +---------------+-------+
+> | port | 9534 |
+> +---------------+-------+
+
+- 如遇连接失败等问题 参考: (https://www.jianshu.com/p/3a397a358a22)

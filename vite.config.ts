@@ -25,7 +25,8 @@ export default defineConfig((mode: ConfigEnv): UserConfig => {
 				"vue-i18n": "vue-i18n/dist/vue-i18n.cjs.js"
 			}
 		},
-		base: "/test/",
+		// base: "/test/",
+		base: "/",
 		// global css
 		css: {
 			preprocessorOptions: {
@@ -45,7 +46,8 @@ export default defineConfig((mode: ConfigEnv): UserConfig => {
 			proxy: {
 				"/api": {
 					secure: false,
-					target: "https://mock.mengxuegu.com/mock/62a4f85212c141642463062a", // easymock 测试地址
+					// target: "https://mock.mengxuegu.com/mock/62a4f85212c141642463062a", // easymock 测试地址
+					target: "http://127.0.0.1:3000", // easymock 测试地址
 					changeOrigin: true,
 					rewrite: path => path.replace(/^\/api/, "")
 				},

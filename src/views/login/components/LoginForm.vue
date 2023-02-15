@@ -52,17 +52,8 @@ import { GlobalStore } from "@/store";
 import { MenuStore } from "@/store/modules/menu";
 import { TabsStore } from "@/store/modules/tabs";
 import md5 from "js-md5";
-import axios from "axios";
 import { loginApi } from "@/api/modules/login";
 
-interface ParentProps {
-	age?: string;
-	address?: string[];
-	obj?: {
-		username: string;
-		password: string;
-	};
-}
 const globalStore = GlobalStore();
 const menuStore = MenuStore();
 const tabStore = TabsStore();
@@ -88,17 +79,6 @@ onMounted(() => {
 });
 const loading = ref<boolean>(false);
 const router = useRouter();
-const _props = withDefaults(defineProps<ParentProps>(), {
-	age: "18",
-	address: () => ["广东省"],
-	obj: () => {
-		return {
-			username: "admin",
-			password: "123456"
-		};
-	}
-});
-
 // 登录按钮点击事件
 const login = (formEl: FormInstance | undefined) => {
 	if (!formEl) return;
@@ -110,32 +90,22 @@ const login = (formEl: FormInstance | undefined) => {
 					username: loginForm.username,
 					password: md5(loginForm.password)
 				};
-				const res = await loginApi(requestLoginForm);
-				console.log("res :>> ", res);
-				return;
-				axios
-					.post("http://127.0.0.1:3000/login", requestLoginForm)
-					.then(function (response) {
-						console.log("response :>> ", response);
-						if (response.data.success) {
-							ElMessage.success("登录成功！");
-							// * 存储 token
-							globalStore.setToken(res.data!.access_token);
-							// * 登录成功之后清除上个账号的 menulist 和 tabs 数据
-							menuStore.setMenuList([]);
-							tabStore.closeMultipleTab();
-							globalStore.setUserInfo({
-								userName: requestLoginForm.username,
-								userPwd: requestLoginForm.password
-							});
-							router.push({ name: "dataScreen" });
-						} else {
-							ElMessage.error(response.data.message);
-						}
-					})
-					.catch(function (error) {
-						console.log("error :>> ", error);
+				const res: any = await loginApi(requestLoginForm);
+				if (res?.data) {
+					ElMessage.success("登录成功！");
+					// * 存储 token
+					// * 登录成功之后清除上个账号的 menulist 和 tabs 数据
+					globalStore.setToken(res.data!.access_token);
+					menuStore.setMenuList([]);
+					tabStore.closeMultipleTab();
+					globalStore.setUserInfo({
+						userName: requestLoginForm.username,
+						userPwd: requestLoginForm.password
 					});
+					router.push({ name: "dataScreen" });
+				} else {
+					ElMessage.error(res!.message);
+				}
 			} finally {
 				loading.value = false;
 			}
@@ -145,7 +115,6 @@ const login = (formEl: FormInstance | undefined) => {
 
 // 重置按钮点击事件
 const resetForm = (formEl: FormInstance | undefined) => {
-	console.log("_props :>> ", _props);
 	if (!formEl) return;
 	formEl.resetFields();
 };
