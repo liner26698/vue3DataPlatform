@@ -5,10 +5,43 @@ const db = require("./server/db.js"); // db: 数据库操作
 const bodyParser = require("koa-bodyparser"); // bodyParser: 解析请求体
 const cors = require("koa-cors"); // cors: 解决跨域问题
 const port = 3000; // 服务端口
+const jwt = require("jsonwebtoken"); // 用于签发、解析`token`
+const tokenConfig = { privateKey: "testKey" }; // 加密密钥
 
 // 实例化 Koa 和 Router 对象
 const app = new Koa();
 const router = new Router();
+
+// 错误处理
+const ERROR = (ctx, msg = "发生异常情况,请刷新重试!", code = 500) => {
+	ctx.body = {
+		code,
+		message: msg
+	};
+};
+
+// 成功处理
+const SUCCESS = (ctx, flag = true, msg = null, data = null) => {
+	ctx.body = {
+		code: 200,
+		success: flag,
+		message: msg,
+		data: data
+	};
+};
+
+// jwt 验证
+class Auth {
+	static expiresIn = 60 * 60 * 24; // 授权时效24小时
+	static async verifyToken(token) {
+		try {
+			jwt.verify(token, tokenConfig.privateKey);
+			return true;
+		} catch (e) {
+			return false;
+		}
+	}
+}
 
 // 配置 MySQL 连接信息 db.js 使用 bodyParser 中间件处理请求数据
 app.use(bodyParser());
@@ -32,7 +65,29 @@ app.use(
 );
 app.use(async (ctx, next) => {
 	ctx.set("Access-Control-Allow-Origin", "*");
-	await next();
+	// 判断token有没过期
+	if (ctx.request.url != "/login" && ctx.request.url != "/test") {
+		let token = ctx.request.header["x-access-token"];
+
+		if (token) {
+			try {
+				let result = await jwt.verify(token, tokenConfig.privateKey);
+				let nowDate = new Date().getTime();
+				let exp = result.exp;
+				if (result && nowDate > exp * 1000) {
+					ERROR(ctx, false, "token已过期", 599);
+				} else {
+					SUCCESS(ctx, true, "成功");
+				}
+			} catch (error) {
+				ERROR(ctx, false, "token已过期", 599);
+			}
+		} else {
+			ERROR(ctx, false, "token不存在", 599);
+		}
+	} else {
+		await next();
+	}
 });
 
 // 启动 Koa 服务
@@ -44,24 +99,6 @@ console.log(`启动成功,服务端口为:${port}`);
  * *********************************************** API ***********************************************
  */
 
-// 错误处理
-const ERROR = (ctx, msg = "发生异常情况,请刷新重试!") => {
-	ctx.body = {
-		code: 500,
-		message: msg
-	};
-};
-
-// 成功处理
-const SUCCESS = (ctx, flag = true, msg = null, data = null) => {
-	ctx.body = {
-		code: 200,
-		success: flag,
-		message: msg,
-		data: data
-	};
-};
-
 /*
  * 登录接口
  * params: username, password
@@ -69,18 +106,22 @@ const SUCCESS = (ctx, flag = true, msg = null, data = null) => {
  * date: 2023年02月07日15:12:34
  */
 router.post("/login", async (ctx, next) => {
-	// 获取请求参数
 	const { username, password } = ctx.request.body;
 	let sql = `SELECT * FROM user_info WHERE username='${username}' AND password='${password}'`;
-	let data = await db.query(sql);
-	if (!data) ERROR(ctx);
-	if (data.length > 0) {
-		SUCCESS(ctx, true, "成功", data);
+	let userInfo = await db.query(sql);
+	let params = {};
+	let token = "";
+	if (!userInfo) ERROR(ctx);
+	if (userInfo.length > 0) {
+		token = jwt.sign({ username, password }, tokenConfig.privateKey, {
+			expiresIn: Auth.expiresIn
+		});
+		params = Object.assign({}, userInfo[0], { token });
+		SUCCESS(ctx, true, "成功", params);
 	} else {
 		ERROR(ctx, "用户名或密码错误!");
 	}
 });
-
 /*
  * 测试get接口
  */
@@ -92,5 +133,30 @@ router.get("/test", async (ctx, next) => {
 		SUCCESS(ctx, true, "成功", data);
 	} else {
 		ERROR(ctx, "失败");
+	}
+});
+
+/*
+ * 测试Token接口
+ * params: true 未过期 false 已过期
+ */
+router.post("/testToken", async (ctx, next) => {
+	const { token } = ctx.request.body;
+	if (token) {
+		try {
+			let result = await jwt.verify(token, tokenConfig.privateKey);
+			let nowDate = new Date().getTime();
+			let exp = result.exp;
+			if (result && nowDate > exp * 1000) {
+				SUCCESS(ctx, false, "token已过期");
+				// return false;
+			} else {
+				SUCCESS(ctx, true, "成功");
+				// return true;
+			}
+		} catch (error) {
+			SUCCESS(ctx, false, "token已过期");
+			// return false;
+		}
 	}
 });

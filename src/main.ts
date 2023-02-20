@@ -33,7 +33,6 @@ import "@/assets/css/tailwind.css";
 // svg icons
 import SvgIcon from "./components/SvgIcon/SvgIcon.vue";
 import "@/assets/iconfont/iconfont.js";
-
 const app = createApp(App);
 
 // 注册element Icons组件
@@ -42,5 +41,4 @@ Object.keys(Icons).forEach(key => {
 });
 
 app.component("SvgIcon", SvgIcon);
-
 app.use(router).use(I18n).use(pinia).use(directives).use(ElementPlus).mount("#app");

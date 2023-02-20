@@ -11,6 +11,9 @@ export const loginApi = (params: Login.ReqLoginForm) => {
 	return http.post<Login.ResLogin>(`/login`, params);
 	// return http.post<Login.ResLogin>(PORT1 + `/login`, params);
 };
+export const testToken = (params: any) => {
+	return http.post(`/testToken`, params);
+};
 
 // * 获取按钮权限
 export const getAuthButtons = () => {

@@ -38,6 +38,7 @@
 		<el-button :icon="UserFilled" round @click="login(loginFormRef)" size="large" type="primary" :loading="loading">
 			登录
 		</el-button>
+		<!-- <el-button :icon="UserFilled" round @click="test()" size="large" type="primary" :loading="loading"> 测试token </el-button> -->
 	</div>
 </template>
 
@@ -95,7 +96,7 @@ const login = (formEl: FormInstance | undefined) => {
 					ElMessage.success("登录成功！");
 					// * 存储 token
 					// * 登录成功之后清除上个账号的 menulist 和 tabs 数据
-					globalStore.setToken(res.data!.access_token);
+					globalStore.setToken(res.data!.token);
 					menuStore.setMenuList([]);
 					tabStore.closeMultipleTab();
 					globalStore.setUserInfo({
@@ -103,6 +104,7 @@ const login = (formEl: FormInstance | undefined) => {
 						userPwd: requestLoginForm.password
 					});
 					router.push({ name: "dataScreen" });
+					console.log("router :>> ", router);
 				} else {
 					ElMessage.error(res!.message);
 				}

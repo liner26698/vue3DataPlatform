@@ -57,6 +57,7 @@ declare module 'vue' {
     ImportExcel: typeof import('./src/components/ImportExcel/index.vue')['default']
     InfiniteScroll: typeof import('element-plus/es')['ElInfiniteScroll']
     Loading: typeof import('element-plus/es')['ElLoadingDirective']
+    Message: typeof import('./src/components/Message/Message.vue')['default']
     Pagination: typeof import('./src/components/Pagination/index.vue')['default']
     ProTable: typeof import('./src/components/ProTable/index.vue')['default']
     SearchForm: typeof import('./src/components/SearchForm/index.vue')['default']
