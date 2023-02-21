@@ -12,6 +12,7 @@ import vueJsx from "@vitejs/plugin-vue-jsx";
 import AutoImport from "unplugin-auto-import/vite";
 import Components from "unplugin-vue-components/vite";
 import { ElementPlusResolver } from "unplugin-vue-components/resolvers";
+import vueSetupExtend from 'vite-plugin-vue-setup-extend-plus';
 
 // @see: https://vitejs.dev/config/
 export default defineConfig((mode: ConfigEnv): UserConfig => {
@@ -68,6 +69,7 @@ export default defineConfig((mode: ConfigEnv): UserConfig => {
 		// plugins
 		plugins: [
 			vue(),
+			vueSetupExtend(),
 			createHtmlPlugin({
 				inject: {
 					data: {

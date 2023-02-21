@@ -188,3 +188,5 @@ server {
 > +---------------+-------+
 
 - 如遇连接失败等问题 参考: (https://www.jianshu.com/p/3a397a358a22)
+- 断点异常? vite-plugin-vue-setup-extend-plus
+- package.json一键更新? npm-check-updates

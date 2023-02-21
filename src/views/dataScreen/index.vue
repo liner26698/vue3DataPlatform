@@ -1,5 +1,6 @@
 <template>
 	<div class="dataScreen-container">
+		<chat></chat>
 		<div class="dataScreen" ref="dataScreenRef">
 			<div class="dataScreen-header">
 				<div class="header-lf">
@@ -25,7 +26,7 @@
 						</div>
 						<!-- chart区域 -->
 						<div class="dataScreen-main-chart">
-							<RealTimeAccessChart ref="RealTimeAccessRef" />
+							<RealTimeAccessChart ref="RealTimeAccessRef" :realTimeVisitorNum="realTimeVisitorNum" />
 						</div>
 					</div>
 					<div class="dataScreen-center">
@@ -120,6 +121,7 @@ import { useRouter } from "vue-router";
 import { useTime } from "@/hooks/useTime";
 import { ECharts } from "echarts";
 import mapChart from "./components/chinaMapChart.vue";
+import chat from "./components/chat.vue";
 import AgeRatioChart from "./components/AgeRatioChart.vue";
 import AnnualUseChart from "./components/AnnualUseChart.vue";
 import HotPlateChart from "./components/HotPlateChart.vue";
@@ -128,6 +130,8 @@ import OverNext30Chart from "./components/OverNext30Chart.vue";
 import PlatformSourceChart from "./components/PlatformSourceChart.vue";
 import RealTimeAccessChart from "./components/RealTimeAccessChart.vue";
 import { Vue3SeamlessScroll } from "vue3-seamless-scroll";
+import { realTimeVisitorApi } from "@/api/dataScreen/modules/index";
+
 /* 引入警告数据 */
 import alarmList from "./assets/alarmList.json";
 /* 获取最外层盒子 */
@@ -135,7 +139,7 @@ const dataScreenRef = ref<HTMLElement | null>(null);
 /* 预警详情开关 */
 const isShowWarning = ref(false);
 
-onMounted(() => {
+onMounted(async () => {
 	// 初始化时为外层盒子加上缩放属性，防止刷新界面时就已经缩放
 	if (dataScreenRef.value) {
 		dataScreenRef.value.style.transform = `scale(${getScale()}) translate(-50%, -50%)`;
@@ -146,6 +150,7 @@ onMounted(() => {
 	initCharts();
 	// 为浏览器绑定事件
 	window.addEventListener("resize", resize);
+	getRealTimeVisitorData();
 });
 
 const changeShowWarning = () => {
@@ -178,6 +183,7 @@ const OverNext30Ref = ref<ChartExpose>();
 const PlatformSourceRef = ref<ChartExpose>();
 const MapchartRef = ref<ChartExpose>();
 /* 初始化 charts参数 */
+let realTimeVisitorNum = ref("0");
 let ageData = [
 	{
 		value: 200,
@@ -421,6 +427,13 @@ timer = setInterval(() => {
 const router = useRouter();
 const handleTo = (): void => {
 	router.push(HOME_URL);
+};
+
+const getRealTimeVisitorData = async () => {
+	let res: any = await realTimeVisitorApi();
+	if (res) {
+		realTimeVisitorNum.value = res.data?.visitorNum;
+	}
 };
 
 /* 销毁时触发 */

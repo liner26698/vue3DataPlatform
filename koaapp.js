@@ -68,22 +68,21 @@ app.use(async (ctx, next) => {
 	// 判断token有没过期
 	if (ctx.request.url != "/login" && ctx.request.url != "/test") {
 		let token = ctx.request.header["x-access-token"];
-
 		if (token) {
 			try {
 				let result = await jwt.verify(token, tokenConfig.privateKey);
 				let nowDate = new Date().getTime();
 				let exp = result.exp;
 				if (result && nowDate > exp * 1000) {
-					ERROR(ctx, false, "token已过期", 599);
+					ERROR(ctx, "token已过期", 599);
 				} else {
-					SUCCESS(ctx, true, "成功");
+					await next();
 				}
 			} catch (error) {
-				ERROR(ctx, false, "token已过期", 599);
+				ERROR(ctx, "token已过期", 599);
 			}
 		} else {
-			ERROR(ctx, false, "token不存在", 599);
+			ERROR(ctx, "token不存在", 599);
 		}
 	} else {
 		await next();
@@ -123,13 +122,19 @@ router.post("/login", async (ctx, next) => {
 	}
 });
 /*
- * 测试get接口
+ * 大屏实时访客数接口
+ * params: visitorNum 访客数
+ * author: kris
+ * date: 2023年02月20日14:22:24
  */
 
-router.get("/test", async (ctx, next) => {
-	let sql = "select * from user_info";
-	let data = await db.query(sql);
-	if (data) {
+router.get("/statistics/getRealTimeVisitorNum", async (ctx, next) => {
+	let sql = "select * from data_screen";
+	let sqlData = await db.query(sql);
+	if (sqlData) {
+		let data = {
+			visitorNum: sqlData[0].realTimeVisitorNum
+		};
 		SUCCESS(ctx, true, "成功", data);
 	} else {
 		ERROR(ctx, "失败");
@@ -149,14 +154,11 @@ router.post("/testToken", async (ctx, next) => {
 			let exp = result.exp;
 			if (result && nowDate > exp * 1000) {
 				SUCCESS(ctx, false, "token已过期");
-				// return false;
 			} else {
 				SUCCESS(ctx, true, "成功");
-				// return true;
 			}
 		} catch (error) {
 			SUCCESS(ctx, false, "token已过期");
-			// return false;
 		}
 	}
 });
