@@ -1,10 +1,15 @@
 <template>
 	<!-- charGPT -->
-	<div class="chat-box">
+	<div class="chat-box" v-show="chatGPT.show">
 		<div class="chat">
 			<div class="chat-title">
-				<h1>chatGPT-small</h1>
-				<h2>text-davinci-003</h2>
+				<h1>
+					<span>chatGPT-small</span>
+					<span class="close" @click="close"
+						><el-icon><CloseBold /></el-icon
+					></span>
+				</h1>
+				<h2>{{ chatGPT.model }}</h2>
 				<figure class="avatar">
 					<img src="@/assets/images/chat_avatar.jpeg" />
 				</figure>
@@ -12,20 +17,25 @@
 			<div class="messages">
 				<div class="messages-content">
 					<template v-for="(item, index) in messageList" :key="index">
-						<!-- <div class="message new" :class="{ loading: loading }" v-if="index % 2 == 0"> -->
 						<div class="message new" v-if="index % 2 == 0">
 							<figure class="avatar">
 								<img src="@/assets/images/chat_avatar.jpeg" />
 							</figure>
 							{{ item.text }}
-							<div class="timestamp">{{ item.time }}</div>
-							<!-- <span v-if="loading && index == messageList.length"></span> -->
+							<div class="ai-timestamp">{{ item.time }}</div>
 						</div>
 						<div class="message message-personal new" v-if="index % 2 != 0">
 							{{ item.text }}
-							<div class="timestamp">{{ item.time }}</div>
+							<div class="user-timestamp">{{ item.time }}</div>
 						</div>
 					</template>
+
+					<div class="message new loading" v-if="loading">
+						<figure class="avatar">
+							<img src="@/assets/images/chat_avatar.jpeg" />
+						</figure>
+						<span></span>
+					</div>
 				</div>
 			</div>
 			<div class="message-box" v-if="!loading">
@@ -50,7 +60,10 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import axios from "axios";
+import { GlobalStore } from "@/store";
 
+const globalStore = GlobalStore();
+const { chatGPT } = globalStore;
 const textArea: any = ref(null);
 let loading = ref(false);
 let messageList: any = ref([
@@ -60,7 +73,7 @@ let messageList: any = ref([
 	}
 ]);
 
-// 30秒倒计时
+// 发送等待-30秒倒计时
 let timer: any = null;
 let count = ref(30);
 const countDown = () => {
@@ -76,44 +89,34 @@ const countDown = () => {
 };
 
 const send = async () => {
-	let text: string = textArea.value.value;
-	if (!text) return;
-	// 清空输入框
+	let { value }: any = textArea.value;
+	if (!value) return;
 	textArea.value.value = "";
-	let len = messageList.value.length;
-	// 判断是机器人回复还是用户输入
-	if (len % 2 != 0) {
-		// 机器人回复
-		console.log("1 :>> ", 1);
-		pushMessageList(text);
-		let _chatMsg: any = await getChatMessage(text);
-		pushMessageList(_chatMsg);
-		setTimeout(() => {
-			textArea.value.focus();
-		}, 100);
-	} else {
-		console.log("2 :>> ", 2);
-		// 用户输入
-		pushMessageList(text);
-	}
+	pushMessage(value);
+	let msg: any = await getMessage(value);
+	pushMessage(msg);
+	setTimeout(() => {
+		textArea.value.focus();
+	}, 100);
 };
 
-const getChatMessage = (text: string) => {
+const getMessage = (text: string) => {
 	let headers = {
 		"Content-Type": "application/json",
-		Authorization: `Bearer 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`
+		Authorization: `Bearer ${chatGPT.keys}`
 	};
 	let params = {
-		max_tokens: 2048,
-		model: "text-davinci-003",
+		max_tokens: chatGPT.max_tokens,
+		model: chatGPT.model,
 		prompt: text,
-		temperature: 0
+		temperature: chatGPT.temperature
 	};
 	loading.value = true;
 	countDown();
+
 	return new Promise((resolve, reject) => {
 		axios
-			.post("https://api.openai.com/v1/completions", JSON.stringify(params), { headers })
+			.post(`${chatGPT.urls}`, JSON.stringify(params), { headers })
 			.then(res => {
 				if (res?.data?.choices?.length) {
 					resolve(res.data.choices[0].text);
@@ -124,13 +127,12 @@ const getChatMessage = (text: string) => {
 			.finally(() => {
 				loading.value = false;
 				clearInterval(timer);
-				resolve("我不明白您的意思,请详细说明您的问题");
+				resolve("请求异常,请联系管理员~~");
 			});
 	});
 };
 
-const pushMessageList = (text: string) => {
-	//  获取当前时分秒
+const pushMessage = (text: string) => {
 	let date = new Date();
 	let time = date.getHours() + ":" + (date.getMinutes() < 10 ? "0" + date.getMinutes() : date.getMinutes());
 
@@ -145,6 +147,10 @@ const pushMessageList = (text: string) => {
 		messageContent.scrollTop = messageContent.scrollHeight;
 	}, 100);
 };
+
+const close = () => {
+	globalStore.chatGPT.show = false;
+};
 </script>
 
 <style lang="scss" scoped>
@@ -158,6 +164,7 @@ const pushMessageList = (text: string) => {
 	width: 500px;
 	height: 700px;
 	z-index: 222222;
+	transition: all 2s ease;
 }
 .chat {
 	width: 100%;
@@ -262,7 +269,18 @@ Chat Title
 		font-size: 8px;
 		letter-spacing: 1px;
 	}
+	.close {
+		font-size: 14px;
+		float: right;
+		cursor: pointer;
+		transition: all 0.1s ease;
 
+		&:hover {
+			font-size: 16px;
+			color: #1d7745;
+			transition: all 0.1s ease;
+		}
+	}
 	.avatar {
 		position: absolute;
 		z-index: 1;
@@ -299,7 +317,10 @@ Messages
 		left: 0;
 		height: 101%;
 		width: 100%;
-		overflow: scroll;
+		overflow-y: scroll;
+		overflow-x: hidden;
+		// 滚动优化
+		-webkit-overflow-scrolling: touch;
 	}
 
 	.message {
@@ -315,7 +336,8 @@ Messages
 		position: relative;
 		text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
 
-		.timestamp {
+		.ai-timestamp,
+		.user-timestamp {
 			position: absolute;
 			bottom: -20px;
 			font-size: 9px;
@@ -407,10 +429,10 @@ Messages
 		}
 	}
 }
-.message .timestamp {
+.ai-timestamp {
 	left: 4px !important;
 }
-.message-personal .timestamp {
+.user-timestamp {
 	right: 2px !important;
 }
 /*--------------------

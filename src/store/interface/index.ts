@@ -4,6 +4,15 @@ export interface ThemeConfigProp {
 	isDark: boolean;
 }
 
+export interface ChatGPTProp {
+	show: boolean;
+	keys: string;
+	max_tokens: number;
+	temperature: number;
+	urls: string;
+	model: string;
+}
+
 /* GlobalState */
 export interface GlobalState {
 	token: string;
@@ -11,8 +20,8 @@ export interface GlobalState {
 	assemblySize: string;
 	language: string;
 	themeConfig: ThemeConfigProp;
+	chatGPT: ChatGPTProp;
 }
-
 /* MenuState */
 export interface MenuState {
 	isCollapse: boolean;

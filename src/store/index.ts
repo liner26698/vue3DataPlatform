@@ -27,6 +27,15 @@ export const GlobalStore = defineStore({
 			primary: "#409eff",
 			// 是否开启深色模式
 			isDark: false
+		},
+		// chatGPT
+		chatGPT: {
+			show: false,
+			keys: "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",
+			max_tokens: 2048,
+			temperature: 0,
+			urls: "https://api.openai.com/v1/completions",
+			model: "text-davinci-003"
 		}
 	}),
 	getters: {},

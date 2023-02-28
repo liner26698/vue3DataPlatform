@@ -5,7 +5,7 @@
 
 		<!-- 登录表单 -->
 		<div class="loginform-box">
-			<LoginForm :age="testVal.age" :address="testVal.address" :obj="testVal.obj"></LoginForm>
+			<LoginForm></LoginForm>
 		</div>
 	</div>
 </template>
@@ -13,15 +13,6 @@
 <script setup lang="ts" name="login">
 import LoginForm from "./components/LoginForm.vue";
 import ThreeLogin from "./threeLogin.vue";
-
-const testVal = reactive({
-	age: "30",
-	address: ["江西省"],
-	obj: {
-		username: "admin",
-		password: "123456"
-	}
-});
 
 onMounted(() => {
 	console.clear();

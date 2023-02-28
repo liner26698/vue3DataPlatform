@@ -1,6 +1,7 @@
 <template>
 	<div class="dataScreen-container">
 		<chat></chat>
+		<screenButton></screenButton>
 		<div class="dataScreen" ref="dataScreenRef">
 			<div class="dataScreen-header">
 				<div class="header-lf">
@@ -131,6 +132,7 @@ import PlatformSourceChart from "./components/PlatformSourceChart.vue";
 import RealTimeAccessChart from "./components/RealTimeAccessChart.vue";
 import { Vue3SeamlessScroll } from "vue3-seamless-scroll";
 import { realTimeVisitorApi } from "@/api/dataScreen/modules/index";
+import screenButton from "@/components/buttons/screenButton/index.vue";
 
 /* 引入警告数据 */
 import alarmList from "./assets/alarmList.json";
