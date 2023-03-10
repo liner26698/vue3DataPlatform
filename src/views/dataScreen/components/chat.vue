@@ -5,7 +5,7 @@
 			<div class="chat-title">
 				<h1>
 					<span>chatGPT-small</span>
-					<span class="close" @click="close"
+					<span class="close" @click="close()"
 						><el-icon><CloseBold /></el-icon
 					></span>
 				</h1>
@@ -44,6 +44,7 @@
 					class="message-input"
 					placeholder="一句话描述您的问题"
 					ref="textArea"
+					onfocus
 					@keyup.enter="send()"
 				></textarea>
 				<button type="submit" class="message-submit" @click.enter="send()">发送</button>
@@ -151,6 +152,34 @@ const pushMessage = (text: string) => {
 const close = () => {
 	globalStore.chatGPT.show = false;
 };
+
+watch(
+	() => globalStore.chatGPT.show,
+	() => {
+		if (globalStore.chatGPT.show) {
+			setTimeout(() => {
+				textArea.value.focus();
+			}, 10);
+		}
+	}
+);
+
+// esc | ctrl + b 快捷键
+function handleKeyDown(e: any) {
+	if (e.keyCode == 27) {
+		close();
+	}
+	if (e.ctrlKey && e.keyCode == 66) {
+		globalStore.chatGPT.show = !globalStore.chatGPT.show;
+		textArea.value.focus();
+	}
+}
+
+window.addEventListener("keydown", handleKeyDown);
+
+onBeforeUnmount(() => {
+	window.removeEventListener("keydown", handleKeyDown);
+});
 </script>
 
 <style lang="scss" scoped>
@@ -219,8 +248,7 @@ body {
 	top: 0;
 	left: 0;
 	z-index: 1;
-	background: url("https://images.unsplash.com/photo-1451186859696-371d9477be93?crop=entropy&fit=crop&fm=jpg&h=975&ixjsv=2.1.0&ixlib=rb-0.3.5&q=80&w=1925")
-		no-repeat 0 0;
+	background: url("../images/chatBg.png") no-repeat 0 0;
 	filter: blur(80px);
 	transform: scale(1.2);
 }

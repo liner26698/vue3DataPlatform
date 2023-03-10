@@ -133,13 +133,14 @@ import RealTimeAccessChart from "./components/RealTimeAccessChart.vue";
 import { Vue3SeamlessScroll } from "vue3-seamless-scroll";
 import { realTimeVisitorApi } from "@/api/dataScreen/modules/index";
 import screenButton from "@/components/buttons/screenButton/index.vue";
-
+import { GlobalStore } from "@/store";
 /* 引入警告数据 */
 import alarmList from "./assets/alarmList.json";
 /* 获取最外层盒子 */
 const dataScreenRef = ref<HTMLElement | null>(null);
 /* 预警详情开关 */
 const isShowWarning = ref(false);
+const globalStore = GlobalStore();
 
 onMounted(async () => {
 	// 初始化时为外层盒子加上缩放属性，防止刷新界面时就已经缩放
@@ -150,6 +151,8 @@ onMounted(async () => {
 	}
 	/* 初始化echarts */
 	initCharts();
+	/* 初始化chatGPT */
+	globalStore.chatGPT.show = false;
 	// 为浏览器绑定事件
 	window.addEventListener("resize", resize);
 	getRealTimeVisitorData();

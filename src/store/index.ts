@@ -31,7 +31,7 @@ export const GlobalStore = defineStore({
 		// chatGPT
 		chatGPT: {
 			show: false,
-			keys: "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",
+			keys: "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",
 			max_tokens: 2048,
 			temperature: 0,
 			urls: "https://api.openai.com/v1/completions",

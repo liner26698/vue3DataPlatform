@@ -1,13 +1,21 @@
 <template>
 	<!-- 悬浮按钮 -->
 	<div class="container">
-		<i
-			:class="[isTrue ? 'fa fa-reddit' : 'fa fa-reddit-square']"
-			id="apple"
-			@mouseenter="changeClass()"
-			@mouseleave="changeClass()"
-			@click="showChatGPT()"
-		></i>
+		<el-tooltip
+			class="box-item"
+			raw-content
+			effect="dark"
+			content="<p><span><strong>CTRL + B</strong> 召唤AI</span></p> <p><span><strong>ESC</strong> 关闭窗口</span></p>"
+			placement="left-start"
+		>
+			<i
+				:class="[isTrue ? 'fa fa-reddit' : 'fa fa-reddit-square']"
+				id="apple"
+				@mouseenter="changeClass()"
+				@mouseleave="changeClass()"
+				@click="showChatGPT()"
+			></i>
+		</el-tooltip>
 	</div>
 </template>
 
