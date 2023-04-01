@@ -78,31 +78,10 @@
 </template>
 
 <script setup lang="ts" name="home">
-import { getDailySentence } from "@/api/modules/myhome";
 import Weather from "./components/Weather.vue"; // 和风天气
 // import Card from "./components/Card.vue"; // 魔术卡
 // import Text from "./components/text.vue"; // 奇幻文字
 let BACKGROUNDVIDEO = new URL("./components/video/yuanshenVideo.mp4", import.meta.url).href;
-let dailySentenceInfo = reactive({
-	caption: "", // 标题
-	note: "", // 每日一句内容
-	time: "" // 时间
-});
-
-const getDailySentenceFn = async () => {
-	try {
-		const res: any = await getDailySentence();
-		if (!res.data) return;
-		const { caption, note, title: time } = res.data.data || {};
-		dailySentenceInfo.caption = caption;
-		dailySentenceInfo.note = note;
-		dailySentenceInfo.time = time;
-	} catch (error) {
-		console.log(error);
-	}
-};
-
-getDailySentenceFn();
 </script>
 
 <style scoped lang="scss">

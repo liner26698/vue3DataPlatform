@@ -14,5 +14,5 @@ export const getBookCatalogs = (params: Book.BookCatalogsParams) => {
 
 // * 查询书籍内容
 export const getBookContent = (params: Book.BookContentParams) => {
-	return http2.get(`/book/${params.bookid}/${params.chapterid}.html`, {}, { headers: { noLoading: true } });
+	return http2.get(`/book/${params.bookid}/${params.chapterid}.html`, {}, { headers: { noLoading: false } });
 };

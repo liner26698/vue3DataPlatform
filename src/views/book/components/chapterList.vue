@@ -44,16 +44,12 @@
 </template>
 
 <script setup lang="ts" name="chapterList">
-import { ElNotification } from "element-plus";
 import { getBookCatalogs } from "@/api/book/modules/mybook";
-import { getBookContent } from "@/api/book/modules/mybook";
-import { BookStore } from "@/store/modules/book";
 
 interface chapterListProps {
 	id: string;
 }
 
-const bookStore = BookStore();
 const props = withDefaults(defineProps<chapterListProps>(), {
 	id: ""
 });
@@ -103,23 +99,7 @@ const tabPaneChange = (tab: number) => {
 };
 
 const getChapterContent = async (item: any) => {
-	let data: any = null;
-	let params = {
-		bookid: props.id,
-		chapterid: item.id
-	};
-	data = await getBookContent(params);
-	if (data?.data?.content) {
-		debugger;
-		console.log("data :>> ", data.data.content);
-		bookStore.setBookDetail(data.data);
-	} else {
-		ElNotification({
-			title: "提示",
-			message: "获取书籍内容失败！",
-			type: "error"
-		});
-	}
+	window.open(`/#/book/bookDetail?bookid=${props.id}&chapterid=${item.id}`, "_blank");
 };
 
 const numberToChinese = (num: number | string) => {

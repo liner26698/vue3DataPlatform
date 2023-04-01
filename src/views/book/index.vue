@@ -10,7 +10,7 @@
 				<!-- 右侧简介目录 -->
 				<RightContent></RightContent>
 				<!-- 详情页 -->
-				<bookDetail></bookDetail>
+				<!-- <bookDetail></bookDetail> -->
 			</div>
 		</div>
 	</div>
@@ -20,7 +20,7 @@
 import Head from "./components/Head.vue";
 import LeftClassification from "./components/LeftClassification.vue";
 import RightContent from "./components/RightContent.vue";
-import bookDetail from "./components/bookDetail.vue";
+// import bookDetail from "./components/bookDetail.vue";
 </script>
 
 <style lang="scss" scoped>

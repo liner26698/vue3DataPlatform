@@ -10,7 +10,7 @@ export namespace Book {
 	}
 
 	export interface BookContentParams {
-		bookid: string;
-		chapterid: string;
+		bookid: string | number;
+		chapterid: string | number;
 	}
 }

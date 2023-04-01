@@ -26,6 +26,16 @@ const routes: RouteRecordRaw[] = [
 			key: "login"
 		}
 	},
+	{
+		path: "/book/bookDetail",
+		name: "bookDetail",
+		component: () => import("@/views/book/components/bookDetail.vue"),
+		meta: {
+			requiresAuth: false,
+			title: "看书页",
+			key: "bookDetail"
+		}
+	},
 	...routerArray,
 	{
 		// 找不到路由重定向到404页面

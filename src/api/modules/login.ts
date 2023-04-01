@@ -1,5 +1,5 @@
 import { Login } from "@/api/interface/index";
-import { PORT1 } from "@/api/config/servicePort";
+// import { PORT1 } from "@/api/config/servicePort";
 
 import http from "@/api";
 
@@ -17,10 +17,12 @@ export const testToken = (params: any) => {
 
 // * 获取按钮权限
 export const getAuthButtons = () => {
-	return http.get<Login.ResAuthButtons>(PORT1 + `/auth/buttons`);
+	// return http.get<Login.ResAuthButtons>(PORT1 + `/auth/buttons`);
+	return http.get<Login.ResAuthButtons>(`/auth/buttons`);
 };
 
 // * 获取菜单列表
 export const getMenuList = () => {
-	return http.get<Menu.MenuOptions[]>(PORT1 + `/menu/list`);
+	// return http.get<Menu.MenuOptions[]>(PORT1 + `/menu/list`);
+	return http.get<Menu.MenuOptions[]>(`/menu/getMenuList`);
 };

@@ -55,13 +55,11 @@ class RequestHttp {
 		this.service.interceptors.response.use(
 			(response: AxiosResponse) => {
 				const { data, config } = response;
-				debugger;
 				// * 在请求结束后，移除本次请求
 				axiosCanceler.removePending(config);
 				tryHideFullScreenLoading();
 				// * 登陆失效（code == 599）
 				if (data.code == ResultEnum.OVERDUE) {
-					debugger;
 					ElMessage.error(data.msg);
 					globalStore.setToken("");
 					router.replace({

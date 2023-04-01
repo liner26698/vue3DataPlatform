@@ -192,27 +192,6 @@ const drawerClose = (): void => {
 	drawer.value = false;
 };
 
-// const cancelClick = (): void => {
-// 	drawer.value = false;
-// };
-// const confirmClick = (): void => {
-// 	drawer.value = false;
-// };
-// 异步详情
-// const showDetail = async (item: any) => {
-// 	const { Name, Author, LastChapter, UpdateTime, Desc, CName, BookStatus } = item;
-// 	drawer.value = true;
-// 	currentDetail.id = item.Id;
-// 	currentDetail.name = Name;
-// 	currentDetail.author = Author;
-// 	currentDetail.lastChapter = LastChapter;
-// 	currentDetail.updateTime = UpdateTime;
-// 	currentDetail.desc = Desc;
-// 	currentDetail.type = CName;
-// 	currentDetail.status = BookStatus;
-// 	directoryName.value = "作品信息";
-// 	getRelatedList();
-// };
 const showDetail = async (item: any) => {
 	drawer.value = true;
 	directoryName.value = "作品信息";
