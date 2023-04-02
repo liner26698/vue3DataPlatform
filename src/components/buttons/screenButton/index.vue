@@ -42,7 +42,7 @@ const showChatGPT = () => {
 	position: absolute;
 	bottom: 10px;
 	right: 10px;
-	z-index: 999;
+	z-index: 9999;
 	cursor: pointer;
 }
 #apple {

@@ -28,7 +28,7 @@
 					@keyup.enter="searchBookFn"
 				/>
 			</div>
-			<div class="login">登录/注册</div>
+			<div class="login">{{ userName || "登录/注册" }}</div>
 		</div>
 	</div>
 </template>
@@ -36,8 +36,10 @@
 <script setup lang="ts">
 import { Search } from "@element-plus/icons-vue";
 import { BookStore } from "@/store/modules/book";
+import { GlobalStore } from "@/store";
 
 const bookStore = BookStore();
+const globalStore = GlobalStore();
 const headerCurrentLabel = ref("首页");
 const headerTabList = [
 	{
@@ -90,6 +92,7 @@ const searchInfo = reactive({
 	page: 1,
 	siteid: "app2"
 });
+let userName = computed(() => globalStore.userInfo.userName);
 const searchBookFn = () => {
 	// 防止修改原始数据 搜索条件为空默认空格 否则查不出数据
 	let _cloneKey = searchInfo.key ? JSON.parse(JSON.stringify(searchInfo.key)) : " ";

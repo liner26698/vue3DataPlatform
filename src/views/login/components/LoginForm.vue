@@ -12,7 +12,7 @@
 		@keyup.enter="login(loginFormRef)"
 	>
 		<el-form-item prop="username">
-			<el-input v-model="loginForm.username" clearable placeholder="用户名：admin / user" autofocus>
+			<el-input v-model="loginForm.username" clearable placeholder="用户名：admin" autofocus>
 				<template #prefix>
 					<el-icon class="el-input__icon"><user /></el-icon>
 				</template>
