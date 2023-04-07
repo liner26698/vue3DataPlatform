@@ -1,4 +1,4 @@
-<template>
+<!-- <template>
 	<div class="book">
 		<nav class="amazing-tabs">
 			<div class="filters-container">
@@ -451,4 +451,4 @@ ul.main-tabs li {
 	transition: transform 0.4s ease-in-out;
 	transform: translateX(var(--translate-filters-slider));
 }
-</style>
+</style> -->

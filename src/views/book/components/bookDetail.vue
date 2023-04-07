@@ -116,9 +116,11 @@ const getChapterContent = async (bookid = "", chapterid = "") => {
 document.onkeydown = function (e) {
 	// 翻页
 	if (e.keyCode == 37) {
+		// @ts-ignore
 		prevChapter();
 	}
 	if (e.keyCode == 39) {
+		// @ts-ignore
 		nextChapter();
 	}
 

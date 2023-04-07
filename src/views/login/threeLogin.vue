@@ -15,6 +15,7 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 // import Stats from "three/examples/jsm/libs/stats.module.js";
 import { defineComponent, onMounted, onUnmounted } from "vue";
+// @ts-ignore
 import _ from "lodash";
 
 export default defineComponent({

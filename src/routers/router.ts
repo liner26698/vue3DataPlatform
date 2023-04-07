@@ -6,7 +6,9 @@ const metaRouters = import.meta.globEager("./modules/*.ts");
 // * 处理路由
 export const routerArray: RouteRecordRaw[] = [];
 Object.keys(metaRouters).forEach(item => {
+	// @ts-ignore
 	Object.keys(metaRouters[item]).forEach((key: any) => {
+		// @ts-ignore
 		routerArray.push(...metaRouters[item][key]);
 	});
 });
