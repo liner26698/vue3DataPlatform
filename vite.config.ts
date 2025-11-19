@@ -12,19 +12,23 @@ import vueJsx from "@vitejs/plugin-vue-jsx";
 import AutoImport from "unplugin-auto-import/vite";
 import Components from "unplugin-vue-components/vite";
 import { ElementPlusResolver } from "unplugin-vue-components/resolvers";
+import vueSetupExtend from "vite-plugin-vue-setup-extend-plus";
 
 // @see: https://vitejs.dev/config/
 export default defineConfig((mode: ConfigEnv): UserConfig => {
-	const env = loadEnv(mode.mode, process.cwd());
+	const env = loadEnv(mode.mode, process.cwd()); // loadEnv(mode, root)
 	const viteEnv = wrapperEnv(env);
-
+	console.log("viteEnv :>> ", viteEnv);
 	return {
 		resolve: {
 			alias: {
 				"@": resolve(__dirname, "./src"),
+				"@images": resolve(__dirname, "./src/assets/images"),
 				"vue-i18n": "vue-i18n/dist/vue-i18n.cjs.js"
 			}
 		},
+		// base: "/test/",
+		base: "/",
 		// global css
 		css: {
 			preprocessorOptions: {
@@ -43,15 +47,33 @@ export default defineConfig((mode: ConfigEnv): UserConfig => {
 			// 代理跨域（mock 不需要配置，这里只是个事列）
 			proxy: {
 				"/api": {
-					target: "https://mock.mengxuegu.com/mock/62a4f85212c141642463062a", // easymock 测试地址
+					secure: false,
+					// target: "http://8.166.130.216:3000", // 发布环境
+					target: "http://127.0.0.1:3001", // 本地开发测试环境
+					// target: "http://127.0.0.1:3000", // 发布正式环境
+					// target: viteEnv.VITE_APP_ENV === "production" ? "http://8.166.130.216:3000" : "http://127.0.0.1:3000",
 					changeOrigin: true,
 					rewrite: path => path.replace(/^\/api/, "")
+				},
+				"/bookApi": {
+					secure: false,
+					target: "https://sou.jiaston.com",
+					changeOrigin: true,
+					rewrite: path => path.replace(/^\/bookApi/, "")
+				},
+				"/shuapi": {
+					secure: false, // * 是否开启https
+					target: "http://shuapi.jiaston.com",
+					changeOrigin: true,
+					rewrite: path => path.replace(/^\/shuapi/, "")
 				}
+				// 以上接口调用异常，可尝试使用以下接口 2023年05月10日11:42:14
 			}
 		},
 		// plugins
 		plugins: [
 			vue(),
+			vueSetupExtend(),
 			createHtmlPlugin({
 				inject: {
 					data: {
@@ -101,11 +123,11 @@ export default defineConfig((mode: ConfigEnv): UserConfig => {
 			// * gzip compress
 			viteEnv.VITE_BUILD_GZIP &&
 				viteCompression({
-					verbose: true,
-					disable: false,
-					threshold: 10240,
-					algorithm: "gzip",
-					ext: ".gz"
+					verbose: true, // * 是否在控制台输出压缩信息
+					disable: false, // * 是否禁用插件
+					threshold: 10240, // * 文件大小大于该值时启用压缩
+					algorithm: "gzip", // * 压缩算法
+					ext: ".gz" // * 压缩文件后缀
 				})
 		],
 		// build configure
@@ -115,8 +137,8 @@ export default defineConfig((mode: ConfigEnv): UserConfig => {
 			terserOptions: {
 				// delete console/debugger
 				compress: {
-					drop_console: viteEnv.VITE_DROP_CONSOLE,
-					drop_debugger: true
+					drop_console: viteEnv.VITE_DROP_CONSOLE, // * 是否删除 console
+					drop_debugger: false // * 是否删除 debugger
 				}
 			},
 			rollupOptions: {

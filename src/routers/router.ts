@@ -6,7 +6,9 @@ const metaRouters = import.meta.globEager("./modules/*.ts");
 // * 处理路由
 export const routerArray: RouteRecordRaw[] = [];
 Object.keys(metaRouters).forEach(item => {
+	// @ts-ignore
 	Object.keys(metaRouters[item]).forEach((key: any) => {
+		// @ts-ignore
 		routerArray.push(...metaRouters[item][key]);
 	});
 });
@@ -26,6 +28,16 @@ const routes: RouteRecordRaw[] = [
 			key: "login"
 		}
 	},
+	{
+		path: "/book/bookDetail",
+		name: "bookDetail",
+		component: () => import("@/views/book/components/bookDetail.vue"),
+		meta: {
+			requiresAuth: false,
+			title: "看书页",
+			key: "bookDetail"
+		}
+	},
 	...routerArray,
 	{
 		// 找不到路由重定向到404页面
@@ -35,7 +47,7 @@ const routes: RouteRecordRaw[] = [
 ];
 
 const router = createRouter({
-	history: createWebHashHistory(),
+	history: createWebHashHistory(), // hash模式：createWebHashHistory，history模式：createWebHistory
 	routes,
 	strict: false,
 	// 切换页面，滚动到最顶部

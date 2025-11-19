@@ -6,7 +6,7 @@ import { reactive, computed, toRefs } from "vue";
  * @param apiUrl 获取表格数据 ApiUrl(必传)
  * @param initParam 获取数据初始化参数(不必传，默认为{})
  * @param isPageable 是否有分页(不必传，默认为true)
- * @param tableRef 当前表格的DOM(不必传，默认为“”)
+ * @param tableRef 当前表格的DOM(不必传，默认为"")
  * */
 export const useTable = (apiUrl: (params: any) => Promise<any>, initParam: any = {}, isPageable: boolean = true) => {
 	const state = reactive<Table.TableStateProps>({
@@ -57,11 +57,9 @@ export const useTable = (apiUrl: (params: any) => Promise<any>, initParam: any =
 			// 更新查询参数
 			updatedTotalParam();
 			Object.assign(state.totalParam, initParam);
-			const { data } = await apiUrl(state.totalParam);
-			state.tableData = isPageable ? data.datalist : data;
-			// 解构后台返回的分页数据(如果有分页更新分页信息)
-			const { pageNum, pageSize, total } = data;
-			isPageable && updatePageable({ pageNum, pageSize, total });
+			const { data, total } = await apiUrl(state.totalParam);
+			state.tableData = isPageable ? data : data.datalist;
+			isPageable && updatePageable({ pageNum: state.pageable.pageNum, pageSize: state.pageable.pageSize, total });
 		} catch (error) {
 			console.log(error);
 		}

@@ -28,12 +28,19 @@ import router from "@/routers/index";
 import I18n from "@/language/index";
 // pinia store
 import pinia from "@/store/index";
-
+// tailwindcss
+import "@/assets/css/tailwind.css";
+// svg icons
+import SvgIcon from "./components/SvgIcon/SvgIcon.vue";
+import "@/assets/iconfont/iconfont.js";
 const app = createApp(App);
-
+// vue3 的图片预览组件
+import vue3PhotoPreview from "vue3-photo-preview";
+import "vue3-photo-preview/dist/index.css";
 // 注册element Icons组件
 Object.keys(Icons).forEach(key => {
 	app.component(key, Icons[key as keyof typeof Icons]);
 });
 
-app.use(router).use(I18n).use(pinia).use(directives).use(ElementPlus).mount("#app");
+app.component("SvgIcon", SvgIcon);
+app.use(router).use(I18n).use(pinia).use(directives).use(ElementPlus).use(vue3PhotoPreview).mount("#app");

@@ -29,7 +29,7 @@ export const useTime = () => {
 		second.value =
 			(date.getSeconds() + "")?.padStart(2, "0") ||
 			new Intl.NumberFormat(undefined, { minimumIntegerDigits: 2 }).format(date.getSeconds());
-		nowTime.value = `${year.value}年${month.value}月${day.value} ${hour.value}:${minute.value}:${second.value}`;
+		nowTime.value = `${year.value}-${month.value}-${day.value} 星期${week.value} ${hour.value}:${minute.value}:${second.value}`;
 	};
 
 	updateTime();

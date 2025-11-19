@@ -13,7 +13,7 @@ const homeRouter: Array<RouteRecordRaw> = [
 				name: "home",
 				component: () => import("@/views/home/index.vue"),
 				meta: {
-					keepAlive: true,
+					keepAlive: false, // 暂不缓存首页 防止背景视频不播放
 					requiresAuth: true,
 					title: "首页",
 					key: "home"

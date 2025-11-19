@@ -55,7 +55,7 @@ watch(
 		tabStore.addTabs(params);
 	},
 	{
-		immediate: true
+		immediate: true // 立即执行
 	}
 );
 

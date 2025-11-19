@@ -7,6 +7,7 @@ export interface Result {
 // * 请求响应参数(包含data)
 export interface ResultData<T = any> extends Result {
 	data?: T;
+	total: number;
 }
 
 // * 分页响应参数
@@ -62,5 +63,22 @@ export namespace User {
 		status: number;
 		avatar: string;
 		children?: ResUserList[];
+	}
+}
+
+// * 日志管理
+export namespace Logs {
+	export interface ReqGetLogsParams extends ReqPage {
+		username: string;
+		operation: string;
+		createTime: string[];
+		lines?: number;
+	}
+	export interface ResLogsList {
+		id: string;
+		username: string;
+		operation: string;
+		ip: string;
+		createTime: string;
 	}
 }

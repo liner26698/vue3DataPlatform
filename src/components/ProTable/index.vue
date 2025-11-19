@@ -81,14 +81,6 @@
 								class="table-image"
 								preview-teleported
 							/>
-							<!-- tag 标签（自带格式化内容） -->
-							<el-tag v-else-if="item.tag" :type="filterEnum(scope.row[item.prop!],item.enum,'tag')">
-								{{ item.enum?.length ? filterEnum(scope.row[item.prop!],item.enum): defaultFormat(0,0,scope.row[item.prop!]) }}
-							</el-tag>
-							<!-- 文字（自带格式化内容） -->
-							<span v-else>
-								{{ item.enum?.length ? filterEnum(scope.row[item.prop!],item.enum): defaultFormat(0,0,scope.row[item.prop!]) }}
-							</span>
 						</slot>
 					</template>
 				</el-table-column>
@@ -118,7 +110,6 @@ import { useTable } from "@/hooks/useTable";
 import { useSelection } from "@/hooks/useSelection";
 import { Refresh, Operation, Search } from "@element-plus/icons-vue";
 import { ColumnProps } from "@/components/ProTable/interface";
-import { filterEnum, defaultFormat } from "@/utils/util";
 import SearchForm from "@/components/SearchForm/index.vue";
 import Pagination from "@/components/Pagination/index.vue";
 import ColSetting from "./components/ColSetting.vue";
@@ -141,6 +132,17 @@ interface ProTableProps {
 }
 
 // 接受父组件参数，配置默认值
+// q? withDefaults 的作用是什么？
+// a: withDefaults 是一个工具函数，用于将默认值与传入的值合并，返回一个新的对象。
+// q? defineProps 的作用是什么？
+// a: defineProps 是一个工具函数，用于定义组件的 props，它接受一个对象作为参数，对象的 key 是 prop 的名称，value 是 prop 的类型。
+// q? defineExpose 的作用是什么？
+// a: defineExpose 是一个工具函数，用于暴露组件的属性和方法给父组件。
+// q? defineEmits 的作用是什么？
+// a: defineEmits 是一个工具函数，用于定义组件的事件，它接受一个数组作为参数，数组的元素是事件的名称。
+// q? defineSlots 的作用是什么？
+// a: defineSlots 是一个工具函数，用于定义组件的插槽，它接受一个对象作为参数，对象的 key 是插槽的名称，value 是插槽的内容。
+
 const props = withDefaults(defineProps<ProTableProps>(), {
 	columns: () => [],
 	pagination: true,

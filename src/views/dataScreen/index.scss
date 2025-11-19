@@ -96,7 +96,7 @@
 				position: absolute;
 				top: 0;
 				right: 14px;
-				width: 310px;
+				width: 340px;
 				font-family: YouSheBiaoTiHei;
 				font-size: 17px;
 				font-weight: 400;
@@ -190,14 +190,16 @@
 							color: rgb(255 183 0 / 74.7%);
 							display: inline-block;
 							box-sizing: border-box;
-							padding: 1px 0;
+							padding: 1px 20px;
 						}
 						img {
 							width: 15px;
 							height: 15px;
-							margin-top: -15px;
+							margin-top: 7px;
 							margin-right: 6px;
 							vertical-align: middle;
+							position: absolute;
+							left: 0;
 						}
 					}
 				}

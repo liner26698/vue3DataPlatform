@@ -1,6 +1,6 @@
 <template>
 	<div class="icon-box">
-		<el-input v-model="iconValue" placeholder="请选择图标" @focus="openDialog" readonly ref="inputRef">
+		<!-- <el-input v-model="iconValue" placeholder="请选择图标" @focus="openDialog" readonly ref="inputRef">
 			<template #append>
 				<el-button :icon="customIcons[iconValue]" />
 			</template>
@@ -10,34 +10,34 @@
 				<component :is="item"></component>
 				<span>{{ item.name }}</span>
 			</div>
-		</el-dialog>
+		</el-dialog> -->
 	</div>
 </template>
 
 <script setup lang="ts" name="selectIcon">
-import { ref } from "vue";
-import * as Icons from "@element-plus/icons-vue";
+// import { ref } from "vue";
+// import * as Icons from "@element-plus/icons-vue";
 
-// 接收参数
-defineProps<{ iconValue: string }>();
+// // 接收参数
+// defineProps<{ iconValue: string }>();
 
-const customIcons: { [key: string]: any } = Icons;
-const dialogVisible = ref(false);
+// const customIcons: { [key: string]: any } = Icons;
+// const dialogVisible = ref(false);
 
-// 打开 dialog
-const openDialog = (e: any) => {
-	// 直接让文本框失去焦点，不然会出现显示bug
-	e.srcElement.blur();
-	dialogVisible.value = true;
-};
+// // 打开 dialog
+// const openDialog = (e: any) => {
+// 	// 直接让文本框失去焦点，不然会出现显示bug
+// 	e.srcElement.blur();
+// 	dialogVisible.value = true;
+// };
 
-const emit = defineEmits(["update:iconValue"]);
+// const emit = defineEmits(["update:iconValue"]);
 
-// 选择图标(触发更新父组件数据)
-const selectIcon = (item: any) => {
-	dialogVisible.value = false;
-	emit("update:iconValue", item.name);
-};
+// // 选择图标(触发更新父组件数据)
+// const selectIcon = (item: any) => {
+// 	dialogVisible.value = false;
+// 	emit("update:iconValue", item.name);
+// };
 </script>
 
 <style scoped lang="scss">

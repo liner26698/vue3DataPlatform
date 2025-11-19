@@ -14,7 +14,7 @@
 			<!-- Full screen -->
 			<Fullscreen></Fullscreen>
 			<!-- User name -->
-			<span class="username">Kris</span>
+			<span class="username">{{ userName }}</span>
 			<!-- Avatar -->
 			<Avatar></Avatar>
 		</div>
@@ -29,6 +29,10 @@ import Language from "./components/Language.vue";
 import AssemblySize from "./components/AssemblySize.vue";
 import Theme from "./components/Theme.vue";
 import Avatar from "./components/Avatar.vue";
+import { GlobalStore } from "@/store";
+
+const globalStore = GlobalStore();
+let userName = computed(() => globalStore.userInfo.userName);
 </script>
 
 <style scoped lang="scss">

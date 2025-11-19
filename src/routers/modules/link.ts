@@ -11,17 +11,17 @@ const myBlogRouter: Array<RouteRecordRaw> = [
 			title: "外部链接"
 		},
 		children: [
-			{
-				path: "/link/gitee",
-				name: "gitee",
-				component: () => import("@/views/link/gitee/index.vue"),
-				meta: {
-					keepAlive: true,
-					requiresAuth: true,
-					title: "Gitee 仓库",
-					key: "gitee"
-				}
-			},
+			// {
+			// 	path: "/link/gitee",
+			// 	name: "gitee",
+			// 	component: () => import("@/views/link/gitee/index.vue"),
+			// 	meta: {
+			// 		keepAlive: true,
+			// 		requiresAuth: true,
+			// 		title: "Gitee 仓库",
+			// 		key: "gitee"
+			// 	}
+			// },
 			{
 				path: "/link/github",
 				name: "github",
@@ -32,29 +32,29 @@ const myBlogRouter: Array<RouteRecordRaw> = [
 					title: "GitHub 仓库",
 					key: "github"
 				}
-			},
-			{
-				path: "/link/juejin",
-				name: "juejin",
-				component: () => import("@/views/link/juejin/index.vue"),
-				meta: {
-					keepAlive: true,
-					requiresAuth: true,
-					title: "掘金文档",
-					key: "juejin"
-				}
-			},
-			{
-				path: "/link/myBlog",
-				name: "myBlog",
-				component: () => import("@/views/link/myBlog/index.vue"),
-				meta: {
-					keepAlive: true,
-					requiresAuth: true,
-					title: "个人博客",
-					key: "myBlog"
-				}
 			}
+			// {
+			// 	path: "/link/juejin",
+			// 	name: "juejin",
+			// 	component: () => import("@/views/link/juejin/index.vue"),
+			// 	meta: {
+			// 		keepAlive: true,
+			// 		requiresAuth: true,
+			// 		title: "掘金文档",
+			// 		key: "juejin"
+			// 	}
+			// },
+			// {
+			// 	path: "/link/myBlog",
+			// 	name: "myBlog",
+			// 	component: () => import("@/views/link/myBlog/index.vue"),
+			// 	meta: {
+			// 		keepAlive: true,
+			// 		requiresAuth: true,
+			// 		title: "个人博客",
+			// 		key: "myBlog"
+			// 	}
+			// }
 		]
 	}
 ];

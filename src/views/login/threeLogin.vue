@@ -13,9 +13,8 @@
 <script lang="ts">
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
-import Stats from "three/examples/jsm/libs/stats.module.js";
+// import Stats from "three/examples/jsm/libs/stats.module.js";
 import { defineComponent, onMounted, onUnmounted } from "vue";
-import _ from "lodash";
 
 export default defineComponent({
 	setup() {
@@ -70,12 +69,12 @@ export default defineComponent({
 		// 声明云流动的渲染函数1
 		let renderCloudMove_second: any;
 		// 声明性能监控
-		let stats: any = new Stats();
+		// let stats: any = new Stats();
 		// 声明渲染器
 		let renderer: any;
 		onUnmounted(() => {
 			console.log(
-				"%c 开启全屏大数据",
+				"%c 开启全屏",
 				" text-shadow: 0 1px 0 #ccc,0 2px 0 #c9c9c9,0 3px 0 #bbb,0 4px 0 #b9b9b9,0 5px 0 #aaa,0 6px 1px rgba(0,0,0,.1),0 0 5px rgba(0,0,0,.1),0 1px 3px rgba(0,0,0,.3),0 3px 5px rgba(0,0,0,.2),0 5px 10px rgba(0,0,0,.25),0 10px 10px rgba(0,0,0,.2),0 20px 20px rgba(0,0,0,.15);font-size:5em"
 			);
 			cancelAnimationFrame(container);
@@ -116,19 +115,32 @@ export default defineComponent({
 			// const axesHelper = new THREE.AxesHelper(2000)
 			// scene.add(axesHelper)
 			window.onresize = () => {
+				// 更新全局宽高变量
+				width = window.innerWidth;
+				height = window.innerHeight;
+
 				// 重置渲染器输出画布canvas尺寸
-				renderer.setSize(window.innerWidth, window.innerHeight);
-				// 重置相机投影的相关参数
-				let k = window.innerWidth / window.innerHeight; //窗口宽高比
-				let s = Math.max(k, 1); //窗口宽高比，取大值
-				camera.left = -s * k;
-				camera.right = s * k;
-				camera.top = s;
-				camera.bottom = -s;
-				// 渲染器执行render方法的时候会读取相机对象的投影矩阵属性projectionMatrix
-				// 但是不会每渲染一帧，就通过相机的属性计算投影矩阵(节约计算资源)
-				// 如果相机的一些属性发生了变化，需要执行updateProjectionMatrix ()方法更新相机的投影矩阵
+				renderer.setSize(width, height);
+
+				// 对于透视相机，只需要更新aspect参数
+				camera.aspect = width / height;
 				camera.updateProjectionMatrix();
+
+				// 重新计算相机位置以保持合适的视角
+				const distance = width / 2 / Math.tan(Math.PI / 12);
+				zAxisNumber = Math.floor(distance - depth / 2);
+				camera.position.set(0, 0, zAxisNumber);
+
+				// 更新背景盒模型大小
+				if (scene && scene.children.length > 0) {
+					// 查找背景盒模型并更新其尺寸
+					scene.children.forEach((child: any) => {
+						if (child.geometry && child.geometry.type === "BoxGeometry") {
+							child.geometry.dispose();
+							child.geometry = new THREE.BoxGeometry(width, height, depth);
+						}
+					});
+				}
 			};
 		});
 		// 初始化场景
@@ -140,7 +152,7 @@ export default defineComponent({
 
 		// 初始化背景（盒模型背景，视角在盒子里面，看到的是盒子内部）
 		const initSceneBg = () => {
-			new THREE.TextureLoader().load(IMAGES_SKY, texture => {
+			new THREE.TextureLoader().load(IMAGES_SKY, (texture: any) => {
 				const geometry = new THREE.BoxGeometry(width, height, depth); // 创建一个球形几何体 SphereGeometry
 				const material = new THREE.MeshBasicMaterial({ map: texture, side: THREE.BackSide }); // 创建基础为网格基础材料
 				const mesh = new THREE.Mesh(geometry, material);
@@ -220,7 +232,8 @@ export default defineComponent({
 			material.map = new THREE.TextureLoader().load(IMAGES_EARTHBG);
 			material.blendDstAlpha = 1;
 			//几何体
-			sphereGeometry = new THREE.SphereGeometry(50, 64, 32);
+			// 将球体半径调整为90
+			sphereGeometry = new THREE.SphereGeometry(90, 64, 32);
 			//模型
 			sphere = new THREE.Mesh(sphereGeometry, material);
 		};
@@ -229,9 +242,10 @@ export default defineComponent({
 		const initSphereGroup = () => {
 			Sphere_Group = new THREE.Group();
 			Sphere_Group.add(sphere);
-			Sphere_Group.position.x = -400;
-			Sphere_Group.position.y = 200;
-			Sphere_Group.position.z = -200;
+			// 调整位置使星球往左上角移动
+			Sphere_Group.position.x = -480; // 更靠左
+			Sphere_Group.position.y = 200; // 更靠上
+			Sphere_Group.position.z = -400; // z轴保持不变
 			scene.add(Sphere_Group);
 		};
 
@@ -276,16 +290,13 @@ export default defineComponent({
 				[[0.6, 100, 0.75], sprite1, 50],
 				[[0, 0, 1], sprite2, 20]
 			];
-			// 初始化1500个节点
-			for (let i = 0; i < 1500; i++) {
-				/**
-				 * const x: number = Math.random() * 2 * width - width
-				 * 等价
-				 * THREE.MathUtils.randFloatSpread(width)
-				 */
-				const x: number = THREE.MathUtils.randFloatSpread(width);
-				const y: number = _.random(0, height / 2);
-				const z: number = _.random(-depth / 2, zAxisNumber);
+
+			// 增加星星数量到1000个，并优化Z轴分布，让更多星星在近处显示
+			for (let i = 0; i < 1000; i++) {
+				const x = Math.random() * width - width / 2;
+				const y = Math.random() * height - height / 2;
+				// 修改Z轴分布，让星星更集中在近处（-depth/4到depth/4之间）
+				const z = (Math.random() * depth) / 2 - depth / 4;
 				vertices.push(x, y, z);
 			}
 
@@ -326,8 +337,9 @@ export default defineComponent({
 		// 渲染星星的运动
 		const renderStarMove = () => {
 			const time = Date.now() * 0.00005;
-			zprogress += 1;
-			zprogress_second += 1;
+			// 降低星星移动速度，从5改为1.5，让星星缓慢移动
+			zprogress += 1.5;
+			zprogress_second += 1.5;
 
 			if (zprogress >= zAxisNumber + depth / 2) {
 				zprogress = particles_init_position;
@@ -385,9 +397,9 @@ export default defineComponent({
 			renderer.shadowMap.enabled = true;
 			renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 			container.appendChild(renderer.domElement);
-			container.appendChild(stats.dom);
-			renderCloudMove_first = initCloudMove(cloudParameter_first, 0.0002);
-			renderCloudMove_second = initCloudMove(cloudParameter_second, 0.0008, 0.001);
+			// 将云朵速度减慢一倍
+			renderCloudMove_first = initCloudMove(cloudParameter_first, 0.0004);
+			renderCloudMove_second = initCloudMove(cloudParameter_second, 0.0015, 0.003);
 		};
 
 		//动画刷新
@@ -418,7 +430,7 @@ export default defineComponent({
 		z-index: 9999;
 		width: 600px;
 		height: 500px;
-		background-image: url("@/assets/images/login_border.png");
+		background-image: url("../../assets/images/login_border.png");
 		background-repeat: no-repeat;
 		background-size: 100% 100%;
 		top: 50%;
@@ -499,7 +511,7 @@ export default defineComponent({
 		z-index: 9998;
 		width: 100%;
 		height: 400px;
-		background-image: url("@/assets/images/ground.png");
+		background-image: url("../../assets/images/ground.png");
 		background-repeat: no-repeat;
 		background-size: 100% 100%;
 		bottom: 0;

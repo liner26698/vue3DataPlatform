@@ -2,7 +2,7 @@
 	<!-- 热门板块 -->
 	<div class="echarts-header">
 		<span>排名</span>
-		<span>景区</span>
+		<span>城市/国家</span>
 		<span>预约数量</span>
 	</div>
 	<div class="echarts" id="HotPlateChart"></div>
@@ -197,6 +197,17 @@ const initChart = (data: any = {}): ECharts => {
 			}
 		]
 	};
+
+	/**
+	 * TODO: 事件绑定需要优化到整个row中
+	 */
+	charEch.on("click", (params: any) => {
+		console.log(params);
+		// 跳转到外部链接
+		if (params.data.src) {
+			window.open(params.data.src, "_blank");
+		}
+	});
 	charEch.setOption(option);
 	return charEch;
 };

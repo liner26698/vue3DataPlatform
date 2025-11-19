@@ -7,8 +7,8 @@
 			人
 		</div>
 		<div class="actual-total">
-			<div class="actual-item" v-for="(item, index) in actualTotal.split('')" :key="index">
-				<count-to :startVal="0" :endVal="Number(item)" :decimals="0" :duration="3000"></count-to>
+			<div class="actual-item" v-for="(item, index) in props.realTimeVisitorNum.split('')" :key="index">
+				<count-to :startVal="0" :endVal="Number(item)" :decimals="0" :duration="5000"></count-to>
 			</div>
 			<div class="actual-item">人</div>
 		</div>
@@ -22,9 +22,14 @@
 import { ECharts, init } from "echarts";
 import "echarts-liquidfill";
 import { CountTo } from "vue3-count-to";
-import { Ref, ref } from "vue";
 
-const actualTotal: Ref<string> = ref("216908");
+interface RealTimeVisitorNumProps {
+	realTimeVisitorNum: string;
+}
+const props = withDefaults(defineProps<RealTimeVisitorNumProps>(), {
+	realTimeVisitorNum: "0"
+});
+
 const initChart = (data: number = 1): ECharts => {
 	const charEle = document.getElementById("RealTimeAccessChart") as HTMLElement;
 	const charEch: ECharts = init(charEle);

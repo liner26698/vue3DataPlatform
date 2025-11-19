@@ -1,3 +1,6 @@
 // 后端微服务端口名
 export const PORT1 = "/geeker";
 export const PORT2 = "/user";
+export const statistics = "/statistics";
+export const crawlerStats = "/crawlerStats";
+export const bookMicroservices = "/bookMicroservices";

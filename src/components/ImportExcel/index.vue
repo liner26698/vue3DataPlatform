@@ -6,6 +6,7 @@
 			</el-form-item>
 			<el-form-item label="文件上传 :">
 				<el-upload
+					name="myfile"
 					action="string"
 					class="upload"
 					:drag="true"
