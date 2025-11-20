@@ -44,7 +44,7 @@
 </template>
 
 <script setup lang="ts" name="chapterList">
-import { getBookCatalogs } from "@/api/book/modules/mybook";
+import { getNovelChapters } from "@/api/book/modules/mybook";
 
 interface chapterListProps {
 	id: string;
@@ -53,43 +53,42 @@ interface chapterListProps {
 const props = withDefaults(defineProps<chapterListProps>(), {
 	id: ""
 });
+
 let pieceList = ref([
 	{
-		name: "",
-		list: [
-			{
-				name: "",
-				id: ""
-			}
-		]
+		name: "全部章节",
+		list: [] as any[]
 	}
 ]);
-let currentList = ref([
-	{
-		name: "",
-		id: ""
-	}
-]);
+let currentList = ref([] as any[]);
 let searchValue = ref("");
-let searchList = ref([
-	{
-		name: "",
-		id: ""
-	}
-]);
+let searchList = ref([] as any[]);
 const searchTotal = computed(() => currentList.value.length);
 let loading = ref(false);
 
 // 获取篇章列表
 const getPieceList = async () => {
-	let data: any = null;
-	data = await getBookCatalogs({ id: props.id });
-	if (data) {
-		data = JSON.parse(data.replace(/},]/g, "}]"));
-		if (data.info === "success") {
-			pieceList.value = data.data.list;
+	try {
+		const data: any = await getNovelChapters({ bookId: props.id });
+		console.log("getNovelChapters response:", data);
+		// 处理响应数据结构：{code, success, message, data: {data: [], total}}
+		if (data && data.data && data.data.data) {
+			const chapters = data.data.data.map((item: any) => ({
+				name: item.chapterName,
+				id: item.chapterId
+			}));
+			pieceList.value = [
+				{
+					name: "全部章节",
+					list: chapters
+				}
+			];
 			tabPaneChange(0);
+		} else {
+			console.error("章节数据结构异常:", data);
 		}
+	} catch (error) {
+		console.error("获取章节列表失败:", error);
 	}
 };
 
@@ -137,7 +136,6 @@ const numberToChinese = (num: number | string) => {
 	} else if (_str == "一万") {
 		_str = "万";
 	}
-	// console.log("_str :>> ", _str);
 	return _str;
 };
 

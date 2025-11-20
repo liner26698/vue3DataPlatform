@@ -203,7 +203,12 @@ const toHome = () => {
 };
 
 onMounted(() => {
-	headerCurrentLabel.value = bookStore.headerCurrentLabel;
+	// 如果store中没有设置header tab，则默认选中AI
+	if (!bookStore.headerCurrentLabel) {
+		currentTab("AI");
+	} else {
+		headerCurrentLabel.value = bookStore.headerCurrentLabel;
+	}
 	// bookStore.setTabTypeList(commonTabTypeList);
 });
 </script>

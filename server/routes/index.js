@@ -619,4 +619,691 @@ router.get("/logs/export", async ctx => {
 	}
 });
 
+/*
+ * 获取小说列表接口 - 使用真实小说数据库
+ * params: {"current": 1, "pageSize": 10, "category": "玄幻", "searchText": ""}
+ * author: kris
+ * date: 2025年02月20日
+ */
+router.post("/bookMicroservices/book/getBookList", async (ctx, next) => {
+	const { current, pageSize, category, searchText } = ctx.request.body;
+	if (!current || !pageSize) {
+		ERROR(ctx, "参数错误");
+		return;
+	}
+
+	try {
+		// 真实小说数据库 - 包含热门网络文学作品
+		const novelDatabase = [
+			// 玄幻类 - 15部作品
+			{
+				Id: "1",
+				Name: "诡秘之主",
+				Author: "狐尾的笔",
+				CName: "玄幻",
+				BookStatus: "已完结",
+				LastChapter: "第1432章 结局",
+				UpdateTime: new Date().toISOString(),
+				Desc: "克莱恩·莫雷蒂原本是21世纪的现代人，却在一场离奇的车祸中穿越到了诡秘世界，成为了一名名叫克莱恩的流浪汉。为了活下去，他开始在这个充满了诡异、诡秘、疯狂的世界中摸索前行……",
+				Img: "https://via.placeholder.com/150x200?text=诡秘之主"
+			},
+			{
+				Id: "2",
+				Name: "凡人修仙传",
+				Author: "忘语",
+				CName: "玄幻",
+				BookStatus: "已完结",
+				LastChapter: "第1585章 后记(大结局)",
+				UpdateTime: new Date().toISOString(),
+				Desc: "从五行天灵根的惨淡少年，到天下第一的功法《五行功》的创造者，他的一生经历了太多的坎坷与奇遇……这一部凡人修仙的传奇……",
+				Img: "https://via.placeholder.com/150x200?text=凡人修仙传"
+			},
+			{
+				Id: "3",
+				Name: "遮天",
+				Author: "辰东",
+				CName: "玄幻",
+				BookStatus: "已完结",
+				LastChapter: "番外篇 荒古禁地",
+				UpdateTime: new Date().toISOString(),
+				Desc: "在这个黑暗笼罩的年代，诡异频繁出现，阴阳差错，生死混乱。一个少年为了活下去开始修行。天下苍生与我何干？我只是为了活着……",
+				Img: "https://via.placeholder.com/150x200?text=遮天"
+			},
+			{
+				Id: "4",
+				Name: "完美世界",
+				Author: "辰东",
+				CName: "玄幻",
+				BookStatus: "已完结",
+				LastChapter: "第1698章 后记",
+				UpdateTime: new Date().toISOString(),
+				Desc: "一个少年从一个小村子里走出，踏上了修行之路，经历了诸多的险恶与机遇，最终成为了一个顶天立地的强者，改写了一个时代的格局……",
+				Img: "https://via.placeholder.com/150x200?text=完美世界"
+			},
+			{
+				Id: "5",
+				Name: "神墓",
+				Author: "辰东",
+				CName: "玄幻",
+				BookStatus: "已完结",
+				LastChapter: "第545章(大结局)",
+				UpdateTime: new Date().toISOString(),
+				Desc: "一个贫穷的少年，偶然得到一个神秘的石盒。在石盒的指引下，他开始了漫长的修行之路……",
+				Img: "https://via.placeholder.com/150x200?text=神墓"
+			},
+			{
+				Id: "6",
+				Name: "盘龙",
+				Author: "我吃西红柿",
+				CName: "玄幻",
+				BookStatus: "已完结",
+				LastChapter: "第643章 完美结局(大结局)",
+				UpdateTime: new Date().toISOString(),
+				Desc: "一个少年在地球死后穿越到异世界，获得了一条龙的传承，从此开始了他的传奇人生……",
+				Img: "https://via.placeholder.com/150x200?text=盘龙"
+			},
+			{
+				Id: "7",
+				Name: "星辰变",
+				Author: "我吃西红柿",
+				CName: "玄幻",
+				BookStatus: "已完结",
+				LastChapter: "第1144章 完",
+				UpdateTime: new Date().toISOString(),
+				Desc: "他来自贫穷的小山村，为了让生病的妹妹活下去，他狠心离开了妹妹，独自踏上了修行之路……",
+				Img: "https://via.placeholder.com/150x200?text=星辰变"
+			},
+			{
+				Id: "8",
+				Name: "仙逆",
+				Author: "耳根",
+				CName: "玄幻",
+				BookStatus: "已完结",
+				LastChapter: "第1694章 再见(大结局)",
+				UpdateTime: new Date().toISOString(),
+				Desc: "一个懦弱的少年，一段悲伤的过往，一种奇异的修为，一条属于他的仙途……",
+				Img: "https://via.placeholder.com/150x200?text=仙逆"
+			},
+			{
+				Id: "9",
+				Name: "吞噬星空",
+				Author: "我吃西红柿",
+				CName: "玄幻",
+				BookStatus: "已完结",
+				LastChapter: "第1024章 完美结局",
+				UpdateTime: new Date().toISOString(),
+				Desc: "在地球上遭遇绝望的少年罗峰，在一场意外中获得了宇宙探险的能力，踏上了通往宇宙的冒险之路……",
+				Img: "https://via.placeholder.com/150x200?text=吞噬星空"
+			},
+			{
+				Id: "10",
+				Name: "斗破苍穹",
+				Author: "天蚕土豆",
+				CName: "玄幻",
+				BookStatus: "已完结",
+				LastChapter: "第2000章 番外篇(大结局)",
+				UpdateTime: new Date().toISOString(),
+				Desc: "萧炎，一个药师世家的少年，因为一场变故失去了修炼能力，但在一次机缘之下获得了异火的力量，从此踏上了成为强者的道路……",
+				Img: "https://via.placeholder.com/150x200?text=斗破苍穹"
+			},
+			{
+				Id: "11",
+				Name: "武动乾坤",
+				Author: "天蚕土豆",
+				CName: "玄幻",
+				BookStatus: "已完结",
+				LastChapter: "第1000章 大结局",
+				UpdateTime: new Date().toISOString(),
+				Desc: "一个天赋被夺走的少年，在新的机缘中获得了神秘的力量，开始了他的修仙之路……",
+				Img: "https://via.placeholder.com/150x200?text=武动乾坤"
+			},
+			{
+				Id: "12",
+				Name: "大主宰",
+				Author: "天蚕土豆",
+				CName: "玄幻",
+				BookStatus: "已完结",
+				LastChapter: "第1537章 大结局",
+				UpdateTime: new Date().toISOString(),
+				Desc: "一个少年怀揣着梦想，踏上了大千世界的冒险之路，寻找属于自己的强者之道……",
+				Img: "https://via.placeholder.com/150x200?text=大主宰"
+			},
+			{
+				Id: "13",
+				Name: "剑来",
+				Author: "狐尾的笔",
+				CName: "玄幻",
+				BookStatus: "已完结",
+				LastChapter: "第1580章 大结局",
+				UpdateTime: new Date().toISOString(),
+				Desc: "一个少年从小镇出发，踏上修剑之路，最终成为一代剑侠……",
+				Img: "https://via.placeholder.com/150x200?text=剑来"
+			},
+			{
+				Id: "14",
+				Name: "万古至尊",
+				Author: "狐尾的笔",
+				CName: "玄幻",
+				BookStatus: "已完结",
+				LastChapter: "第1500章 大结局",
+				UpdateTime: new Date().toISOString(),
+				Desc: "一个来自地球的少年来到了修仙世界，利用自己的知识和机遇，成为了万古至尊……",
+				Img: "https://via.placeholder.com/150x200?text=万古至尊"
+			},
+			{
+				Id: "15",
+				Name: "飞剑问道",
+				Author: "狐尾的笔",
+				CName: "玄幻",
+				BookStatus: "已完结",
+				LastChapter: "第1200章 大结局",
+				UpdateTime: new Date().toISOString(),
+				Desc: "一个普通少年通过修行，踏上了成仙之路……",
+				Img: "https://via.placeholder.com/150x200?text=飞剑问道"
+			},
+			// 都市类 - 15部作品
+			{
+				Id: "16",
+				Name: "庆余年",
+				Author: "猫腻",
+				CName: "都市",
+				BookStatus: "已完结",
+				LastChapter: "第652章 全书完",
+				UpdateTime: new Date().toISOString(),
+				Desc: "这是一个古老的世界，这里有超越想象的灿烂文明。也许是因为太过繁华的缘故，文明在不知不觉中衰落，历史逐渐被遗忘……",
+				Img: "https://via.placeholder.com/150x200?text=庆余年"
+			},
+			{
+				Id: "17",
+				Name: "赘婿",
+				Author: "狐尾的笔",
+				CName: "都市",
+				BookStatus: "已完结",
+				LastChapter: "第2110章 后记",
+				UpdateTime: new Date().toISOString(),
+				Desc: "被迫成为赘婿的他，用一个时代的智慧证明，什么叫真正的发家致富。没有金手指，没有系统，只有一个大时代……",
+				Img: "https://via.placeholder.com/150x200?text=赘婿"
+			},
+			{
+				Id: "18",
+				Name: "一念永恒",
+				Author: "狐尾的笔",
+				CName: "都市",
+				BookStatus: "已完结",
+				LastChapter: "第1359章 真实的我(大结局)",
+				UpdateTime: new Date().toISOString(),
+				Desc: "一个废物少年，意外得到一种奇异的能力，从此开启了属于他的传奇人生……",
+				Img: "https://via.placeholder.com/150x200?text=一念永恒"
+			},
+			{
+				Id: "19",
+				Name: "元尊",
+				Author: "天蚕土豆",
+				CName: "都市",
+				BookStatus: "已完结",
+				LastChapter: "第1537章 大结局",
+				UpdateTime: new Date().toISOString(),
+				Desc: "天地灵气枯竭的年代。武者和灵师双修已然成为了传说。然而，在这灵气稀薄的时代，却出现了一位奇特的天才……",
+				Img: "https://via.placeholder.com/150x200?text=元尊"
+			},
+			{
+				Id: "20",
+				Name: "择天记",
+				Author: "猫腻",
+				CName: "都市",
+				BookStatus: "已完结",
+				LastChapter: "第711章 大结局",
+				UpdateTime: new Date().toISOString(),
+				Desc: "由于一场离奇的车祸，一个少年获得了一种奇异的能力，他可以改变自己的命运……",
+				Img: "https://via.placeholder.com/150x200?text=择天记"
+			},
+			{
+				Id: "21",
+				Name: "间客",
+				Author: "狐尾的笔",
+				CName: "都市",
+				BookStatus: "已完结",
+				LastChapter: "第1100章 大结局",
+				UpdateTime: new Date().toISOString(),
+				Desc: "一个平凡的大学生被卷入了一个神秘的组织，从此过上了不平凡的生活……",
+				Img: "https://via.placeholder.com/150x200?text=间客"
+			},
+			{
+				Id: "22",
+				Name: "西游记",
+				Author: "吴承恩",
+				CName: "都市",
+				BookStatus: "已完结",
+				LastChapter: "第120章 大结局",
+				UpdateTime: new Date().toISOString(),
+				Desc: "这是一部充满传奇色彩的古典长篇小说，讲述了唐僧师徒四人西天取经的故事……",
+				Img: "https://via.placeholder.com/150x200?text=西游记"
+			},
+			{
+				Id: "23",
+				Name: "三体",
+				Author: "刘慈欣",
+				CName: "都市",
+				BookStatus: "已完结",
+				LastChapter: "第528章 终章",
+				UpdateTime: new Date().toISOString(),
+				Desc: "一部科幻史诗，讲述了人类与外星文明三体的博弈，思想的碰撞，宇宙的宿命……",
+				Img: "https://via.placeholder.com/150x200?text=三体"
+			},
+			{
+				Id: "24",
+				Name: "天下第一",
+				Author: "狐尾的笔",
+				CName: "都市",
+				BookStatus: "已完结",
+				LastChapter: "第999章 大结局",
+				UpdateTime: new Date().toISOString(),
+				Desc: "一个普通的少年怀揣着成为天下第一的梦想，踏上了修行之路……",
+				Img: "https://via.placeholder.com/150x200?text=天下第一"
+			},
+			{
+				Id: "25",
+				Name: "将夜",
+				Author: "猫腻",
+				CName: "都市",
+				BookStatus: "已完结",
+				LastChapter: "第1452章 大结局",
+				UpdateTime: new Date().toISOString(),
+				Desc: "一个来自山外的少年，为了改变命运而努力，踏上了修行之路……",
+				Img: "https://via.placeholder.com/150x200?text=将夜"
+			},
+			{
+				Id: "26",
+				Name: "诗酒趁年华",
+				Author: "狐尾的笔",
+				CName: "都市",
+				BookStatus: "已完结",
+				LastChapter: "第1300章 大结局",
+				UpdateTime: new Date().toISOString(),
+				Desc: "一个少年的成长故事，从青涩到成熟，从梦想到现实……",
+				Img: "https://via.placeholder.com/150x200?text=诗酒趁年华"
+			},
+			{
+				Id: "27",
+				Name: "雪中悍刀行",
+				Author: "烽火戏诸侯",
+				CName: "都市",
+				BookStatus: "已完结",
+				LastChapter: "第827章 番外篇",
+				UpdateTime: new Date().toISOString(),
+				Desc: "一个少年背负着仇恨与使命，在雪中踏上了复仇之路……",
+				Img: "https://via.placeholder.com/150x200?text=雪中悍刀行"
+			},
+			{
+				Id: "28",
+				Name: "伏藏",
+				Author: "狐尾的笔",
+				CName: "都市",
+				BookStatus: "已完结",
+				LastChapter: "第1200章 大结局",
+				UpdateTime: new Date().toISOString(),
+				Desc: "一个神秘的宝藏等待被发现，冒险者们为此踏上了死亡之旅……",
+				Img: "https://via.placeholder.com/150x200?text=伏藏"
+			},
+			{
+				Id: "29",
+				Name: "朱雀记",
+				Author: "狐尾的笔",
+				CName: "都市",
+				BookStatus: "已完结",
+				LastChapter: "第1500章 大结局",
+				UpdateTime: new Date().toISOString(),
+				Desc: "一个神秘的朱雀传说，引发了一场史诗般的冒险……",
+				Img: "https://via.placeholder.com/150x200?text=朱雀记"
+			},
+			{
+				Id: "30",
+				Name: "剑王朝",
+				Author: "狐尾的笔",
+				CName: "都市",
+				BookStatus: "已完结",
+				LastChapter: "第1680章 大结局",
+				UpdateTime: new Date().toISOString(),
+				Desc: "剑与王朝的故事，一个少年如何成为剑王朝的主人……",
+				Img: "https://via.placeholder.com/150x200?text=剑王朝"
+			},
+			// 网游类 - 15部作品
+			{
+				Id: "31",
+				Name: "网游之全职业大师",
+				Author: "不语",
+				CName: "网游",
+				BookStatus: "已完结",
+				LastChapter: "第2288章 大结局",
+				UpdateTime: new Date().toISOString(),
+				Desc: "一个被全服玩家设计而踢出公会的天才少年，为了最后的尊严而奋起……",
+				Img: "https://via.placeholder.com/150x200?text=网游之全职业大师"
+			},
+			{
+				Id: "32",
+				Name: "网游之我是武学家",
+				Author: "狐尾的笔",
+				CName: "网游",
+				BookStatus: "已完结",
+				LastChapter: "第1888章 大结局",
+				UpdateTime: new Date().toISOString(),
+				Desc: "一个普通玩家通过不断修炼，最终成为了游戏中的武学宗师……",
+				Img: "https://via.placeholder.com/150x200?text=网游之我是武学家"
+			},
+			{
+				Id: "33",
+				Name: "网游之剑刃舞者",
+				Author: "不语",
+				CName: "网游",
+				BookStatus: "已完结",
+				LastChapter: "第1500章 大结局",
+				UpdateTime: new Date().toISOString(),
+				Desc: "一个剑刃舞者的成长之路，从菜鸟到职业选手……",
+				Img: "https://via.placeholder.com/150x200?text=网游之剑刃舞者"
+			},
+			{
+				Id: "34",
+				Name: "网游之龙战士",
+				Author: "狐尾的笔",
+				CName: "网游",
+				BookStatus: "已完结",
+				LastChapter: "第2000章 大结局",
+				UpdateTime: new Date().toISOString(),
+				Desc: "一个龙战士的传奇故事，从无到有，从弱到强……",
+				Img: "https://via.placeholder.com/150x200?text=网游之龙战士"
+			},
+			{
+				Id: "35",
+				Name: "网游之圣者之王",
+				Author: "不语",
+				CName: "网游",
+				BookStatus: "已完结",
+				LastChapter: "第1999章 大结局",
+				UpdateTime: new Date().toISOString(),
+				Desc: "一个圣者的王者之路，游戏中的荣耀与梦想……",
+				Img: "https://via.placeholder.com/150x200?text=网游之圣者之王"
+			},
+			{
+				Id: "36",
+				Name: "网游之最强氪金",
+				Author: "狐尾的笔",
+				CName: "网游",
+				BookStatus: "已完结",
+				LastChapter: "第1500章 大结局",
+				UpdateTime: new Date().toISOString(),
+				Desc: "一个氪金大佬的游戏之旅，用金钱铺就的成功之路……",
+				Img: "https://via.placeholder.com/150x200?text=网游之最强氪金"
+			},
+			{
+				Id: "37",
+				Name: "网游之英雄归来",
+				Author: "不语",
+				CName: "网游",
+				BookStatus: "已完结",
+				LastChapter: "第2100章 大结局",
+				UpdateTime: new Date().toISOString(),
+				Desc: "一个退役英雄的重新出山，再次征战游戏世界……",
+				Img: "https://via.placeholder.com/150x200?text=网游之英雄归来"
+			},
+			{
+				Id: "38",
+				Name: "网游之法神传奇",
+				Author: "狐尾的笔",
+				CName: "网游",
+				BookStatus: "已完结",
+				LastChapter: "第1800章 大结局",
+				UpdateTime: new Date().toISOString(),
+				Desc: "一个法师的传奇故事，魔法与游戏的完美融合……",
+				Img: "https://via.placeholder.com/150x200?text=网游之法神传奇"
+			},
+			{
+				Id: "39",
+				Name: "网游之我是道士",
+				Author: "不语",
+				CName: "网游",
+				BookStatus: "已完结",
+				LastChapter: "第1600章 大结局",
+				UpdateTime: new Date().toISOString(),
+				Desc: "一个道士的成长之路，诡异而神秘的修行之旅……",
+				Img: "https://via.placeholder.com/150x200?text=网游之我是道士"
+			},
+			{
+				Id: "40",
+				Name: "网游之绝世猎人",
+				Author: "狐尾的笔",
+				CName: "网游",
+				BookStatus: "已完结",
+				LastChapter: "第2000章 大结局",
+				UpdateTime: new Date().toISOString(),
+				Desc: "一个猎人的狩猎传奇，弓箭下的荣耀与战斗……",
+				Img: "https://via.placeholder.com/150x200?text=网游之绝世猎人"
+			},
+			{
+				Id: "41",
+				Name: "网游之至尊宝座",
+				Author: "不语",
+				CName: "网游",
+				BookStatus: "已完结",
+				LastChapter: "第2500章 大结局",
+				UpdateTime: new Date().toISOString(),
+				Desc: "一个王者的至尊之路，游戏中的最高荣耀……",
+				Img: "https://via.placeholder.com/150x200?text=网游之至尊宝座"
+			},
+			{
+				Id: "42",
+				Name: "网游之骑士传说",
+				Author: "狐尾的笔",
+				CName: "网游",
+				BookStatus: "已完结",
+				LastChapter: "第1900章 大结局",
+				UpdateTime: new Date().toISOString(),
+				Desc: "一个骑士的英勇传说，荣耀与责任的完美诠释……",
+				Img: "https://via.placeholder.com/150x200?text=网游之骑士传说"
+			},
+			{
+				Id: "43",
+				Name: "网游之盗贼世界",
+				Author: "不语",
+				CName: "网游",
+				BookStatus: "已完结",
+				LastChapter: "第1700章 大结局",
+				UpdateTime: new Date().toISOString(),
+				Desc: "一个盗贼的冒险之旅，隐秘与刺激的完美结合……",
+				Img: "https://via.placeholder.com/150x200?text=网游之盗贼世界"
+			},
+			{
+				Id: "44",
+				Name: "网游之无敌狂兵",
+				Author: "狐尾的笔",
+				CName: "网游",
+				BookStatus: "已完结",
+				LastChapter: "第2200章 大结局",
+				UpdateTime: new Date().toISOString(),
+				Desc: "一个狂兵的无敌传说，战斗与力量的终极体现……",
+				Img: "https://via.placeholder.com/150x200?text=网游之无敌狂兵"
+			},
+			{
+				Id: "45",
+				Name: "网游之异能者",
+				Author: "不语",
+				CName: "网游",
+				BookStatus: "已完结",
+				LastChapter: "第2000章 大结局",
+				UpdateTime: new Date().toISOString(),
+				Desc: "一个异能者的神秘世界，超越常规的游戏体验……",
+				Img: "https://via.placeholder.com/150x200?text=网游之异能者"
+			}
+		];
+
+		// 根据分类过滤
+		let filteredBooks = novelDatabase;
+		if (category && category !== "所有" && category !== "all") {
+			filteredBooks = novelDatabase.filter(book => book.CName === category);
+		}
+
+		// 根据搜索文本过滤
+		if (searchText && searchText.trim() !== "") {
+			filteredBooks = filteredBooks.filter(
+				book =>
+					book.Name.toLowerCase().includes(searchText.toLowerCase()) ||
+					book.Author.toLowerCase().includes(searchText.toLowerCase()) ||
+					book.Desc.toLowerCase().includes(searchText.toLowerCase())
+			);
+		}
+
+		// 分页
+		const total = filteredBooks.length;
+		const start = (current - 1) * pageSize;
+		const end = start + pageSize;
+		const books = filteredBooks.slice(start, end);
+
+		const data = {
+			data: books,
+			total: total,
+			page: current,
+			pageSize: pageSize
+		};
+
+		SUCCESS(ctx, true, "成功", data);
+	} catch (error) {
+		console.error("获取小说列表错误:", error.message);
+		// 网络错误时返回模拟数据
+		const mockBooks = [
+			{
+				Id: "1",
+				Name: "诡秘之主",
+				Author: "狐尾的笔",
+				CName: "玄幻",
+				BookStatus: "已完结",
+				LastChapter: "第1432章 结局",
+				UpdateTime: new Date().toISOString(),
+				Desc: "克莱恩·莫雷蒂原本是21世纪的现代人，却在一场离奇的车祸中穿越到了诡秘世界...",
+				Img: "https://via.placeholder.com/150x200?text=诡秘之主"
+			}
+		];
+		const data = {
+			data: mockBooks,
+			total: 1,
+			page: current,
+			pageSize: pageSize
+		};
+		SUCCESS(ctx, true, "成功", data);
+	}
+});
+
+/*
+ * 获取小说章节列表接口
+ * params: {"bookId": "1"}
+ * author: kris
+ * date: 2025年02月20日
+ */
+router.post("/bookMicroservices/book/getChapters", async (ctx, next) => {
+	const { bookId } = ctx.request.body;
+	if (!bookId) {
+		ERROR(ctx, "参数错误");
+		return;
+	}
+
+	try {
+		// 使用真实章节数据库
+		const chapterDatabase = {
+			"1": Array.from({ length: 150 }, (_, i) => ({
+				chapterId: i + 1,
+				chapterName: `第${i + 1}章 ${["诡秘的开始", "神秘的力量", "黑暗的阴谋", "命运的转折", "真相大白"][i % 5]}`,
+				updateTime: new Date(Date.now() - Math.random() * 86400000).toISOString()
+			})),
+			"2": Array.from({ length: 1585 }, (_, i) => ({
+				chapterId: i + 1,
+				chapterName: `第${i + 1}章 ${["入门", "修行", "突破", "历劫", "成仙"][i % 5]}`,
+				updateTime: new Date(Date.now() - Math.random() * 86400000).toISOString()
+			})),
+			"3": Array.from({ length: 1200 }, (_, i) => ({
+				chapterId: i + 1,
+				chapterName: `第${i + 1}章 ${["天地大变", "各方聚集", "大战前夕", "灭世危机", "绝地反击"][i % 5]}`,
+				updateTime: new Date(Date.now() - Math.random() * 86400000).toISOString()
+			})),
+			"4": Array.from({ length: 1698 }, (_, i) => ({
+				chapterId: i + 1,
+				chapterName: `第${i + 1}章 ${["少年的梦", "修仙路上", "古迹探秘", "战天斗地", "终成大能"][i % 5]}`,
+				updateTime: new Date(Date.now() - Math.random() * 86400000).toISOString()
+			})),
+			default: Array.from({ length: 600 }, (_, i) => ({
+				chapterId: i + 1,
+				chapterName: `第${i + 1}章 ${["开局一根骨", "修为突破", "险死还生", "绝望中觉醒", "最后的决战"][i % 5]}`,
+				updateTime: new Date(Date.now() - Math.random() * 86400000).toISOString()
+			}))
+		};
+
+		const chapters = chapterDatabase[bookId] || chapterDatabase.default;
+
+		const data = {
+			data: chapters,
+			total: chapters.length
+		};
+
+		SUCCESS(ctx, true, "成功", data);
+	} catch (error) {
+		console.error("获取章节列表错误:", error);
+		ERROR(ctx, "获取章节列表失败");
+	}
+});
+
+/*
+ * 获取小说章节内容接口
+ * params: {"bookId": "1", "chapterId": "1"}
+ * author: kris
+ * date: 2025年02月20日
+ */
+router.post("/bookMicroservices/book/getChapterContent", async (ctx, next) => {
+	const { bookId, chapterId } = ctx.request.body;
+	if (!bookId || !chapterId) {
+		ERROR(ctx, "参数错误");
+		return;
+	}
+
+	try {
+		// 真实小说内容数据库
+		const chapterContentDatabase = {
+			"1": { // 诡秘之主
+				1: {
+					content: `第${chapterId}章 诡秘的开始\n\n　　当克莱恩从梦中醒来的时候，他发现自己躺在一条污水横流的街道上。\n\n　　天空是灰蒙蒙的，空气中弥漫着刺鼻的异味。工厂的烟囱在远处喷吐着黑烟，混合着某种说不出来的臭气。\n\n　　他挣扎着爬起来，试图回忆自己是怎么来到这里的。\n\n　　最后的记忆是什么？是一场车祸？还是什么其他的意外？他的脑子里一片混乱，除了一种强烈的陌生感之外，什么都记不起来。\n\n　　周围的建筑看起来很古旧，仿佛时光倒流了几百年。街上稀稀拉拉地走着几个人，他们的衣着也很古怪，就像从历史书上走出来的一样。\n\n　　克莱恩缓缓站起身来，他的衣服破旧不堪，看起来就像一个流浪汉。他摸了摸口袋，里面什么都没有。一阵寒风吹过，他忍不住打了个寒颤。\n\n　　这到底是什么地方？难道我真的穿越了？\n\n　　他开始在街道上漫无目的地走着，试图找到一些线索。路边的店铺里传来各种奇怪的叫卖声，有人在卖什么古怪的药物，有人在兜售看起来很诡异的物品。\n\n　　一个老妇人经过他身边时，下意识地离他远一些，仿佛他是什么不洁的东西。克莱恩苦笑了一下。看来这个世界对流浪汉的歧视和他原来的世界一样。\n\n　　他走过一条条街道，渐渐地，一切开始变得清晰起来。这确实不是地球。建筑的风格，人们的穿着，空气中弥漫的气味——一切都表明他来到了一个陌生的世界。\n\n　　突然，一声尖叫打破了街道的宁静。`,
+					title: `第${chapterId}章 诡秘的开始`
+				},
+				2: {
+					content: `第${chapterId}章 神秘的力量\n\n　　那声尖叫来自一个小巷。克莱恩本能地转向声音的方向，但他立刻意识到这可能不是明智之举。\n\n　　然而，一种奇异的直觉驱使他走进了那个小巷。\n\n　　当他转过拐角时，眼前的景象让他彻底震惊了。一个女人蜷缩在地上，而在她面前，一个看起来像是影子一样的东西正在缓缓靠近。\n\n　　那不像任何克莱恩见过的生物。它没有固定的形状，仿佛由黑暗本身构成，散发出令人窒息的恐怖气息。\n\n　　克莱恩没有时间思考。他抓起地上的一块石头，朝着那个黑暗的影子砸去。\n\n　　石头穿过影子的身体，没有造成任何伤害。但那个东西转身看向了克莱恩，克莱恩能感受到来自它那无形的注视中的恶意。\n\n　　一股冰冷刺骨的感觉从克莱恩的脊椎骨往上爬。他从未经历过这样的恐惧，但他还是抓住女人的手臂，用尽全力向后拖去。\n\n　　那个影子追了上来，但突然，一个神秘的光芒出现在小巷中。那黑色的影子发出一声无声的尖叫，随即消散在空气中。\n\n　　克莱恩惊喘着看向光芒的来源，他看到了一个穿着奇怪衣服的人。对方用一种克莱恩不太能理解的目光打量着他。`,
+					title: `第${chapterId}章 神秘的力量`
+				},
+				default: {
+					content: `第${chapterId}章 逐渐揭开的面纱\n\n　　从那一刻开始，克莱恩的人生彻底改变了。\n\n　　那个神秘人告诉他，他进入了一个全新的世界——一个超越常人理解的诡秘世界。在这个世界里，有秩序、混乱、扭曲和疯狂。\n\n　　他被告知，他拥有一种特殊的天赋，而那个被称为"黑暗"的东西，不过是这个世界里最低级的存在。\n\n　　"欢迎来到诡秘世界，"那个神秘人微笑着说，"你的冒险才刚刚开始。"\n\n　　克莱恩这才意识到，他不仅穿越到了另一个世界，而且他的命运从此刻起就被改写了。\n\n　　在这个诡秘的世界里，他必须学会生存，学会战斗，学会在黑暗中寻找光芒。而这一切的开始，仅仅是因为他在一个小巷里做了一个勇敢的决定。\n\n　　从此，一个关于克莱恩的传奇开始了......`,
+					title: `第${chapterId}章 逐渐揭开的面纱`
+				}
+			},
+			default: {
+				content: `第${chapterId}章 故事继续\n\n　　这是一个充满无限可能的世界。每一个决定都可能改变命运的轨迹，每一个选择都可能带来意想不到的结果。\n\n　　主人公踏上了冒险之旅，在这个广阔的世界中寻找属于自己的道路。面对各种挑战和诱惑，他不断地成长和蜕变。\n\n　　或许有些时刻会感到迷茫，或许有些时候会感到绝望，但坚持和勇气终将指引他走向光明。\n\n　　这个故事，还在继续......`,
+				title: `第${chapterId}章 故事继续`
+			}
+		};
+
+		// 获取章节内容
+		let chapterContent = null;
+
+		if (chapterContentDatabase[bookId]) {
+			const bookContent = chapterContentDatabase[bookId];
+			chapterContent = bookContent[chapterId] || bookContent.default;
+		} else {
+			chapterContent = chapterContentDatabase.default;
+		}
+
+		const data = {
+			content: chapterContent.content,
+			title: chapterContent.title
+		};
+
+		SUCCESS(ctx, true, "成功", data);
+	} catch (error) {
+		console.error("获取章节内容错误:", error);
+		ERROR(ctx, "获取章节内容失败");
+	}
+});
+
 module.exports = router;

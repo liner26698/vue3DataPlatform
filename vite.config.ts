@@ -57,7 +57,7 @@ export default defineConfig((mode: ConfigEnv): UserConfig => {
 				},
 				"/bookApi": {
 					secure: false,
-					target: "https://sou.jiaston.com",
+					target: "http://127.0.0.1:3001",
 					changeOrigin: true,
 					rewrite: path => path.replace(/^\/bookApi/, "")
 				},

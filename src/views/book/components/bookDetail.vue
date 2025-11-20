@@ -66,7 +66,7 @@
 	</div>
 </template>
 <script setup lang="ts" name="bookDetail">
-import { getBookContent } from "@/api/book/modules/mybook";
+import { getNovelChapterContent } from "@/api/book/modules/mybook";
 import { ElNotification } from "element-plus";
 
 let title = ref("");
@@ -74,28 +74,24 @@ let author = ref("");
 let content = ref("");
 let textTotal = ref(0);
 let currentBookid = ref("");
-let currentNid = ref("");
-let currentPid = ref("");
+let currentChapterId = ref("");
 let fontsize = ref(16);
 
 // 获取内容
 const getChapterContent = async (bookid = "", chapterid = "") => {
 	if (chapterid == "" || bookid == "" || chapterid == "-1" || bookid == "-1") return; // 无效的章节id
 	let params = {
-		bookid: bookid,
-		chapterid: chapterid
+		bookId: bookid,
+		chapterId: chapterid
 	};
-	let data: any = await getBookContent(params);
+	let data: any = await getNovelChapterContent(params);
+	console.log("getNovelChapterContent response:", data);
+	// 处理响应数据结构：{code, success, message, data: {content, title}}
 	if (data?.data?.content) {
 		currentBookid.value = bookid;
-		if (data.data.nid) {
-			currentNid.value = String(data.data.nid);
-		}
-		if (data.data.pid) {
-			currentPid.value = String(data.data.pid);
-		}
-		title.value = data.data.cname;
-		author.value = data.data.name;
+		currentChapterId.value = chapterid;
+		title.value = data.data.title || `第${chapterid}章`;
+		author.value = "佚名";
 		content.value = data.data.content.replace(/(\n)/g, "<br/>");
 
 		try {
@@ -159,13 +155,23 @@ const debounce = (fn: Function, time: number) => {
 
 // 上一章
 const prevChapter = debounce(() => {
-	getChapterContent(currentBookid.value, currentPid.value);
-	document.documentElement.scrollTop = 0;
+	const prevChapterid = parseInt(currentChapterId.value) - 1;
+	if (prevChapterid > 0) {
+		getChapterContent(currentBookid.value, String(prevChapterid));
+		document.documentElement.scrollTop = 0;
+	} else {
+		ElNotification({
+			title: "提示",
+			message: "已经是第一章了~",
+			type: "warning"
+		});
+	}
 }, 300);
 
 // 下一章
 const nextChapter = debounce(() => {
-	getChapterContent(currentBookid.value, currentNid.value);
+	const nextChapterid = parseInt(currentChapterId.value) + 1;
+	getChapterContent(currentBookid.value, String(nextChapterid));
 	document.documentElement.scrollTop = 0;
 }, 300);
 

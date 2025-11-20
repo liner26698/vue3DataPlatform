@@ -89,7 +89,7 @@
 </template>
 
 <script setup lang="ts">
-import { getBooks } from "@/api/book/modules/mybook";
+import { getNovelList } from "@/api/book/modules/mybook";
 import { BookStore } from "@/store/modules/book";
 import workInformation from "../workInformation.vue";
 import chapterList from "../chapterList.vue";
@@ -123,8 +123,14 @@ const directoryClick = (tab: any): void => {
 };
 // 搜索
 const pushBookList = (data: any): void => {
-	if (data?.data?.length) {
-		bookList.push(...data.data);
+	console.log("pushBookList received data:", data);
+	// 处理响应数据结构：{code, success, message, data: {data: [], total, page, pageSize}}
+	if (data?.data?.data?.length) {
+		console.log("Adding books to list:", data.data.data);
+		bookList.push(...data.data.data);
+		console.log("bookList after push:", bookList);
+	} else {
+		console.log("No data received. Data structure:", JSON.stringify(data));
 	}
 };
 // 时间去除时分秒
@@ -138,7 +144,13 @@ const format = (date: string): string => {
 
 const load = async () => {
 	bookStore.searchInfo.page++;
-	let res = await getBooks(bookStore.searchInfo, false);
+	const params = {
+		current: bookStore.searchInfo.page,
+		pageSize: 12,
+		category: bookStore.leftTabLabel,
+		searchText: bookStore.searchInfo.key === " " ? "" : bookStore.searchInfo.key
+	};
+	let res = await getNovelList(params);
 	pushBookList(res);
 };
 const drawer = ref(false);
@@ -176,14 +188,13 @@ const showDetail = async (item: any) => {
 const getRelatedList = async () => {
 	relatedList.length = 0;
 	let res: any;
-	res = await getBooks(
-		{
-			key: currentDetail.name,
-			page: 1,
-			siteid: "app2"
-		},
-		true
-	);
+	const params = {
+		current: 1,
+		pageSize: 10,
+		category: bookStore.leftTabLabel,
+		searchText: currentDetail.name
+	};
+	res = await getNovelList(params);
 	if (res?.data?.length) {
 		relatedList.push(...res.data.slice(1, 6));
 		relatedimgChange(0);
@@ -200,11 +211,21 @@ const relatedimgChange = (index: number) => {
 };
 
 onMounted(async () => {
+	console.log("bookComponents/content.vue onMounted");
 	bookStore.searchInfo.page = 1;
 	bookStore.searchInfo.key = " ";
 	title.value = bookStore.leftTabLabel;
-	let res = await getBooks(bookStore.searchInfo, false);
+	const params = {
+		current: 1,
+		pageSize: 12,
+		category: bookStore.leftTabLabel,
+		searchText: ""
+	};
+	console.log("Fetching novels with params:", params);
+	let res = await getNovelList(params);
+	console.log("getNovelList response:", res);
 	pushBookList(res);
+	console.log("Final bookList:", bookList);
 });
 
 const storeBookkey = computed(() => {
@@ -216,7 +237,13 @@ watch(
 	async () => {
 		bookList.length = 0;
 		bookStore.searchInfo.page = 1;
-		let res = await getBooks(bookStore.searchInfo, false);
+		const params = {
+			current: 1,
+			pageSize: 12,
+			category: bookStore.leftTabLabel,
+			searchText: bookStore.searchInfo.key === " " ? "" : bookStore.searchInfo.key
+		};
+		let res = await getNovelList(params);
 		pushBookList(res);
 	},
 	{ deep: true }
@@ -224,8 +251,18 @@ watch(
 
 watch(
 	() => bookStore.leftTabLabel,
-	() => {
+	async () => {
 		title.value = bookStore.leftTabLabel;
+		bookList.length = 0;
+		bookStore.searchInfo.page = 1;
+		const params = {
+			current: 1,
+			pageSize: 12,
+			category: bookStore.leftTabLabel,
+			searchText: bookStore.searchInfo.key === " " ? "" : bookStore.searchInfo.key
+		};
+		let res = await getNovelList(params);
+		pushBookList(res);
 	}
 );
 </script>
