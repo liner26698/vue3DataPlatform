@@ -78,12 +78,19 @@ let currentChapterId = ref("");
 let fontsize = ref(16);
 
 // 获取内容
-const getChapterContent = async (bookid = "", chapterid = "") => {
+const getChapterContent = async (bookid = "", chapterid = "", chapterHref = "") => {
+	debugger;
 	if (chapterid == "" || bookid == "" || chapterid == "-1" || bookid == "-1") return; // 无效的章节id
-	let params = {
+	let params: any = {
 		bookId: bookid,
 		chapterId: chapterid
 	};
+
+	// 如果有章节href，传递给API以获取真实内容
+	if (chapterHref) {
+		params.chapterHref = chapterHref;
+	}
+
 	let data: any = await getNovelChapterContent(params);
 	console.log("getNovelChapterContent response:", data);
 	// 处理响应数据结构：{code, success, message, data: {content, title}}
@@ -176,10 +183,12 @@ const nextChapter = debounce(() => {
 }, 300);
 
 onMounted(() => {
+	debugger;
 	const url = window.location.href;
-	const bookid = url.split("?")[1].split("&")[0].split("=")[1];
-	const chapterid = url.split("?")[1].split("&")[1].split("=")[1];
-	getChapterContent(bookid, chapterid);
+	const bookid = url.split("bookid=")[1]?.split("&")[0] || "";
+	const chapterid = url.split("chapterid=")[1]?.split("&")[0] || "";
+	const chapterHref = url.split("chapterHref=")[1] ? decodeURIComponent(url.split("chapterHref=")[1]) : "";
+	getChapterContent(bookid, chapterid, chapterHref);
 });
 </script>
 

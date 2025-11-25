@@ -61,6 +61,12 @@ export default defineConfig((mode: ConfigEnv): UserConfig => {
 					changeOrigin: true,
 					rewrite: path => path.replace(/^\/bookApi/, "")
 				},
+				"/bookMicroservices": {
+					secure: false,
+					target: "http://127.0.0.1:3001",
+					changeOrigin: true
+					// 不需要 rewrite，直接转发完整路径到后端
+				},
 				"/shuapi": {
 					secure: false, // * 是否开启https
 					target: "http://shuapi.jiaston.com",

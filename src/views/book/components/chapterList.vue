@@ -48,10 +48,12 @@ import { getNovelChapters } from "@/api/book/modules/mybook";
 
 interface chapterListProps {
 	id: string;
+	novelHref?: string;
 }
 
 const props = withDefaults(defineProps<chapterListProps>(), {
-	id: ""
+	id: "",
+	novelHref: ""
 });
 
 let pieceList = ref([
@@ -69,13 +71,20 @@ let loading = ref(false);
 // 获取篇章列表
 const getPieceList = async () => {
 	try {
-		const data: any = await getNovelChapters({ bookId: props.id });
+		// 传递novelHref以获取真实章节数据
+		const params: any = { bookId: props.id };
+		if (props.novelHref) {
+			params.novelHref = props.novelHref;
+		}
+
+		const data: any = await getNovelChapters(params);
 		console.log("getNovelChapters response:", data);
 		// 处理响应数据结构：{code, success, message, data: {data: [], total}}
 		if (data && data.data && data.data.data) {
 			const chapters = data.data.data.map((item: any) => ({
 				name: item.chapterName,
-				id: item.chapterId
+				id: item.chapterId,
+				href: item.chapterHref || item.href // 支持 chapterHref 或 href 字段
 			}));
 			pieceList.value = [
 				{
@@ -98,7 +107,9 @@ const tabPaneChange = (tab: number) => {
 };
 
 const getChapterContent = async (item: any) => {
-	window.open(`/#/book/bookDetail?bookid=${props.id}&chapterid=${item.id}`, "_blank");
+	const params = `bookid=${props.id}&chapterid=${item.id}`;
+	const hrefParam = item.href ? `&chapterHref=${encodeURIComponent(item.href)}` : "";
+	window.open(`/#/book/bookDetail?${params}${hrefParam}`, "_blank");
 };
 
 const numberToChinese = (num: number | string) => {

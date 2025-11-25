@@ -74,7 +74,7 @@
 						></workInformation>
 
 						<!-- 章节列表 -->
-						<chapterList v-else :id="currentDetail.id"></chapterList>
+						<chapterList v-else :id="currentDetail.id" :novelHref="currentDetail.href"></chapterList>
 					</div>
 				</template>
 				<!-- <template #footer>
@@ -163,7 +163,8 @@ const currentDetail = reactive({
 	updateTime: "",
 	desc: "",
 	type: "",
-	status: ""
+	status: "",
+	href: "" // 小说的href，用于爬虫获取真实数据
 });
 const drawerClose = (): void => {
 	drawer.value = false;
@@ -180,7 +181,8 @@ const showDetail = async (item: any) => {
 		updateTime: item.UpdateTime,
 		desc: item.Desc,
 		type: item.CName,
-		status: item.BookStatus
+		status: item.BookStatus,
+		href: item.href // 保存小说的href，用于爬虫获取真实数据
 	});
 	getRelatedList();
 };

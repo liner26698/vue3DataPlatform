@@ -3,6 +3,7 @@ const bodyParser = require("koa-bodyparser");
 const cors = require("koa-cors");
 const { ERROR } = require("./server/utils/common");
 const router = require("./server/routes");
+const bookApi = require("./server/routes/bookApi");
 
 const app = new Koa();
 const port = 3001;
@@ -25,7 +26,8 @@ app.use(async (ctx, next) => {
 	}
 });
 
-// 路由
+// 路由 - 小说模块API优先级更高
+app.use(bookApi.routes());
 app.use(router.routes());
 
 // 启动服务

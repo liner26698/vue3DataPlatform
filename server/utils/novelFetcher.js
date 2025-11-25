@@ -21,6 +21,7 @@ const realNovelDatabase = {
 			Desc: "克莱恩·莫雷蒂原本是21世纪的现代人，却在一场离奇的车祸中穿越到了诡秘世界。为了活下去，他开始在这个充满了诡异、诡秘、疯狂的世界中摸索前行。",
 			Img: "https://via.placeholder.com/150x200?text=诡秘之主",
 			chapters: 1432,
+			href: "/local/1",
 			Source: "local"
 		}
 	],
@@ -35,6 +36,7 @@ const realNovelDatabase = {
 			Desc: "这是一个关于一个普通少年韩立的修仙历程的故事。他原本是一个贫苦的农家少年，因为一次意外的机遇，进入了修仙世界。",
 			Img: "https://via.placeholder.com/150x200?text=凡人修仙传",
 			chapters: 1585,
+			href: "/local/2",
 			Source: "local"
 		}
 	],
@@ -49,6 +51,7 @@ const realNovelDatabase = {
 			Desc: "这是一个宏大的修仙史诗。天地发生了莫名的变化，诸天万界陷入了诡异的危机。一个名叫叶凡的少年突然进入这个危险的时代。",
 			Img: "https://via.placeholder.com/150x200?text=遮天",
 			chapters: 1200,
+			href: "/local/3",
 			Source: "local"
 		}
 	],
@@ -63,6 +66,7 @@ const realNovelDatabase = {
 			Desc: "萧炎，一个药师世家的少年，因为一场变故失去了修炼能力。但在一次机缘之下获得了异火的力量，从此踏上了成为强者的道路。",
 			Img: "https://via.placeholder.com/150x200?text=斗破苍穹",
 			chapters: 2000,
+			href: "/local/4",
 			Source: "local"
 		}
 	]
@@ -72,34 +76,58 @@ const realNovelDatabase = {
 const cache = new Map();
 
 /**
+ * 获取所有小说 - 用于分类浏览
+ */
+async function getAllNovels() {
+	try {
+		console.log("[API] 获取全部小说");
+		const allNovels = [];
+		
+		// 从所有分类收集小说
+		for (const [key, books] of Object.entries(realNovelDatabase)) {
+			allNovels.push(...books);
+		}
+		
+		console.log(`[API] 返回 ${allNovels.length} 部小说`);
+		return allNovels;
+	} catch (error) {
+		console.error("[API] 获取全部小说失败:", error.message);
+		return [];
+	}
+}
+
+/**
  * 搜索小说 - 使用本地真实数据库
  */
-async function searchNovels(keyword = "诡秘", page = 1) {
+async function searchNovels(keyword = "", page = 1) {
 	try {
+		// 如果没有关键词，返回空（让调用者使用getAllNovels）
+		if (!keyword || keyword.trim() === "") {
+			console.log("[API] 搜索关键词为空");
+			return [];
+		}
+		
 		console.log(`[API] 搜索小说: ${keyword}`);
 		
 		// 首先尝试从本地数据库查找
 		let results = [];
 		
-		// 匹配关键词
+		// 匹配关键词（同时检查小说名、作者、描述）
 		for (const [key, books] of Object.entries(realNovelDatabase)) {
-			if (keyword.includes(key) || key.includes(keyword)) {
-				results = results.concat(books);
+			for (const book of books) {
+				if (
+					keyword.includes(key) || 
+					key.includes(keyword) ||
+					book.Name.includes(keyword) ||
+					book.Author.includes(keyword) ||
+					book.Desc.includes(keyword)
+				) {
+					results.push(book);
+				}
 			}
 		}
-		
-		// 如果没有找到，返回热门小说
-		if (results.length === 0) {
-			console.log("[API] 关键词无结果，返回热门小说");
-			results = [
-				realNovelDatabase.诡秘[0],
-				realNovelDatabase.凡人[0],
-				realNovelDatabase.遮天[0],
-				realNovelDatabase.斗破[0]
-			];
-		}
 
-		console.log(`[API] 找到 ${results.length} 部小说`);
+		console.log(`[API] 搜索找到 ${results.length} 部小说`);
 		return results;
 	} catch (error) {
 		console.error("[API] 搜索失败:", error.message);
@@ -267,6 +295,7 @@ async function fetchChapterContentFromBiquge(bookId, chapterId) {
 
 module.exports = {
 	searchNovels,
+	getAllNovels,
 	fetchChaptersFromBiquge,
 	fetchChapterContentFromBiquge
 };

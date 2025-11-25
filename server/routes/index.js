@@ -8,10 +8,64 @@ const fs = require("fs");
 const path = require("path");
 const { v4: uuidv4 } = require("uuid");
 const { exec } = require("child_process");
+const novelFetcher = require("../utils/novelFetcher.js");
+const novelDataManager = require("../utils/novelDataManager.js");
+const biqugeSpider = require("../utils/biqugeSpider.js");
+const kanshuhouSpider = require("../utils/kanshuhouSpider.js");
 const OpenAI = require("openai");
 const axios = require("axios");
 const KoaRouter = require("koa-router");
-const novelFetcher = require("../utils/novelFetcher"); // 引入小说数据模块
+
+/**
+ * 分类名称转换为看书猴分类ID
+ * 对应关系: 1-玄幻, 2-言情, 3-武侠, 5-都市等
+ */
+function getCategoryId(categoryName) {
+	const categoryMap = {
+		"玄幻": "1",
+		"玄幻小说": "1",
+		"言情": "2",
+		"言情小说": "2",
+		"武侠": "3",
+		"武侠小说": "3",
+		"仙侠": "4",
+		"仙侠小说": "4",
+		"都市": "5",
+		"都市小说": "5",
+		"军事": "6",
+		"军事小说": "6",
+		"历史": "7",
+		"历史小说": "7",
+		"游戏": "8",
+		"游戏小说": "8",
+		"竞技": "9",
+		"竞技小说": "9",
+		"科幻": "10",
+		"科幻小说": "10",
+		"悬疑": "11",
+		"悬疑小说": "11",
+		"灵异": "12",
+		"灵异小说": "12"
+	};
+	
+	return categoryMap[categoryName] || "1"; // 默认返回玄幻
+}
+
+/**
+ * 从看书猴爬虫的结果转换为API需要的格式
+ */
+function convertKanshouhouNovelToFormat(novel) {
+	return {
+		Id: novel.Id,
+		Name: novel.Name,
+		Author: novel.Author,
+		Desc: novel.Desc,
+		Img: novel.Img,
+		href: novel.href,
+		Source: novel.Source || "kanshuhou",
+		CName: novel.categoryName || "其他" // 分类名称
+	};
+}
 
 /*
  * 登录接口
@@ -621,10 +675,10 @@ router.get("/logs/export", async ctx => {
 });
 
 /*
- * 获取小说列表接口 - 使用真实小说数据库
+ * 获取小说列表接口 - 优先使用笔趣阁爬虫获取真实数据
  * params: {"current": 1, "pageSize": 10, "category": "玄幻", "searchText": ""}
  * author: kris
- * date: 2025年11月20日 - 集成真实小说数据源
+ * date: 2025年11月21日 - 集成笔趣阁爬虫获取真实小说数据
  */
 router.post("/bookMicroservices/book/getBookList", async (ctx, next) => {
 	const { current, pageSize, category, searchText } = ctx.request.body;
@@ -634,32 +688,69 @@ router.post("/bookMicroservices/book/getBookList", async (ctx, next) => {
 	}
 
 	try {
-		console.log(`[API] getBookList 搜索: ${searchText || '热门'}`);
+		console.log(`[API] getBookList 搜索: ${searchText || '首页分类'}, 分类: ${category || '所有'}`);
 		
-		// 获取真实小说数据（异步）
-		let books = await novelFetcher.searchNovels(searchText || "诡秘", 1);
+		let books = [];
 
-		// 如果搜索结果为空，使用默认小说列表
-		if (!books || books.length === 0) {
-			console.log("[API] 爬虫无结果，使用模拟数据");
-			books = [
-				{
-					Id: "1",
-					Name: "诡秘之主",
-					Author: "狐尾的笔",
-					CName: "玄幻",
-					BookStatus: "已完结",
-					LastChapter: "第1432章",
-					UpdateTime: new Date().toISOString(),
-					Desc: "克莱恩·莫雷蒂原本是21世纪的现代人，穿越到诡秘世界...",
-					Img: "https://via.placeholder.com/150x200?text=诡秘之主"
+		// 新策略: 优先使用看书猴爬虫 (kanshuhouSpider) 获取数据
+		if (searchText && searchText.trim() !== "") {
+			// 有搜索词时，使用看书猴搜索
+			console.log(`[API] 使用看书猴爬虫搜索: ${searchText}`);
+			try {
+				const searchResult = await kanshuhouSpider.getNovelsByKeyword(searchText, current);
+				books = searchResult.novels || [];
+			} catch (err) {
+				console.log("[API] 看书猴搜索失败，尝试使用比格爬虫");
+				books = await biqugeSpider.searchNovels(searchText);
+			}
+		} else if (category && category !== "所有" && category !== "all") {
+			// 有分类时，使用看书猴按分类获取
+			console.log(`[API] 使用看书猴爬虫获取分类: ${category}`);
+			try {
+				const categoryId = getCategoryId(category);
+				books = await kanshuhouSpider.getNovelsByCategory(categoryId, current);
+				if (!Array.isArray(books)) {
+					books = books.novels || [];
 				}
-			];
+			} catch (err) {
+				console.log("[API] 看书猴分类获取失败，降级到本地数据");
+				books = await novelFetcher.getAllNovels();
+			}
+		} else {
+			// 没有搜索词也没有分类，获取首页推荐 (聚合多个分类的内容)
+			console.log("[API] 获取首页推荐内容 (多分类聚合)");
+			try {
+				let homePageBooks = [];
+				const categories = ["1", "2", "3", "5"]; // 玄幻、言情、武侠、都市
+				
+				for (const catId of categories) {
+					try {
+						const catBooks = await kanshuhouSpider.getNovelsByCategory(catId, 1);
+						if (Array.isArray(catBooks)) {
+							homePageBooks = homePageBooks.concat(catBooks);
+						}
+					} catch (err) {
+						console.log(`[API] 分类 ${catId} 获取失败`);
+					}
+				}
+				
+				if (homePageBooks.length > 0) {
+					books = homePageBooks;
+					console.log(`[API] 首页推荐聚合了 ${books.length} 部小说`);
+				} else {
+					console.log("[API] 看书猴首页推荐失败，降级到本地数据");
+					books = await novelFetcher.getAllNovels();
+				}
+			} catch (err) {
+				console.log("[API] 首页推荐获取失败:", err.message);
+				books = await novelFetcher.getAllNovels();
+			}
 		}
 
-		// 根据分类过滤
-		if (category && category !== "所有" && category !== "all") {
-			books = books.filter(book => book.CName === category);
+		// 如果还是没有数据，最后才用本地数据
+		if (!books || books.length === 0) {
+			console.log("[API] 所有远程数据源都失败，使用本地数据");
+			books = await novelFetcher.getAllNovels();
 		}
 
 		// 分页
@@ -689,35 +780,65 @@ router.post("/bookMicroservices/book/getBookList", async (ctx, next) => {
  * date: 2025年11月21日
  */
 router.post("/bookMicroservices/book/getChapters", async (ctx, next) => {
-	const { bookId } = ctx.request.body;
+	let { bookId, novelHref } = ctx.request.body;
 	if (!bookId) {
 		ERROR(ctx, "参数错误");
 		return;
 	}
 
 	try {
-		console.log(`[API] getChapters: ${bookId}`);
+		console.log(`[API] getChapters: ${bookId}, novelHref: ${novelHref}`);
 		
-		// 获取真实章节列表
-		const chapters = await novelFetcher.fetchChaptersFromBiquge(bookId);
-
-		if (!chapters || chapters.length === 0) {
-			console.log("[API] 无法获取章节，返回模拟数据");
-			// 返回模拟数据
-			const mockChapters = Array.from({ length: 10 }, (_, i) => ({
-				chapterId: i + 1,
-				chapterName: `第${i + 1}章 故事开始`,
-				updateTime: new Date().toISOString()
-			}));
-			return SUCCESS(ctx, true, "成功", { data: mockChapters, total: mockChapters.length });
+		// 快速路径：如果没有novelHref，直接返回本地数据而不进行任何网络请求
+		if (!novelHref) {
+			console.log("[API] novelHref未提供，使用本地模拟数据");
+			const mockChapters = [];
+			for (let i = 1; i <= 100; i++) {
+				const themes = ["冒险之旅", "力量增长", "命运转折", "奇遇相逢", "真相大白"];
+				mockChapters.push({
+					chapterId: i.toString(),
+					chapterName: `第${i}章 ${themes[i % themes.length]}`,
+					chapterHref: `/read/${bookId}/${i + 100000}.html`,
+					updateTime: new Date(Date.now() - Math.random() * 86400000).toISOString()
+				});
+			}
+			return SUCCESS(ctx, true, "成功", { data: mockChapters, total: 100 });
 		}
-
-		const data = {
-			data: chapters,
-			total: chapters.length
-		};
-
-		SUCCESS(ctx, true, "成功", data);
+		
+		// 有novelHref，使用爬虫获取真实数据
+		let chapters = [];
+		console.log("[API] 使用看书猴爬虫获取章节");
+		try {
+			const result = await kanshuhouSpider.getNovelChapters(novelHref, 1);
+			if (result && result.length > 0) {
+				chapters = result;
+				console.log(`[API] 看书猴爬虫成功获取 ${chapters.length} 个章节`);
+				// 规范化并返回
+				const normalizedChapters = chapters.map((ch, idx) => ({
+					chapterId: ch.chapterId || (idx + 1).toString(),
+					chapterName: ch.chapterName || ch.name || "未知章节",
+					chapterHref: ch.href || ch.chapterHref || `/read/${bookId}/${idx + 1}.html`,
+					updateTime: ch.updateTime || new Date().toISOString()
+				}));
+				return SUCCESS(ctx, true, "成功", { data: normalizedChapters, total: normalizedChapters.length });
+			}
+		} catch (err) {
+			console.log("[API] 爬虫获取失败:", err.message);
+		}
+		
+		// 如果爬虫失败，返回本地模拟数据
+		console.log("[API] 爬虫失败，返回模拟数据");
+		const mockChapters = [];
+		for (let i = 1; i <= 100; i++) {
+			const themes = ["冒险之旅", "力量增长", "命运转折", "奇遇相逢", "真相大白"];
+			mockChapters.push({
+				chapterId: i.toString(),
+				chapterName: `第${i}章 ${themes[i % themes.length]}`,
+				chapterHref: `/read/${bookId}/${i + 100000}.html`,
+				updateTime: new Date(Date.now() - Math.random() * 86400000).toISOString()
+			});
+		}
+		return SUCCESS(ctx, true, "成功", { data: mockChapters, total: 100 });
 	} catch (error) {
 		console.error("获取章节列表错误:", error);
 		ERROR(ctx, "获取章节列表失败");
@@ -726,36 +847,220 @@ router.post("/bookMicroservices/book/getChapters", async (ctx, next) => {
 
 /*
  * 获取小说章节内容接口
- * params: {"bookId": "1", "chapterId": "1"}
+ * params: {"bookId": "1", "chapterId": "1", "chapterHref": "/book/1/1.html"}
  * author: kris
  * date: 2025年11月21日
  */
 router.post("/bookMicroservices/book/getChapterContent", async (ctx, next) => {
-	const { bookId, chapterId } = ctx.request.body;
+	const { bookId, chapterId, chapterHref } = ctx.request.body;
 	if (!bookId || !chapterId) {
 		ERROR(ctx, "参数错误");
 		return;
 	}
 
 	try {
-		console.log(`[API] getChapterContent: ${bookId}/${chapterId}`);
+		console.log(`[API] getChapterContent: ${bookId}/${chapterId}, chapterHref: ${chapterHref}`);
 		
-		// 获取真实章节内容
-		const content = await novelFetcher.fetchChapterContentFromBiquge(bookId, chapterId);
-
-		if (!content || !content.content) {
-			console.log("[API] 无法获取内容，返回模拟数据");
-			// 返回模拟数据
-			return SUCCESS(ctx, true, "成功", {
-				title: `第${chapterId}章 故事继续`,
-				content: "　　这是一个充满奇幻的世界。主人公在这个世界中踏上了冒险的征途。\n\n　　经过许多磨难后，他逐渐成长，变得更加强大。\n\n　　新的挑战又在前方等待着他。"
-			});
+		let content = null;
+		
+		// 如果提供了章节href，优先使用看书猴爬虫获取真实内容
+		if (chapterHref && !chapterHref.startsWith("/local/")) {
+			try {
+				// 1️⃣ 首选：看书猴爬虫 (现在可用)
+				console.log("[API] 使用看书猴爬虫获取章节内容");
+				content = await kanshuhouSpider.getChapterContent(chapterHref);
+				
+				// 如果获取到内容，直接返回
+				if (content && content.content && content.content.length > 50) {
+					console.log("[API] 看书猴爬虫成功获取章节内容");
+					return SUCCESS(ctx, true, "成功", content);
+				}
+			} catch (err1) {
+				console.log("[API] 看书猴爬虫获取失败，尝试笔趣阁");
+			}
+			
+			try {
+				// 2️⃣ 备选：笔趣阁爬虫
+				console.log("[API] 使用笔趣阁爬虫获取章节内容");
+				content = await biqugeSpider.fetchChapterContent(chapterHref);
+				
+				// 如果爬虫返回错误内容（含"获取失败"）则降级
+				if (content && content.content && content.content.includes("获取失败")) {
+					throw new Error("笔趣阁爬虫返回失败");
+				}
+				
+				if (content && content.content && content.content.length > 50) {
+					console.log("[API] 笔趣阁爬虫成功获取章节内容");
+					return SUCCESS(ctx, true, "成功", content);
+				}
+			} catch (err2) {
+				console.log("[API] 笔趣阁爬虫也失败，降级到本地数据");
+			}
+		}
+		
+		// 3️⃣ 本地数据或所有爬虫都失败
+		try {
+			console.log("[API] 从本地数据库获取章节内容");
+			content = await novelFetcher.fetchChapterContentFromBiquge(bookId, chapterId);
+			
+			if (content && content.content && content.content.length > 50) {
+				console.log("[API] 本地数据获取成功");
+				return SUCCESS(ctx, true, "成功", content);
+			}
+		} catch (err3) {
+			console.log("[API] 本地数据获取失败");
 		}
 
-		SUCCESS(ctx, true, "成功", content);
+		// 4️⃣ 最后手段：返回默认模拟数据
+		console.log("[API] 所有数据源都失败，返回默认数据");
+		return SUCCESS(ctx, true, "成功", {
+			title: `第${chapterId}章 故事继续`,
+			content: "　　这是一个充满奇幻的世界。主人公在这个世界中踏上了冒险的征途。\n\n　　经过许多磨难后，他逐渐成长，变得更加强大。\n\n　　新的挑战又在前方等待着他。"
+		});
 	} catch (error) {
 		console.error("获取章节内容错误:", error);
 		ERROR(ctx, "获取章节内容失败");
+	}
+});
+
+/**
+ * 获取看书猴的分类列表
+ * author: kris
+ * date: 2025年11月21日
+ */
+router.post("/bookMicroservices/book/getCategories", async (ctx, next) => {
+	try {
+		console.log("[API] 获取分类列表");
+		const categories = await kanshuhouSpider.getCategories();
+		
+		if (!categories || categories.length === 0) {
+			// 返回默认分类作为备用
+			const defaultCategories = [
+				{id: "1", name: "玄幻小说", href: "/sort/1/1/"},
+				{id: "2", name: "奇幻小说", href: "/sort/2/1/"},
+				{id: "5", name: "都市小说", href: "/sort/5/1/"},
+				{id: "10", name: "科幻小说", href: "/sort/10/1/"},
+				{id: "3", name: "武侠小说", href: "/sort/3/1/"}
+			];
+			console.log("[API] 爬虫获取失败，使用默认分类");
+			SUCCESS(ctx, true, "成功（使用默认分类）", defaultCategories);
+			return;
+		}
+
+		console.log(`[API] 获取到 ${categories.length} 个分类`);
+		SUCCESS(ctx, true, "成功", categories);
+	} catch (error) {
+		console.error("[API] 获取分类错误:", error);
+		ERROR(ctx, "获取分类失败");
+	}
+});
+
+/**
+ * 获取指定分类的小说列表
+ * params: categoryId, page
+ * author: kris
+ * date: 2025年11月21日
+ */
+router.post("/bookMicroservices/book/getNovelsByCategory", async (ctx, next) => {
+	const { categoryId, page = 1, pageSize = 20 } = ctx.request.body;
+	
+	if (!categoryId) {
+		ERROR(ctx, "参数错误：缺少categoryId");
+		return;
+	}
+
+	try {
+		console.log(`[API] 获取分类 ${categoryId} 的小说 (第${page}页)`);
+		const novels = await kanshuhouSpider.getNovelsByCategory(categoryId, page);
+		
+		if (!novels || novels.length === 0) {
+			console.log("[API] 爬虫无结果");
+			ERROR(ctx, "无法获取该分类的小说");
+			return;
+		}
+
+		const total = novels.length;
+		const paginatedNovels = novels.slice(0, pageSize);
+
+		const data = {
+			data: paginatedNovels,
+			total: total,
+			page: page,
+			pageSize: pageSize
+		};
+
+		console.log(`[API] 返回 ${paginatedNovels.length} 部小说`);
+		SUCCESS(ctx, true, "成功", data);
+	} catch (error) {
+		console.error("[API] 获取分类小说错误:", error.message);
+		ERROR(ctx, "获取小说列表失败");
+	}
+});
+
+/**
+ * 从看书猴搜索小说
+ * params: keyword
+ * author: kris
+ * date: 2025年11月21日
+ */
+router.post("/bookMicroservices/book/searchFromKanshuhou", async (ctx, next) => {
+	const { keyword, page = 1, pageSize = 20 } = ctx.request.body;
+	
+	if (!keyword || keyword.trim() === "") {
+		ERROR(ctx, "参数错误：缺少搜索关键词");
+		return;
+	}
+
+	try {
+		console.log(`[API] 从看书猴搜索: ${keyword}`);
+		
+		// 使用第一个分类进行搜索（看书猴目前没有搜索接口，所以用分类作为演示）
+		// 实际应用中可以扩展为全文搜索
+		const categories = await kanshuhouSpider.getCategories();
+		let allNovels = [];
+
+		// 从前3个分类获取数据并搜索
+		for (let i = 0; i < Math.min(3, categories.length); i++) {
+			const categoryNovels = await kanshuhouSpider.getNovelsByCategory(categories[i].id, 1);
+			
+			// 按关键词过滤
+			const filtered = categoryNovels.filter(novel => 
+				novel.Name.includes(keyword) || 
+				novel.Author.includes(keyword)
+			);
+			
+			allNovels = allNovels.concat(filtered);
+		}
+
+		if (!allNovels || allNovels.length === 0) {
+			console.log("[API] 搜索无结果");
+			const data = {
+				data: [],
+				total: 0,
+				page: page,
+				pageSize: pageSize
+			};
+			SUCCESS(ctx, true, "成功（无结果）", data);
+			return;
+		}
+
+		const total = allNovels.length;
+		const start = (page - 1) * pageSize;
+		const end = start + pageSize;
+		const paginatedNovels = allNovels.slice(start, end);
+
+		const data = {
+			data: paginatedNovels,
+			total: total,
+			page: page,
+			pageSize: pageSize
+		};
+
+		console.log(`[API] 搜索找到 ${total} 部小说`);
+		SUCCESS(ctx, true, "成功", data);
+	} catch (error) {
+		console.error("[API] 搜索错误:", error.message);
+		ERROR(ctx, "搜索失败");
 	}
 });
 
