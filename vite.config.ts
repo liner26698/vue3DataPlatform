@@ -48,22 +48,19 @@ export default defineConfig((mode: ConfigEnv): UserConfig => {
 			proxy: {
 				"/api": {
 					secure: false,
-					// target: "http://8.166.130.216:3000", // 发布环境
-					target: "http://127.0.0.1:3001", // 本地开发测试环境
-					// target: "http://127.0.0.1:3000", // 发布正式环境
-					// target: viteEnv.VITE_APP_ENV === "production" ? "http://8.166.130.216:3000" : "http://127.0.0.1:3000",
+					target: "http://127.0.0.1:3001", // 本地开发环境 - 后端服务监听 3001
 					changeOrigin: true,
 					rewrite: path => path.replace(/^\/api/, "")
 				},
 				"/bookApi": {
 					secure: false,
-					target: "http://127.0.0.1:3001",
+					target: "http://127.0.0.1:3001", // 本地开发环境
 					changeOrigin: true,
 					rewrite: path => path.replace(/^\/bookApi/, "")
 				},
 				"/bookMicroservices": {
 					secure: false,
-					target: "http://127.0.0.1:3001",
+					target: "http://127.0.0.1:3001", // 本地开发环境
 					changeOrigin: true
 					// 不需要 rewrite，直接转发完整路径到后端
 				},

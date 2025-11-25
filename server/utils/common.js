@@ -53,12 +53,6 @@ const menuList = [
 		path: "/dataScreen"
 	},
 	{
-		icon: "reading",
-		title: "小说",
-		path: "/book"
-	},
-
-	{
 		icon: "tickets",
 		title: "照片墙",
 		path: "/photo",
@@ -84,18 +78,6 @@ const menuList = [
 		]
 	},
 
-	{
-		icon: "message-box",
-		title: "抽奖",
-		path: "/lottery",
-		children: [
-			{
-				path: "/lottery/index",
-				title: "抽奖",
-				icon: "menu"
-			}
-		]
-	}
 ];
 
 // 按钮权限配置

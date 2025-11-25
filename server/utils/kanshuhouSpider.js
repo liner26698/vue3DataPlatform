@@ -12,39 +12,71 @@ const crawlerConfig = require("../config/crawlerConfig.js");
 const cache = new Map();
 const CACHE_TIME = crawlerConfig.cache.ttl; // 24小时缓存
 
+// 随机 User-Agent 列表
+const userAgents = [
+	"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+	"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
+	"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+	"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+	"Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0"
+];
+
+function getRandomUserAgent() {
+	return userAgents[Math.floor(Math.random() * userAgents.length)];
+}
+
 // 请求配置
 const axiosInstance = axios.create({
-	timeout: 5000,
+	timeout: 10000,
 	headers: {
-		"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+		"User-Agent": getRandomUserAgent(),
+		"Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+		"Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
+		"Cache-Control": "max-age=0",
+		"Referer": "https://www.kanshuhou.com/",
+		"DNT": "1"
 	}
 });
 
-// 请求延迟 - 礼貌爬虫
+// 请求延迟 - 礼貌爬虫 (增加延迟避免被识别为爬虫)
 let lastRequestTime = 0;
 async function delayRequest() {
 	const now = Date.now();
 	const timeSinceLastRequest = now - lastRequestTime;
-	if (timeSinceLastRequest < 500) {
-		await new Promise(resolve => setTimeout(resolve, 500 - timeSinceLastRequest));
+	// 延迟 300-800ms
+	const delay = Math.random() * 500 + 300;
+	if (timeSinceLastRequest < delay) {
+		await new Promise(resolve => setTimeout(resolve, delay - timeSinceLastRequest));
 	}
 	lastRequestTime = Date.now();
 }
 
-// 带重试的请求函数
-async function fetchWithRetry(url, maxRetries = 3) {
+// 带重试的请求函数 (增加重试次数和等待时间)
+async function fetchWithRetry(url, maxRetries = 4) {
 	let lastError;
 	for (let i = 0; i < maxRetries; i++) {
 		try {
 			await delayRequest();
+			// 每次请求都更新 User-Agent
+			axiosInstance.defaults.headers["User-Agent"] = getRandomUserAgent();
 			console.log(`[看书猴爬虫] 请求 (尝试 ${i + 1}/${maxRetries}): ${url}`);
 			const response = await axiosInstance.get(url);
-			return response;
+			// 成功后验证状态码
+			if (response.status === 200 || response.status === 304) {
+				return response;
+			}
 		} catch (error) {
 			lastError = error;
-			console.warn(`[看书猴爬虫] 第 ${i + 1} 次尝试失败: ${error.message}`);
-			if (i < maxRetries - 1) {
-				await new Promise(resolve => setTimeout(resolve, 1000));
+			const status = error.response?.status || "unknown";
+			console.warn(`[看书猴爬虫] 第 ${i + 1} 次尝试失败 (HTTP ${status}): ${error.message}`);
+			
+			// 如果是 403，稍微等待后重试
+			if (error.response?.status === 403) {
+				const waitTime = (i + 1) * 800; // 线性等待
+				console.log(`[看书猴爬虫] 遇到 403 限流，等待 ${waitTime / 1000} 秒后重试...`);
+				await new Promise(resolve => setTimeout(resolve, waitTime));
+			} else if (i < maxRetries - 1) {
+				await new Promise(resolve => setTimeout(resolve, 500 + Math.random() * 500));
 			}
 		}
 	}

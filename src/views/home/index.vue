@@ -76,6 +76,23 @@
 						</div>
 					</el-card>
 				</el-col>
+
+				<!-- 热门话题模块 -->
+				<el-col :xs="24" :sm="24" :md="24" :lg="24">
+					<el-card class="module-card topics-module">
+						<template #header>
+							<div class="card-header">
+								<span class="title">🔥 热门话题</span>
+								<el-button type="primary" link @click="toggleTopics" class="toggle-btn">{{
+									topicsVisible ? "收起" : "展开"
+								}}</el-button>
+							</div>
+						</template>
+						<div v-show="topicsVisible" class="topics-content">
+							<HotTopics />
+						</div>
+					</el-card>
+				</el-col>
 			</el-row>
 		</div>
 	</div>
@@ -85,6 +102,7 @@
 import { ref, onMounted } from "vue";
 import GameTable from "@/components/GameTable.vue";
 import AiList from "./components/aiList.vue";
+import HotTopics from "./components/hotTopics.vue";
 import { getGameStatsApi } from "@/api/crawlerStats/game";
 
 // 游戏模块
@@ -122,6 +140,7 @@ const typeOptions = [
 // 模块展开/收起状态
 const gameVisible = ref(true);
 const aiVisible = ref(true);
+const topicsVisible = ref(true);
 
 // 获取游戏数据
 const fetchData = async () => {
@@ -174,139 +193,405 @@ const toggleAi = () => {
 	aiVisible.value = !aiVisible.value;
 };
 
+const toggleTopics = () => {
+	topicsVisible.value = !topicsVisible.value;
+};
+
 onMounted(() => {
 	fetchData();
 });
 </script>
 
 <style lang="scss" scoped>
-.home-box {
-	height: 100%;
-	overflow: auto;
-	background: #f5f7fa;
-}
+$primary-color: #409eff;
+$border-color: #e4e7eb;
+$text-color: #606266;
+$game-gradient-start: #667eea;
+$game-gradient-end: #764ba2;
+$ai-gradient-start: #f093fb;
+$ai-gradient-end: #f5576c;
 
-.home-content {
-	padding: 20px;
-	max-width: 1400px;
-	margin: 0 auto;
+.home-box {
+	min-height: 100vh;
+	background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+	padding: 30px 20px;
+
+	.home-content {
+		max-width: 1400px;
+		margin: 0 auto;
+		width: 100%;
+	}
 }
 
 .modules-container {
+	width: 100%;
 	display: flex;
 	flex-direction: column;
-	gap: 20px;
+	gap: 24px;
+
+	:deep(.el-col) {
+		width: 100%;
+		animation: slideUp 0.6s ease-out both;
+
+		&:nth-child(1) {
+			animation-delay: 0.1s;
+		}
+
+		&:nth-child(2) {
+			animation-delay: 0.3s;
+		}
+
+		&:nth-child(3) {
+			animation-delay: 0.5s;
+		}
+	}
 }
 
 .module-card {
-	border-radius: 8px;
-	box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+	width: 100%;
+	border: none;
+	border-radius: 12px;
+	box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
 	transition: all 0.3s ease;
+	overflow: hidden;
 
 	&:hover {
-		box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+		box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+		transform: translateY(-2px);
 	}
 
 	:deep(.el-card__header) {
-		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-		padding: 16px 20px;
-		border-bottom: none;
+		background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.9) 100%);
+		border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+		padding: 18px 20px;
+	}
+
+	:deep(.el-card__body) {
+		padding: 24px;
+		background-color: #ffffff;
 	}
 
 	.card-header {
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
+		width: 100%;
 
 		.title {
 			font-size: 18px;
-			font-weight: bold;
-			color: white;
+			font-weight: 600;
+			background-size: 100%;
+			transition: all 0.3s ease;
 		}
 
 		.toggle-btn {
-			color: white;
-			font-weight: 500;
-			transition: all 0.2s ease;
+			padding: 0 8px;
+			font-size: 13px;
+			color: #409eff;
+			transition: all 0.3s ease;
 
 			&:hover {
-				opacity: 0.8;
+				color: #66b1ff;
+				transform: scale(1.05);
 			}
-		}
-
-		:deep(.el-button) {
-			color: white;
-			font-weight: 500;
 		}
 	}
 }
 
 .game-module {
 	:deep(.el-card__header) {
-		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		border-left: 4px solid $game-gradient-start;
+		background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
+	}
+
+	.card-header {
+		.title {
+			background: linear-gradient(135deg, $game-gradient-start 0%, $game-gradient-end 100%);
+			-webkit-background-clip: text;
+			-webkit-text-fill-color: transparent;
+			background-clip: text;
+		}
+	}
+
+	.game-content {
+		width: 100%;
+		display: flex;
+		flex-direction: column;
+		min-height: 500px;
+
+		:deep(.pro-table) {
+			flex: 1;
+			display: flex;
+			flex-direction: column;
+		}
+
+		:deep(.el-table) {
+			flex: 1;
+		}
+
+		:deep(.el-pagination) {
+			padding: 16px 0;
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			margin-top: auto;
+		}
 	}
 }
 
 .ai-module {
 	:deep(.el-card__header) {
-		background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+		border-left: 4px solid $ai-gradient-start;
+		background: linear-gradient(135deg, rgba(240, 147, 251, 0.05) 0%, rgba(245, 87, 108, 0.05) 100%);
+	}
+
+	.card-header {
+		.title {
+			background: linear-gradient(135deg, $ai-gradient-start 0%, $ai-gradient-end 100%);
+			-webkit-background-clip: text;
+			-webkit-text-fill-color: transparent;
+			background-clip: text;
+		}
+	}
+
+	.ai-content {
+		width: 100%;
 	}
 }
 
-.game-content {
-	.search-wrapper {
-		margin-bottom: 24px;
-		padding: 16px;
-		background: linear-gradient(135deg, #f5f7fa 0%, #e9ecf1 100%);
-		border-radius: 8px;
-		border-left: 4px solid #667eea;
+.topics-module {
+	:deep(.el-card__header) {
+		border-left: 4px solid #ff6b6b;
+		background: linear-gradient(135deg, rgba(255, 107, 107, 0.05) 0%, rgba(255, 71, 87, 0.05) 100%);
 	}
 
+	.card-header {
+		.title {
+			background: linear-gradient(135deg, #ff6b6b 0%, #ff4757 100%);
+			-webkit-background-clip: text;
+			-webkit-text-fill-color: transparent;
+			background-clip: text;
+		}
+	}
+
+	.topics-content {
+		width: 100%;
+		min-height: 300px;
+	}
+}
+
+.search-wrapper {
+	margin-bottom: 20px;
+	width: 100%;
+	padding: 16px;
+	background: linear-gradient(135deg, rgba(102, 126, 234, 0.08) 0%, rgba(118, 75, 162, 0.05) 100%);
+	border-radius: 10px;
+	border-left: 3px solid $game-gradient-start;
+
 	.search-form {
+		width: 100%;
+
 		:deep(.el-form-item) {
-			margin-bottom: 0;
+			width: 100% !important;
+			margin-bottom: 12px;
+
+			&:last-child {
+				margin-bottom: 0;
+			}
 
 			.el-form-item__label {
-				font-weight: 600;
-				color: #333;
-				width: auto !important;
-				padding-right: 12px !important;
+				font-weight: 500;
+				color: #303133;
+				font-size: 13px;
 			}
 
 			.el-form-item__content {
-				line-height: 1;
+				width: 100% !important;
+				flex: 1 !important;
+				box-sizing: border-box;
+
+				.el-input,
+				.el-select {
+					width: 100% !important;
+				}
 			}
 		}
 
-		:deep(.el-input),
-		:deep(.el-select) {
-			width: 100%;
+		:deep(.el-row) {
+			width: 100% !important;
 		}
 
+		:deep(.el-col) {
+			width: 100% !important;
+		}
+
+		:deep(.el-input__wrapper),
 		:deep(.el-select__wrapper) {
-			width: 100%;
-		}
-	}
+			background-color: rgba(255, 255, 255, 0.9);
+			border: 1px solid rgba(102, 126, 234, 0.2);
+			border-radius: 6px;
+			transition: all 0.3s ease;
 
-	.button-group {
-		display: flex;
-		gap: 8px;
-		width: 100%;
+			&:hover {
+				border-color: rgba(102, 126, 234, 0.4);
+				box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);
+			}
 
-		.search-btn,
-		.reset-btn {
-			flex: 1;
-			min-width: 80px;
-		}
-
-		:deep(.el-button) {
-			padding: 8px 16px;
-			font-size: 14px;
+			&:focus-within {
+				border-color: $game-gradient-start;
+				box-shadow: 0 2px 12px rgba(102, 126, 234, 0.15);
+			}
 		}
 	}
 }
 
-.ai-content {
-	min-height: 500px;
+.button-group {
+	display: flex;
+	gap: 10px;
+	width: 100%;
+
+	.search-btn,
+	.reset-btn {
+		flex: 1;
+		border-radius: 6px;
+		transition: all 0.3s ease;
+		font-weight: 500;
+
+		&:hover {
+			transform: translateY(-1px);
+		}
+	}
+
+	.search-btn {
+		background: linear-gradient(135deg, $game-gradient-start 0%, $game-gradient-end 100%);
+		border: none;
+		color: white;
+
+		&:hover {
+			box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+		}
+	}
+
+	.reset-btn {
+		background-color: rgba(0, 0, 0, 0.05);
+		border: 1px solid rgba(0, 0, 0, 0.1);
+		color: #606266;
+
+		&:hover {
+			background-color: rgba(0, 0, 0, 0.08);
+			border-color: rgba(0, 0, 0, 0.15);
+		}
+	}
+}
+
+// 进入动画
+@keyframes slideUp {
+	from {
+		opacity: 0;
+		transform: translateY(30px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+// 响应式设计
+@media (max-width: 768px) {
+	.home-box {
+		padding: 20px 12px;
+	}
+
+	.modules-container {
+		gap: 16px;
+	}
+
+	.module-card {
+		:deep(.el-card__header) {
+			padding: 14px 16px;
+		}
+
+		:deep(.el-card__body) {
+			padding: 16px;
+		}
+
+		.card-header {
+			flex-direction: column;
+			gap: 12px;
+			align-items: flex-start;
+
+			.toggle-btn {
+				align-self: flex-end;
+			}
+
+			.title {
+				font-size: 16px;
+			}
+		}
+	}
+
+	.search-wrapper {
+		margin-bottom: 16px;
+		padding: 12px;
+		border-radius: 8px;
+	}
+
+	.button-group {
+		gap: 8px;
+
+		.search-btn,
+		.reset-btn {
+			font-size: 12px;
+			padding: 8px 12px;
+		}
+	}
+}
+
+@media (max-width: 480px) {
+	.home-box {
+		padding: 12px 8px;
+	}
+
+	.modules-container {
+		gap: 12px;
+	}
+
+	.module-card {
+		border-radius: 10px;
+
+		:deep(.el-card__header) {
+			padding: 12px 14px;
+		}
+
+		:deep(.el-card__body) {
+			padding: 12px;
+		}
+
+		.card-header {
+			.title {
+				font-size: 14px;
+			}
+
+			.toggle-btn {
+				font-size: 12px;
+			}
+		}
+	}
+
+	.search-wrapper {
+		margin-bottom: 12px;
+		padding: 10px;
+		border-radius: 6px;
+	}
+
+	.button-group {
+		gap: 6px;
+
+		.search-btn,
+		.reset-btn {
+			font-size: 11px;
+			padding: 6px 10px;
+		}
+	}
 }
 </style>

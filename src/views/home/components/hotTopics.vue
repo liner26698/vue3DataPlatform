@@ -1,0 +1,640 @@
+<template>
+	<div class="hot-topics-container">
+		<!-- 平台选项卡 -->
+		<div class="platform-tabs">
+			<button
+				v-for="platform in platforms"
+				:key="platform.id"
+				:class="['platform-tab', { active: activePlatform === platform.id }]"
+				@click="activePlatform = platform.id"
+			>
+				<span class="platform-icon">{{ platform.icon }}</span>
+				<span class="platform-name">{{ platform.name }}</span>
+			</button>
+		</div>
+
+		<!-- 话题列表 -->
+		<div class="topics-list">
+			<div
+				v-for="(topic, index) in filteredTopics"
+				:key="index"
+				:class="['topic-item', `rank-${index + 1}`]"
+				@click="openTopic(topic)"
+			>
+				<!-- 排名 -->
+				<div class="topic-rank">
+					<span v-if="index < 3" class="rank-badge" :class="`rank-${index + 1}`">
+						{{ index + 1 }}
+					</span>
+					<span v-else class="rank-number">{{ index + 1 }}</span>
+				</div>
+
+				<!-- 话题内容 -->
+				<div class="topic-content">
+					<div class="topic-title">{{ topic.title }}</div>
+					<div class="topic-meta">
+						<span class="topic-category" v-if="topic.category">{{ topic.category }}</span>
+						<span class="topic-heat">
+							<i class="icon-fire">🔥</i>
+							{{ formatNumber(topic.heat) }}
+						</span>
+					</div>
+				</div>
+
+				<!-- 额外信息 -->
+				<div class="topic-extra">
+					<span v-if="topic.trend" :class="['trend', topic.trend]">
+						{{ topic.trend === "up" ? "↑" : topic.trend === "down" ? "↓" : "→" }}
+					</span>
+					<span v-if="topic.tags" class="topic-tags">
+						<span v-for="tag in topic.tags" :key="tag" class="tag">{{ tag }}</span>
+					</span>
+				</div>
+
+				<!-- 跳转按钮 -->
+				<div class="topic-link">
+					<i class="icon-link">→</i>
+				</div>
+			</div>
+
+			<!-- 空状态 -->
+			<div v-if="filteredTopics.length === 0" class="empty-state">
+				<p>暂无话题数据</p>
+			</div>
+		</div>
+	</div>
+</template>
+
+<script setup lang="ts">
+import { ref, computed, onMounted } from "vue";
+
+interface Topic {
+	title: string;
+	category?: string;
+	heat: number;
+	trend?: "up" | "down" | "stable";
+	tags?: string[];
+	url?: string;
+	platform: string;
+}
+
+const platforms = [
+	{ id: "douyin", name: "抖音", icon: "🎵", color: "#000" },
+	{ id: "baidu", name: "百度", icon: "🔍", color: "#2319dc" },
+	{ id: "zhihu", name: "知乎", icon: "❓", color: "#0084ff" },
+	{ id: "weibo", name: "微博", icon: "✨", color: "#e6162d" },
+	{ id: "bilibili", name: "B站", icon: "▶", color: "#fb7299" }
+];
+
+const activePlatform = ref("douyin");
+const topics = ref<Topic[]>([]);
+
+const filteredTopics = computed(() => {
+	return topics.value.filter(topic => topic.platform === activePlatform.value);
+});
+
+// 模拟数据
+const mockData: { [key: string]: Topic[] } = {
+	douyin: [
+		{
+			title: "明年小目标: 学会Vue 3开发",
+			heat: 2500000,
+			category: "科技",
+			trend: "up",
+			tags: ["前端", "Vue"],
+			url: "https://www.douyin.com/",
+			platform: "douyin"
+		},
+		{
+			title: "年轻人的新烦恼：996工作制",
+			heat: 2100000,
+			category: "生活",
+			trend: "up",
+			tags: ["工作", "职场"],
+			url: "https://www.douyin.com/",
+			platform: "douyin"
+		},
+		{
+			title: "这个冬天如何保暖",
+			heat: 1800000,
+			category: "生活",
+			trend: "stable",
+			tags: ["冬天", "健康"],
+			url: "https://www.douyin.com/",
+			platform: "douyin"
+		},
+		{
+			title: "明星八卦热议中",
+			heat: 1500000,
+			category: "娱乐",
+			trend: "down",
+			tags: ["明星", "娱乐"],
+			url: "https://www.douyin.com/",
+			platform: "douyin"
+		},
+		{
+			title: "新晋女演员实力派表演",
+			heat: 1300000,
+			category: "娱乐",
+			trend: "up",
+			tags: ["电影", "演员"],
+			url: "https://www.douyin.com/",
+			platform: "douyin"
+		}
+	],
+	baidu: [
+		{
+			title: "2024年度流行趋势总结",
+			heat: 3200000,
+			category: "社会",
+			trend: "up",
+			url: "https://www.baidu.com/",
+			platform: "baidu"
+		},
+		{
+			title: "人工智能发展新突破",
+			heat: 2800000,
+			category: "科技",
+			trend: "up",
+			url: "https://www.baidu.com/",
+			platform: "baidu"
+		},
+		{
+			title: "健康饮食小贴士",
+			heat: 2400000,
+			category: "健康",
+			trend: "stable",
+			url: "https://www.baidu.com/",
+			platform: "baidu"
+		},
+		{
+			title: "国内经济形势分析",
+			heat: 2100000,
+			category: "财经",
+			trend: "up",
+			url: "https://www.baidu.com/",
+			platform: "baidu"
+		},
+		{
+			title: "最新天气预报信息",
+			heat: 1900000,
+			category: "天气",
+			trend: "down",
+			url: "https://www.baidu.com/",
+			platform: "baidu"
+		}
+	],
+	zhihu: [
+		{
+			title: "如何有效学习编程？",
+			heat: 2600000,
+			category: "教育",
+			trend: "up",
+			url: "https://www.zhihu.com/",
+			platform: "zhihu"
+		},
+		{
+			title: "程序员如何保持身体健康？",
+			heat: 2200000,
+			category: "健康",
+			trend: "up",
+			url: "https://www.zhihu.com/",
+			platform: "zhihu"
+		},
+		{
+			title: "2024年求职指南",
+			heat: 1950000,
+			category: "职业",
+			trend: "stable",
+			url: "https://www.zhihu.com/",
+			platform: "zhihu"
+		},
+		{
+			title: "如何理财规划未来？",
+			heat: 1750000,
+			category: "财经",
+			trend: "up",
+			url: "https://www.zhihu.com/",
+			platform: "zhihu"
+		},
+		{
+			title: "人生意义的思考",
+			heat: 1550000,
+			category: "哲学",
+			trend: "down",
+			url: "https://www.zhihu.com/",
+			platform: "zhihu"
+		}
+	],
+	weibo: [
+		{
+			title: "名人微博话题讨论",
+			heat: 3800000,
+			category: "娱乐",
+			trend: "up",
+			url: "https://www.weibo.com/",
+			platform: "weibo"
+		},
+		{
+			title: "实时热点新闻评论",
+			heat: 3200000,
+			category: "新闻",
+			trend: "up",
+			url: "https://www.weibo.com/",
+			platform: "weibo"
+		},
+		{
+			title: "体育比赛实时讨论",
+			heat: 2900000,
+			category: "体育",
+			trend: "stable",
+			url: "https://www.weibo.com/",
+			platform: "weibo"
+		},
+		{
+			title: "社会热点话题争议",
+			heat: 2600000,
+			category: "社会",
+			trend: "up",
+			url: "https://www.weibo.com/",
+			platform: "weibo"
+		},
+		{
+			title: "明星粉丝应援互动",
+			heat: 2300000,
+			category: "娱乐",
+			trend: "down",
+			url: "https://www.weibo.com/",
+			platform: "weibo"
+		}
+	],
+	bilibili: [
+		{
+			title: "热门UP主最新视频发布",
+			heat: 2700000,
+			category: "动画",
+			trend: "up",
+			url: "https://www.bilibili.com/",
+			platform: "bilibili"
+		},
+		{
+			title: "游戏直播热门内容",
+			heat: 2400000,
+			category: "游戏",
+			trend: "up",
+			url: "https://www.bilibili.com/",
+			platform: "bilibili"
+		},
+		{
+			title: "学习教程高热度视频",
+			heat: 2100000,
+			category: "教育",
+			trend: "stable",
+			url: "https://www.bilibili.com/",
+			platform: "bilibili"
+		},
+		{
+			title: "音乐视频排行榜前十",
+			heat: 1850000,
+			category: "音乐",
+			trend: "up",
+			url: "https://www.bilibili.com/",
+			platform: "bilibili"
+		},
+		{
+			title: "生活日常分享排行",
+			heat: 1600000,
+			category: "生活",
+			trend: "down",
+			url: "https://www.bilibili.com/",
+			platform: "bilibili"
+		}
+	]
+};
+
+// 格式化数字
+const formatNumber = (num: number) => {
+	if (num >= 1000000) {
+		return (num / 1000000).toFixed(1) + "M";
+	} else if (num >= 1000) {
+		return (num / 1000).toFixed(1) + "K";
+	}
+	return num.toString();
+};
+
+// 打开话题链接
+const openTopic = (topic: Topic) => {
+	if (topic.url) {
+		window.open(topic.url, "_blank");
+	}
+};
+
+// 获取数据
+const fetchData = async () => {
+	try {
+		// 这里可以调用真实的 API，现在使用模拟数据
+		const allTopics = Object.values(mockData).flat();
+		topics.value = allTopics;
+	} catch (error) {
+		console.error("获取热门话题失败:", error);
+		// 失败时使用模拟数据
+		const allTopics = Object.values(mockData).flat();
+		topics.value = allTopics;
+	}
+};
+
+onMounted(() => {
+	fetchData();
+});
+</script>
+
+<style lang="scss" scoped>
+.hot-topics-container {
+	width: 100%;
+	display: flex;
+	flex-direction: column;
+	gap: 20px;
+
+	.platform-tabs {
+		display: flex;
+		gap: 8px;
+		flex-wrap: wrap;
+		padding: 8px 0;
+
+		.platform-tab {
+			display: flex;
+			align-items: center;
+			gap: 6px;
+			padding: 8px 16px;
+			border: 1px solid rgba(0, 0, 0, 0.1);
+			border-radius: 20px;
+			background: #ffffff;
+			cursor: pointer;
+			transition: all 0.3s ease;
+			font-size: 13px;
+			font-weight: 500;
+			color: #606266;
+
+			.platform-icon {
+				font-size: 16px;
+			}
+
+			.platform-name {
+				white-space: nowrap;
+			}
+
+			&:hover {
+				border-color: #409eff;
+				color: #409eff;
+				background: rgba(64, 158, 255, 0.05);
+			}
+
+			&.active {
+				border-color: #409eff;
+				background: linear-gradient(135deg, rgba(64, 158, 255, 0.1) 0%, rgba(64, 158, 255, 0.05) 100%);
+				color: #409eff;
+				font-weight: 600;
+
+				.platform-icon {
+					transform: scale(1.2);
+				}
+			}
+		}
+	}
+
+	.topics-list {
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
+
+		.topic-item {
+			display: flex;
+			align-items: center;
+			gap: 12px;
+			padding: 12px 16px;
+			border-radius: 8px;
+			background: #f5f7fa;
+			border: 1px solid rgba(0, 0, 0, 0.05);
+			cursor: pointer;
+			transition: all 0.3s ease;
+
+			&:hover {
+				background: #ffffff;
+				border-color: #409eff;
+				box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+				transform: translateX(4px);
+
+				.topic-link {
+					opacity: 1;
+					transform: translateX(0);
+				}
+			}
+
+			&.rank-1,
+			&.rank-2,
+			&.rank-3 {
+				background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.95) 100%);
+				border: 1px solid rgba(100, 200, 255, 0.2);
+
+				.topic-rank {
+					.rank-badge {
+						font-weight: 700;
+						color: white;
+						padding: 4px 8px;
+						border-radius: 4px;
+						min-width: 28px;
+						text-align: center;
+						display: block;
+
+						&.rank-1 {
+							background: linear-gradient(135deg, #ff6b6b 0%, #ff4757 100%);
+						}
+
+						&.rank-2 {
+							background: linear-gradient(135deg, #ffa502 0%, #ff8c00 100%);
+						}
+
+						&.rank-3 {
+							background: linear-gradient(135deg, #ffd700 0%, #ffb700 100%);
+							color: #333;
+						}
+					}
+				}
+			}
+
+			.topic-rank {
+				flex-shrink: 0;
+				min-width: 40px;
+
+				.rank-badge {
+					display: flex;
+					align-items: center;
+					justify-content: center;
+					font-size: 14px;
+					font-weight: 700;
+				}
+
+				.rank-number {
+					display: flex;
+					align-items: center;
+					justify-content: center;
+					font-size: 13px;
+					color: #909399;
+					min-width: 28px;
+				}
+			}
+
+			.topic-content {
+				flex: 1;
+				min-width: 0;
+
+				.topic-title {
+					font-size: 14px;
+					font-weight: 500;
+					color: #303133;
+					line-height: 1.4;
+					overflow: hidden;
+					text-overflow: ellipsis;
+					white-space: nowrap;
+
+					@media (max-width: 768px) {
+						font-size: 13px;
+					}
+				}
+
+				.topic-meta {
+					display: flex;
+					align-items: center;
+					gap: 8px;
+					margin-top: 4px;
+					font-size: 12px;
+
+					.topic-category {
+						display: inline-block;
+						padding: 2px 8px;
+						background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+						color: #667eea;
+						border-radius: 4px;
+						white-space: nowrap;
+					}
+
+					.topic-heat {
+						color: #909399;
+						display: flex;
+						align-items: center;
+						gap: 2px;
+
+						.icon-fire {
+							animation: flicker 2s ease-in-out infinite;
+						}
+					}
+				}
+			}
+
+			.topic-extra {
+				display: flex;
+				align-items: center;
+				gap: 8px;
+				flex-shrink: 0;
+
+				.trend {
+					font-weight: 700;
+					font-size: 14px;
+
+					&.up {
+						color: #ff4757;
+					}
+
+					&.down {
+						color: #2ed573;
+					}
+
+					&.stable {
+						color: #ffa502;
+					}
+				}
+
+				.topic-tags {
+					display: flex;
+					gap: 4px;
+
+					.tag {
+						display: inline-block;
+						padding: 2px 8px;
+						background: #e8f5e9;
+						color: #27ae60;
+						border-radius: 3px;
+						font-size: 11px;
+						white-space: nowrap;
+					}
+				}
+			}
+
+			.topic-link {
+				flex-shrink: 0;
+				font-size: 18px;
+				color: #409eff;
+				opacity: 0.5;
+				transform: translateX(-8px);
+				transition: all 0.3s ease;
+			}
+		}
+
+		.empty-state {
+			padding: 40px 20px;
+			text-align: center;
+			color: #909399;
+
+			p {
+				font-size: 14px;
+			}
+		}
+	}
+}
+
+@keyframes flicker {
+	0%,
+	100% {
+		opacity: 1;
+	}
+	50% {
+		opacity: 0.6;
+	}
+}
+
+@media (max-width: 768px) {
+	.hot-topics-container {
+		gap: 16px;
+
+		.platform-tabs {
+			gap: 6px;
+
+			.platform-tab {
+				padding: 6px 12px;
+				font-size: 12px;
+
+				.platform-icon {
+					font-size: 14px;
+				}
+			}
+		}
+
+		.topics-list {
+			gap: 8px;
+
+			.topic-item {
+				padding: 10px 12px;
+				gap: 10px;
+
+				.topic-extra {
+					display: none;
+				}
+
+				.topic-link {
+					font-size: 16px;
+				}
+			}
+		}
+	}
+}
+</style>

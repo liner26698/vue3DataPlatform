@@ -1,9 +1,10 @@
 const Koa = require("koa");
 const bodyParser = require("koa-bodyparser");
 const cors = require("koa-cors");
-const { ERROR } = require("./server/utils/common");
-const router = require("./server/routes");
-const bookApi = require("./server/routes/bookApi");
+const { ERROR } = require("./utils/common");
+const router = require("./routes");
+const bookApi = require("./routes/bookApi");
+const { startScheduledTasks } = require("./utils/cronScheduler");
 
 const app = new Koa();
 const port = 3001;
@@ -30,7 +31,16 @@ app.use(async (ctx, next) => {
 app.use(bookApi.routes());
 app.use(router.routes());
 
+// 启动热门话题爬虫定时任务
+console.log("\n🚀 正在启动热门话题爬虫定时任务...");
+try {
+	startScheduledTasks();
+	console.log("✅ 爬虫定时任务已启动\n");
+} catch (error) {
+	console.error("⚠️ 爬虫定时任务启动失败:", error.message);
+}
+
 // 启动服务
 app.listen(port, () => {
-	console.log(`启动成功,服务端口为:${port}`);
+	console.log(`✅ 服务启动成功，端口: ${port}`);
 });

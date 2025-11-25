@@ -8,10 +8,10 @@ const fs = require("fs");
 const path = require("path");
 const { v4: uuidv4 } = require("uuid");
 const { exec } = require("child_process");
-const novelFetcher = require("../utils/novelFetcher.js");
-const novelDataManager = require("../utils/novelDataManager.js");
-const biqugeSpider = require("../utils/biqugeSpider.js");
-const kanshuhouSpider = require("../utils/kanshuhouSpider.js");
+// const novelFetcher = require("../utils/novelFetcher.js");
+// const novelDataManager = require("../utils/novelDataManager.js");
+// const biqugeSpider = require("../utils/biqugeSpider.js");
+// const kanshuhouSpider = require("../utils/kanshuhouSpider.js");
 const OpenAI = require("openai");
 const axios = require("axios");
 const KoaRouter = require("koa-router");
@@ -197,58 +197,42 @@ router.get("/statistics/getHotPlate", async ctx => {
 });
 
 /*
- * chatGpt接口
+ * chatGpt接口 - DeepSeek API
  * author: kris
  * 2024年06月12日10:31:10
  */
 router.post("/statistics/chatGpt", async ctx => {
-	// 400 - 格式错误
-	// 401 - 认证失败
-	// 402 - 余额不足
-	// 422 - 参数错误
-	// 429 - 请求速率达到上限
-	// 500 - 服务器故障
-	// 503 - 服务器繁忙
+	try {
+		const { content, role } = ctx.request.body || {};
+		
+		if (!content) {
+			ERROR(ctx, "content 参数不能为空");
+			return;
+		}
 
-	// 2025年02月27日15:12:46, 这个版本是对接deepseek的版本 (一次性返回所有数据)
-	// const { content, role } = ctx.request.body || "";
-	// const openai = new OpenAI({
-	// 	baseURL: "https://api.deepseek.com",
-	// 	apiKey: "sk-a2121cafac0e4173bbec5124027984da"
-	// });
-	// const completion = await openai.chat.completions.create({
-	// 	messages: [{ role: "system", content: content }],
-	// 	model: "deepseek-chat",
-	// 	// stream: true
-	// });
-	// try {
-	// 	SUCCESS(ctx, true, "成功", completion.choices[0].message.content);
-	// } catch (error) {
-	// 	console.error("chatGpt 接口错误:", error);
-	// 	ERROR(ctx, "chatGpt 接口调用失败");
-	// }
+		// 从环境变量或配置获取 API Key
+		const apiKey = process.env.DEEPSEEK_API_KEY || "sk-a2121cafac0e4173bbec5124027984da";
+		
+		const openai = new OpenAI({
+			baseURL: "https://api.deepseek.com/v1",
+			apiKey: apiKey
+		});
 
-	// 2025年03月18日18:22:13, 这个版本是对接openai的版本 (使用stream流式传输)
-	const { content, role } = ctx.request.body || "";
-	const queryInfos = {
-		messages: [
-			{
-				role: "system",
-				content: content
-			}
-		],
-		model: "deepseek-chat",
-		stream: true,
-		depth: 3 // 深度分析
-	};
+		const completion = await openai.chat.completions.create({
+			messages: [
+				{
+					role: "system",
+					content: content
+				}
+			],
+			model: "deepseek-chat"
+		});
 
-	const response = await this.openai.chat.completions.create(queryInfos);
-	for await (const part of response) {
-		// part.choices[0].delta.content;
-		// 返回给前端
-
-		console.log("part:", part.choices[0].delta.content);
-		SUCCESS(ctx, true, "成功", part.choices[0].delta.content);
+		const responseText = completion.choices[0]?.message?.content || "无响应内容";
+		SUCCESS(ctx, true, "成功", responseText);
+	} catch (error) {
+		console.error("chatGpt 接口错误:", error.message);
+		ERROR(ctx, "chatGpt 接口调用失败: " + error.message);
 	}
 });
 
@@ -259,6 +243,201 @@ router.get("/statistics/chatGpt2", async ctx => {
 		ctx.res.write(`data: ${new Date().toLocaleTimeString()}\n\n`);
 		SUCCESS(ctx, true, "成功", new Date().toLocaleTimeString());
 	}, 1000);
+});
+
+/*
+ * 热门话题接口
+ * params: platform (可选) - 指定平台 douyin/baidu/zhihu/weibo/bilibili
+ * author: kris
+ * date: 2025年11月25日
+ */
+router.post("/statistics/getHotTopics", async ctx => {
+	try {
+		// 从数据库获取所有平台的热门话题
+		const sql = `
+			SELECT 
+				id, platform, \`rank\`, title, category, heat, trend, tags, url, description
+			FROM hot_topics
+			WHERE is_active = 1
+			AND DATE(updated_at) = CURDATE()
+			ORDER BY platform, \`rank\`
+			LIMIT 100
+		`;
+
+		const dbTopics = await db.query(sql);
+
+		// 按平台分组
+		const groupedTopics = {
+			douyin: [],
+			baidu: [],
+			zhihu: [],
+			weibo: [],
+			bilibili: []
+		};
+
+		dbTopics.forEach(topic => {
+			if (groupedTopics[topic.platform]) {
+				groupedTopics[topic.platform].push({
+					title: topic.title,
+					category: topic.category,
+					heat: topic.heat,
+					trend: topic.trend,
+					tags: topic.tags ? JSON.parse(topic.tags) : [],
+					url: topic.url,
+					platform: topic.platform,
+					description: topic.description
+				});
+			}
+		});
+
+		// 如果数据库中没有数据，使用默认模拟数据
+		if (dbTopics.length === 0) {
+			console.log("⚠️  数据库中没有话题数据，使用模拟数据");
+			const mockTopics = {
+				douyin: [
+					{
+						title: "明年小目标: 学会Vue 3开发",
+						heat: 2500000,
+						category: "科技",
+						trend: "up",
+						tags: ["前端", "Vue"],
+						url: "https://www.douyin.com/",
+						platform: "douyin"
+					},
+					{
+						title: "年轻人的新烦恼：996工作制",
+						heat: 2100000,
+						category: "生活",
+						trend: "up",
+						tags: ["工作", "职场"],
+						url: "https://www.douyin.com/",
+						platform: "douyin"
+					}
+				],
+				baidu: [
+					{
+						title: "2024年度流行趋势总结",
+						heat: 3200000,
+						category: "社会",
+						trend: "up",
+						url: "https://www.baidu.com/",
+						platform: "baidu"
+					},
+					{
+						title: "人工智能发展新突破",
+						heat: 2800000,
+						category: "科技",
+						trend: "up",
+						url: "https://www.baidu.com/",
+						platform: "baidu"
+					}
+				],
+				zhihu: [
+					{
+						title: "如何有效学习编程？",
+						heat: 2600000,
+						category: "教育",
+						trend: "up",
+						url: "https://www.zhihu.com/",
+						platform: "zhihu"
+					}
+				],
+				weibo: [
+					{
+						title: "名人微博话题讨论",
+						heat: 3800000,
+						category: "娱乐",
+						trend: "up",
+						url: "https://www.weibo.com/",
+						platform: "weibo"
+					}
+				],
+				bilibili: [
+					{
+						title: "热门UP主最新视频发布",
+						heat: 2700000,
+						category: "动画",
+						trend: "up",
+						url: "https://www.bilibili.com/",
+						platform: "bilibili"
+					}
+				]
+			};
+			SUCCESS(ctx, true, "成功（使用模拟数据）", { topics: mockTopics });
+		} else {
+			SUCCESS(ctx, true, "成功", { topics: groupedTopics });
+		}
+	} catch (err) {
+		console.error("获取热门话题失败:", err);
+		ERROR(ctx, "获取热门话题失败");
+	}
+});
+
+router.post("/statistics/getHotTopicsByPlatform", async ctx => {
+	const { platform } = ctx.request.body || {};
+	try {
+		if (!platform) {
+			ERROR(ctx, "平台参数不能为空");
+			return;
+		}
+
+		// 从数据库获取指定平台的热门话题
+		const sql = `
+			SELECT 
+				id, \`rank\`, title, category, heat, trend, tags, url, description
+			FROM hot_topics
+			WHERE is_active = 1 
+			AND platform = ?
+			AND DATE(updated_at) = CURDATE()
+			ORDER BY \`rank\` ASC
+			LIMIT 20
+		`;
+
+		const topics = await db.query(sql, [platform]);
+
+		// 格式化数据
+		const formattedTopics = topics.map(topic => ({
+			title: topic.title,
+			category: topic.category,
+			heat: topic.heat,
+			trend: topic.trend,
+			tags: topic.tags ? JSON.parse(topic.tags) : [],
+			url: topic.url,
+			platform: platform,
+			description: topic.description
+		}));
+
+		if (formattedTopics.length === 0) {
+			console.log(`⚠️  数据库中没有 ${platform} 的话题数据，使用默认模拟数据`);
+			const mockTopics = {
+				douyin: [
+					{ title: "明年小目标: 学会Vue 3开发", heat: 2500000, category: "科技", trend: "up", platform: "douyin" },
+					{ title: "年轻人的新烦恼：996工作制", heat: 2100000, category: "生活", trend: "up", platform: "douyin" }
+				],
+				baidu: [
+					{ title: "2024年度流行趋势总结", heat: 3200000, category: "社会", trend: "up", platform: "baidu" },
+					{ title: "人工智能发展新突破", heat: 2800000, category: "科技", trend: "up", platform: "baidu" }
+				],
+				zhihu: [
+					{ title: "如何有效学习编程？", heat: 2600000, category: "教育", trend: "up", platform: "zhihu" }
+				],
+				weibo: [
+					{ title: "名人微博话题讨论", heat: 3800000, category: "娱乐", trend: "up", platform: "weibo" }
+				],
+				bilibili: [
+					{ title: "热门UP主最新视频发布", heat: 2700000, category: "动画", trend: "up", platform: "bilibili" }
+				]
+			};
+
+			const data = mockTopics[platform] || [];
+			SUCCESS(ctx, true, "成功（使用模拟数据）", { topics: data });
+		} else {
+			SUCCESS(ctx, true, "成功", { topics: formattedTopics });
+		}
+	} catch (err) {
+		console.error("获取平台热门话题失败:", err);
+		ERROR(ctx, "获取平台热门话题失败");
+	}
 });
 
 /*
@@ -622,23 +801,14 @@ router.post("/logs", async ctx => {
 });
 
 /*
- * 清空日志接口
+ * 清空日志接口 - 仅清空页面数据，不删除服务器日志
  * author: kris
  * date: 2025年02月15日16:29:56
  */
 router.delete("/logs", async ctx => {
 	try {
-		await new Promise((resolve, reject) => {
-			exec("pm2 flush", (error, stdout, stderr) => {
-				if (error) {
-					reject(error);
-				} else {
-					resolve(stdout);
-				}
-			});
-		});
-
-		SUCCESS(ctx, true, "日志已清空");
+		// 只返回成功，不实际清空服务器日志
+		SUCCESS(ctx, true, "日志已清空（页面数据）");
 	} catch (err) {
 		console.error("清空日志失败:", err);
 		ERROR(ctx, "清空日志失败");
@@ -665,9 +835,9 @@ router.get("/logs/export", async ctx => {
 			});
 		});
 
-		ctx.set("Content-Type", "text/plain");
-		ctx.set("Content-Disposition", "attachment; filename=logs.txt");
-		ctx.body = logs;
+		// 返回 JSON 格式，前端处理成 CSV
+		const logLines = logs.split('\n').filter(line => line.trim());
+		SUCCESS(ctx, true, "导出成功", logLines);
 	} catch (err) {
 		console.error("导出日志失败:", err);
 		ERROR(ctx, "导出日志失败");

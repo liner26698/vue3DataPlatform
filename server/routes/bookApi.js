@@ -1,8 +1,7 @@
 /**
- * 小说模块 API - 仅使用爬虫获取数据
- * 简化逻辑，移除所有本地数据生成
+ * 小说模块 API - 爬虫已启用
  * author: kris
- * date: 2025年11月24日
+ * date: 2025年11月25日
  */
 
 const Router = require("koa-router");
@@ -39,43 +38,23 @@ function getCategoryHref(category) {
 }
 
 async function getHomepageNovels() {
-	const categories = ["1", "2", "3", "5"];
-	let allNovels = [];
-
-	for (const categoryId of categories) {
-		try {
-			const novels = await kanshuhouSpider.getNovelsByCategory(categoryId, 1);
-			if (Array.isArray(novels) && novels.length > 0) {
-				allNovels = allNovels.concat(novels);
-			}
-		} catch (err) {
-			console.log(`[小说] 分类 ${categoryId} 获取失败:`, err.message);
-		}
+	try {
+		const novels = await kanshuhouSpider.getNovelsByCategory(1);
+		return novels.slice(0, 30);
+	} catch (error) {
+		console.error("获取首页小说失败:", error.message);
+		return [];
 	}
-
-	return allNovels;
 }
 
 async function searchNovels(keyword) {
-	const categories = ["1", "2", "3", "5"];
-	let allNovels = [];
-
-	for (const categoryId of categories) {
-		try {
-			const novels = await kanshuhouSpider.getNovelsByCategory(categoryId, 1);
-			const filtered = novels.filter(novel =>
-				(novel.Name && novel.Name.includes(keyword)) ||
-				(novel.Author && novel.Author.includes(keyword))
-			);
-			if (filtered.length > 0) {
-				allNovels = allNovels.concat(filtered);
-			}
-		} catch (err) {
-			console.log(`[小说] 搜索分类 ${categoryId} 失败`);
-		}
+	try {
+		const novels = await kanshuhouSpider.searchNovels(keyword);
+		return novels;
+	} catch (error) {
+		console.error("搜索小说失败:", error.message);
+		return [];
 	}
-
-	return allNovels;
 }
 
 /**
@@ -121,8 +100,8 @@ router.post("/bookMicroservices/book/getBookList", async (ctx) => {
 			const categoryId = getCategoryHref(category);
 			console.log(`[小说] 分类ID: ${categoryId}`);
 			if (categoryId) {
-				novels = await kanshuhouSpider.getNovelsByCategory(categoryId, current);
-				console.log(`[小说] 爬虫返回: ${novels ? novels.length : 0} 部小说`);
+				novels = await kanshuhouSpider.getNovelsByCategory(categoryId);
+				console.log(`[小说] 爬虫返回: ${novels.length} 部小说`);
 			}
 		} else {
 			// 首页推荐 - 聚合多个分类
@@ -170,13 +149,13 @@ router.post("/bookMicroservices/book/getChapters", async (ctx) => {
 		let chapters = [];
 
 		if (novelHref) {
-			// 使用novelHref获取真实章节
-			chapters = await kanshuhouSpider.getNovelChapters(novelHref, 1);
+			// 爬虫暂时禁用
+			chapters = []; // await kanshuhouSpider.getNovelChapters(novelHref, 1);
 		}
 
 		if (!chapters || chapters.length === 0) {
 			console.log("[小说] 章节列表为空");
-			ERROR(ctx, "无法获取章节列表");
+			ERROR(ctx, "小说模块暂时禁用");
 			return;
 		}
 
@@ -220,11 +199,11 @@ router.post("/bookMicroservices/book/getChapterContent", async (ctx) => {
 			return;
 		}
 
-		// 获取章节内容
-		const content = await kanshuhouSpider.getChapterContent(chapterHref);
+		// 获取章节内容 - 爬虫暂时禁用
+		const content = null; // await kanshuhouSpider.getChapterContent(chapterHref);
 
 		if (!content || !content.content) {
-			ERROR(ctx, "无法获取章节内容");
+			ERROR(ctx, "小说模块暂时禁用");
 			return;
 		}
 

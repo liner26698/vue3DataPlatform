@@ -166,8 +166,17 @@ onMounted(() => {
 	}
 
 	.search-form {
+		:deep(.el-row) {
+			width: 100%;
+		}
+
+		:deep(.el-col) {
+			width: 100%;
+		}
+
 		:deep(.el-form-item) {
 			margin-bottom: 0;
+			width: 100%;
 
 			.el-form-item__label {
 				font-weight: 600;
@@ -178,16 +187,33 @@ onMounted(() => {
 
 			.el-form-item__content {
 				line-height: 1;
+				width: 100% !important;
+				flex: 1;
 			}
 		}
 
 		:deep(.el-input),
 		:deep(.el-select) {
+			width: 100% !important;
+			flex: 1;
+		}
+
+		:deep(.el-input__wrapper),
+		:deep(.el-select__wrapper) {
+			width: 100% !important;
+			box-sizing: border-box;
+		}
+
+		:deep(.el-input__inner) {
+			width: 100% !important;
+		}
+
+		:deep(.el-select__tags) {
 			width: 100%;
 		}
 
-		:deep(.el-select__wrapper) {
-			width: 100%;
+		:deep(.el-select__suffix) {
+			flex-shrink: 0;
 		}
 	}
 
