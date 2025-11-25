@@ -332,11 +332,41 @@ const openTopic = (topic: Topic) => {
 // 获取数据
 const fetchData = async () => {
 	try {
-		// 这里可以调用真实的 API，现在使用模拟数据
-		const allTopics = Object.values(mockData).flat();
-		topics.value = allTopics;
+		// 导入 API 模块
+		const { getHotTopicsApi } = await import("@/api/modules/hotTopics");
+		
+		// 调用真实的 API
+		const res: any = await getHotTopicsApi();
+		
+		if (res && res.data) {
+			// 将数据库返回的分类数据转为一维数组
+			const allTopics: Topic[] = [];
+			
+			// 遍历所有平台的数据
+			for (const platform of Object.keys(res.data)) {
+				if (Array.isArray(res.data[platform])) {
+					res.data[platform].forEach((topic: any) => {
+						allTopics.push({
+							title: topic.title || "",
+							heat: topic.heat || 0,
+							category: topic.category || "",
+							trend: topic.trend || "stable",
+							tags: Array.isArray(topic.tags) ? topic.tags : typeof topic.tags === "string" ? JSON.parse(topic.tags) : [],
+							url: topic.url || "#",
+							platform: platform
+						});
+					});
+				}
+			}
+			
+			topics.value = allTopics;
+			console.log(`✅ 成功加载 ${allTopics.length} 条热门话题`);
+		} else {
+			throw new Error("API 返回数据格式错误");
+		}
 	} catch (error) {
 		console.error("获取热门话题失败:", error);
+		console.log("⚠️ 降级使用模拟数据");
 		// 失败时使用模拟数据
 		const allTopics = Object.values(mockData).flat();
 		topics.value = allTopics;
