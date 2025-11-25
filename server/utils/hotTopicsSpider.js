@@ -15,6 +15,7 @@
 const axios = require("axios");
 const cheerio = require("cheerio");
 const iconv = require("iconv-lite");
+const superagent = require("superagent");
 const db = require("../db.js");
 
 // 模拟浏览器 User-Agent
@@ -30,99 +31,131 @@ const SPIDER_CONFIG = {
 };
 
 /**
- * 1. 爬取百度热搜
+ * 1. 爬取百度热搜 - 使用 superagent + cheerio
  */
 async function crawlBaiduTrending() {
 	try {
 		console.log("🔍 正在爬取百度热搜...");
-		const url = "https://top.baidu.com/board?tab=realtime";
+		const url = "https://www.baidu.com/";
 
-		const response = await axios.get(url, {
-			...SPIDER_CONFIG,
-			headers: {
-				...SPIDER_CONFIG.headers,
-				Referer: "https://www.baidu.com/",
-				Accept: "application/json"
+		const response = await superagent
+			.get(url)
+			.set({
+				"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+				"Accept-Language": "zh-CN,zh;q=0.9",
+				"Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+				"Referer": "https://www.baidu.com/"
+			})
+			.timeout(10000);
+
+		const html = response.text;
+		const $ = cheerio.load(html);
+		const topics = [];
+
+		// 查找所有 li.hotsearch-item 元素
+		$("li.hotsearch-item").each((index, element) => {
+			if (index >= 30) return; // 只取前30条
+
+			const $item = $(element);
+			
+			// 获取排名 (从 span.title-content-index 中提取)
+			const rankText = $item.find("span.title-content-index").text().trim();
+			const rank = rankText ? parseInt(rankText) : index + 1;
+
+			// 获取标题 (从 span.title-content-title 中提取)
+			const title = $item.find("span.title-content-title").text().trim();
+
+			// 获取链接
+			const link = $item.find("a.title-content").attr("href") || `https://www.baidu.com/s?wd=${encodeURIComponent(title)}`;
+
+			// 判断是否为热 (查找是否有热标记)
+			const isHot = $item.find("span.title-content-mark").length > 0;
+
+			if (title) {
+				topics.push({
+					platform: "baidu",
+					rank: rank,
+					title: title,
+					category: isHot ? "热" : "搜索",
+					heat: (100 - rank) * 100000,
+					trend: "stable",
+					tags: ["百度", "热搜"],
+					url: link,
+					description: title,
+					is_active: 1
+				});
 			}
 		});
 
-		// 使用正则从 HTML 中提取 JSON 数据
-		const jsonMatch = response.data.match(/var initialData = ({[\s\S]*?});/);
-		if (!jsonMatch) {
-			console.warn("⚠️  百度热搜数据提取失败，尝试备用方案...");
-			
-			// 备用方案：爬取网页版本
+		if (topics.length > 0) {
+			console.log(`✅ 百度热搜爬取成功: ${topics.length} 条`);
+			return topics.slice(0, 15);
+		} else {
+			console.warn("⚠️  从首页提取热搜失败，尝试板块页面...");
+			return await crawlBaiduBoardTrending();
+		}
+	} catch (error) {
+		console.error("❌ 百度热搜爬取失败:", error.message);
+		return await crawlBaiduBoardTrending();
+	}
+}
+
+/**
+ * 百度热搜板块页面备用方案
+ */
+async function crawlBaiduBoardTrending() {
+	try {
+		console.log("🔍 尝试百度热搜板块页面...");
+		const url = "https://top.baidu.com/board?tab=realtime";
+
+		const response = await superagent
+			.get(url)
+			.set({
+				"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+				"Accept-Language": "zh-CN,zh;q=0.9",
+				"Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+				"Referer": "https://www.baidu.com/"
+			})
+			.timeout(10000);
+
+		// 尝试从响应中提取 JSON 数据
+		const jsonMatch = response.text.match(/var initialData = ({[\s\S]*?});/);
+		if (jsonMatch) {
 			try {
-				const pageResponse = await axios.get("https://www.baidu.com/", {
-					...SPIDER_CONFIG,
-					headers: {
-						...SPIDER_CONFIG.headers,
-						Referer: "https://www.baidu.com/"
-					}
-				});
-				
-				const $ = cheerio.load(pageResponse.data);
+				const data = JSON.parse(jsonMatch[1]);
 				const topics = [];
-				
-				// 查找热搜容器
-				$(".s-hotsearch-wrapper").find(".item").each((index, element) => {
-					const $item = $(element);
-					const title = $item.find(".title-content-title").text().trim() || $item.text().trim();
-					const link = $item.find("a").attr("href") || `https://www.baidu.com/s?wd=${encodeURIComponent(title)}`;
-					
-					if (title && index < 30) {
-						topics.push({
-							platform: "baidu",
-							rank: index + 1,
-							title: title,
-							category: "热搜",
-							heat: (100 - index) * 100000,
-							trend: "stable",
-							tags: ["百度", "热搜"],
-							url: link,
-							description: title,
-							is_active: 1
-						});
-					}
-				});
-				
+
+				if (data.cards && data.cards[0] && data.cards[0].content) {
+					data.cards[0].content.forEach((item, index) => {
+						if (item.word && item.word.trim() && index < 30) {
+							topics.push({
+								platform: "baidu",
+								rank: index + 1,
+								title: item.word.trim(),
+								category: item.topic_flag ? item.topic_flag[0] : "热搜",
+								heat: item.realrank ? parseInt(item.realrank) : (100 - index) * 100000,
+								trend: item.rise_rate ? (item.rise_rate > 0 ? "up" : item.rise_rate < 0 ? "down" : "stable") : "stable",
+								tags: item.topic_flag || [],
+								url: item.query ? `https://www.baidu.com/s?wd=${encodeURIComponent(item.query)}` : `https://www.baidu.com/s?wd=${encodeURIComponent(item.word)}`,
+								description: item.word,
+								is_active: 1
+							});
+						}
+					});
+				}
+
 				if (topics.length > 0) {
-					console.log(`✅ 百度热搜爬取成功 (备用方案): ${topics.length} 条`);
+					console.log(`✅ 百度热搜板块爬取成功: ${topics.length} 条`);
 					return topics.slice(0, 15);
 				}
 			} catch (e) {
-				console.warn("⚠️  备用方案也失败了");
+				console.warn("⚠️  JSON 解析失败");
 			}
-			
-			return [];
 		}
 
-		const data = JSON.parse(jsonMatch[1]);
-		const topics = [];
-
-		if (data.cards && data.cards[0] && data.cards[0].content) {
-			data.cards[0].content.forEach((item, index) => {
-				if (item.word && item.word.trim() && index < 30) {
-					topics.push({
-						platform: "baidu",
-						rank: index + 1,
-						title: item.word.trim(),
-						category: item.topic_flag ? item.topic_flag[0] : "热搜",
-						heat: item.realrank ? parseInt(item.realrank) : (100 - index) * 100000,
-						trend: item.rise_rate ? (item.rise_rate > 0 ? "up" : item.rise_rate < 0 ? "down" : "stable") : "stable",
-						tags: item.topic_flag || [],
-						url: item.query ? `https://www.baidu.com/s?wd=${encodeURIComponent(item.query)}` : `https://www.baidu.com/s?wd=${encodeURIComponent(item.word)}`,
-						description: item.word,
-						is_active: 1
-					});
-				}
-			});
-		}
-
-		console.log(`✅ 百度热搜爬取成功: ${topics.length} 条`);
-		return topics.slice(0, 15);
+		return [];
 	} catch (error) {
-		console.error("❌ 百度热搜爬取失败:", error.message);
+		console.error("❌ 百度热搜板块爬取失败:", error.message);
 		return [];
 	}
 }
