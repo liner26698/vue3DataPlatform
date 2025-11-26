@@ -52,6 +52,12 @@ export default defineConfig((mode: ConfigEnv): UserConfig => {
 					changeOrigin: true,
 					rewrite: path => path.replace(/^\/api/, "")
 				},
+				"/statistics": {
+					secure: false,
+					target: "http://127.0.0.1:3001", // 后端统计接口
+					changeOrigin: true
+					// 不需要 rewrite，直接转发完整路径 /statistics/getCrawlerStats
+				},
 				"/bookApi": {
 					secure: false,
 					target: "http://127.0.0.1:3001", // 本地开发环境
