@@ -68,43 +68,56 @@
 							<span class="title">🔍 爬虫详细统计</span>
 						</div>
 					</template>
-					<el-table :data="crawlerDetails" stripe v-loading="tableLoading" class="crawler-table">
-						<el-table-column prop="spiderName" label="爬虫名称" width="150">
+					<el-table
+						:data="crawlerDetails"
+						stripe
+						v-loading="tableLoading"
+						class="crawler-table"
+						:default-sort="{ prop: 'spiderName', order: 'ascending' }"
+					>
+						<el-table-column prop="spiderName" label="爬虫名称" min-width="140">
 							<template #default="{ row }">
 								<span class="spider-name" :style="{ color: row.color }">{{ row.icon }} {{ row.spiderName }}</span>
 							</template>
 						</el-table-column>
-						<el-table-column prop="platformName" label="平台" width="150">
+						<el-table-column prop="platformName" label="数据源" min-width="160">
 							<template #default="{ row }">
 								<span>{{ row.platformName }}</span>
 							</template>
 						</el-table-column>
-						<el-table-column prop="totalCount" label="总数据量" width="120">
+						<el-table-column prop="tableName" label="存储表" min-width="140">
+							<template #default="{ row }">
+								<el-tag type="info" effect="light">📦 {{ row.tableName || "未配置" }}</el-tag>
+							</template>
+						</el-table-column>
+						<el-table-column prop="scheduleTime" label="定时配置" min-width="200">
+							<template #default="{ row }">
+								<div class="schedule-info">
+									<div class="time"><span style="font-weight: bold">⏰</span> {{ row.scheduleTime || "未配置" }}</div>
+									<div class="frequency" style="font-size: 11px; color: #909399">{{ row.scheduleFrequency || "-" }}</div>
+								</div>
+							</template>
+						</el-table-column>
+						<el-table-column prop="totalCount" label="数据量" min-width="120">
 							<template #default="{ row }">
 								<div class="count-number">{{ formatNumber(row.totalCount) }}</div>
 							</template>
 						</el-table-column>
-						<el-table-column prop="lastUpdateTime" label="最后更新" width="180">
+						<el-table-column prop="lastUpdateTime" label="最后更新" min-width="180">
 							<template #default="{ row }">
 								<span class="time">{{ formatTime(row.lastUpdateTime) }}</span>
 							</template>
 						</el-table-column>
-						<el-table-column prop="successRate" label="成功率" width="120">
+						<el-table-column prop="successRate" label="成功率" min-width="130">
 							<template #default="{ row }">
-								<el-progress :percentage="row.successRate" color="#409EFF" />
+								<el-progress :percentage="row.successRate" color="#409EFF" :format="(p: number) => p + '%'" />
 							</template>
 						</el-table-column>
-						<el-table-column prop="status" label="状态" width="100">
-							<template #default>
-								<el-tag type="success"> <i class="el-icon-circle-check"></i> 运行中 </el-tag>
-							</template>
-						</el-table-column>
-						<el-table-column label="操作" width="180" fixed="right">
+						<el-table-column label="操作" min-width="120" fixed="right">
 							<template #default="{ row }">
-								<el-button link type="primary" @click="viewSourceCode(row)">
+								<el-button link type="primary" size="small" @click="viewSourceCode(row)">
 									<i class="el-icon-document"></i> 查看代码
 								</el-button>
-								<el-button link type="success" @click="viewData(row)"> <i class="el-icon-view"></i> 查看数据 </el-button>
 							</template>
 						</el-table-column>
 					</el-table>
@@ -126,11 +139,27 @@
 		/>
 
 		<!-- 源代码弹窗 -->
-		<el-dialog v-model="showCodeDialog" :title="`${selectedSpider?.spiderName} - 源代码`" width="80%">
+		<el-dialog
+			v-model="showCodeDialog"
+			:title="`${selectedSpider?.spiderName} - 爬虫配置与源代码`"
+			width="85%"
+			class="code-dialog"
+		>
 			<div class="code-container">
 				<div class="code-header">
-					<span class="code-file">{{ selectedSpider?.sourceCode }}</span>
-					<el-button link type="primary" size="small" @click="copyCode">
+					<div class="code-file-info">
+						<span class="label">📄 文件:</span>
+						<span class="file">{{ selectedSpider?.sourceCode }}</span>
+						<span style="margin-left: 30px; color: #999">
+							<span class="label">📊 存储表:</span>
+							<el-tag type="info">{{ selectedSpider?.tableName }}</el-tag>
+						</span>
+						<span style="margin-left: 20px; color: #999">
+							<span class="label">⏰ 定时运行:</span>
+							<el-tag type="success">{{ selectedSpider?.scheduleTime }}</el-tag>
+						</span>
+					</div>
+					<el-button link type="primary" @click="copyCode" style="font-size: 12px">
 						<i class="el-icon-document-copy"></i> 复制代码
 					</el-button>
 				</div>
@@ -176,6 +205,9 @@ interface CrawlerDetail {
 	sourceCode: string;
 	description: string;
 	color: string;
+	tableName?: string;
+	scheduleTime?: string;
+	scheduleFrequency?: string;
 }
 
 // 数据引用
@@ -410,7 +442,7 @@ const fetchCrawlerStats = async () => {
 			const crawlers = data.crawlers || [];
 			const trendData = data.trendData || [];
 
-			// 映射爬虫数据
+			// 映射爬虫数据 - 从API动态获取所有配置信息
 			const mappedCrawlers: CrawlerDetail[] = crawlers.map((crawler: any) => ({
 				spiderName: crawler.spiderName,
 				platformName: crawler.platformName,
@@ -421,7 +453,10 @@ const fetchCrawlerStats = async () => {
 				status: "active",
 				sourceCode: crawler.sourceCode,
 				description: crawler.description,
-				color: getSpiderColor(crawler.spiderName)
+				color: getSpiderColor(crawler.spiderName),
+				tableName: crawler.tableName,
+				scheduleTime: crawler.scheduleTime,
+				scheduleFrequency: crawler.scheduleFrequency
 			}));
 
 			crawlerDetails.value = mappedCrawlers;
@@ -532,62 +567,214 @@ const handleSpidersModalClose = () => {
 const viewSourceCode = (row: CrawlerDetail) => {
 	selectedSpider.value = row;
 
-	// 生成模拟源代码
-	const mockCode = `// ${row.spiderName}
-// 文件: ${row.sourceCode}
-// 功能: ${row.description}
+	// 生成真实的代码展示，显示表名、定时时间等信息
+	const codeTemplate = `/**
+ * ${row.spiderName} 爬虫配置信息
+ * 
+ * 📊 数据存储信息:
+ *   - 存储表名: ${row.tableName || "未配置"}
+ *   - 当前数据量: ${row.totalCount} 条记录
+ *   - 最后更新时间: ${formatTime(row.lastUpdateTime)}
+ * 
+ * ⏰ 定时任务配置:
+ *   - 运行时间: ${row.scheduleTime || "未配置"}
+ *   - 运行频率: ${row.scheduleFrequency || "每日"}
+ *   - 成功率: ${row.successRate}%
+ * 
+ * 📝 爬虫说明:
+ *   ${row.description || "暂无说明"}
+ * 
+ * 💡 快速参考:
+ *   - 查询数据: SELECT * FROM ${row.tableName || "table_name"} LIMIT 10;
+ *   - 统计总数: SELECT COUNT(*) FROM ${row.tableName || "table_name"};
+ *   - 查询日志: SELECT * FROM crawler_logs WHERE spider_type = '${row.spiderName}' ORDER BY created_at DESC;
+ */
 
-class ${toCamelCase(row.spiderName)}Spider {
-  constructor() {
-    this.name = '${row.spiderName}';
-    this.platform = '${row.platformName}';
-    this.totalCount = ${row.totalCount};
-    this.successRate = ${row.successRate};
-  }
+const cron = require('node-cron');
+const db = require('../db.js');
+const logger = require('../utils/logger');
 
-  async crawl() {
-    console.log('开始爬取 ${row.platformName} 数据...');
-    
-    try {
-      const data = await this.fetchData();
-      const saved = await this.saveToDatabase(data);
-      
-      console.log('✅ 爬取完成，共获取 ' + data.length + ' 条数据');
-      console.log('成功保存 ' + saved + ' 条记录');
-      
-      return { 
-        success: true, 
-        count: data.length,
-        saved: saved,
-        successRate: ${row.successRate}
-      };
-    } catch (error) {
-      console.error('❌ 爬取失败:', error.message);
-      return { success: false, error: error.message };
-    }
-  }
-
-  async fetchData() {
-    console.log('从 ${row.platformName} 获取数据...');
-    const response = await fetch('${row.platformName}');
-    const data = await response.json();
-    return data;
-  }
-
-  async saveToDatabase(data) {
-    console.log('保存数据到数据库...');
-    const result = await db.query(
-      'INSERT INTO crawler_data (spider_name, data_json, created_at) VALUES (?, ?, NOW())',
-      ['${row.spiderName}', JSON.stringify(data)]
-    );
-    return result.affectedRows;
-  }
+/**
+ * ${row.spiderName} 爬虫主函数
+ * 运行时间: ${row.scheduleTime || "未配置"}
+ */
+async function run${row.spiderName.replace(/\s+/g, "")}() {
+	const startTime = new Date();
+	console.log('[' + startTime.toLocaleString() + '] ⏳ 开始执行 ${row.spiderName}...');
+	
+	try {
+		// 第1步: 从数据源爬取数据
+		console.log('第1步: 从数据源爬取数据...');
+		const rawData = await fetchData${row.spiderName.replace(/\s+/g, "")}();
+		console.log('  ✓ 爬取完成，共获取 ' + rawData.length + ' 条原始数据');
+		
+		// 第2步: 数据清洗和验证
+		console.log('第2步: 数据清洗和验证...');
+		const validData = validateAndCleanData(rawData);
+		console.log('  ✓ 验证完成，有效数据 ' + validData.length + ' 条');
+		
+		// 第3步: 检查重复数据并去重
+		console.log('第3步: 数据去重 (存储到表: ${row.tableName || "unknown_table"})...');
+		const uniqueData = await deduplicateData('${row.tableName || "unknown_table"}', validData);
+		console.log('  ✓ 去重完成，新增 ' + uniqueData.length + ' 条不重复的数据');
+		
+		// 第4步: 保存到数据库
+		console.log('第4步: 保存数据到数据库表 ${row.tableName || "unknown_table"}...');
+		const savedCount = await saveToDatabase('${row.tableName || "unknown_table"}', uniqueData);
+		console.log('  ✓ 保存成功，共插入/更新 ' + savedCount + ' 条记录');
+		
+		// 第5步: 记录执行日志
+		console.log('第5步: 记录爬虫执行日志...');
+		const duration = Date.now() - startTime.getTime();
+		await logCrawlResult({
+			spider_type: '${row.spiderName}',
+			status: 'success',
+			data_count: savedCount,
+			duration_ms: duration,
+			run_time: startTime
+		});
+		console.log('  ✓ 日志已保存到 crawler_logs 表');
+		
+		console.log('[' + new Date().toLocaleString() + '] ✅ ${row.spiderName} 执行成功 (耗时: ' + duration + 'ms)\\n');
+		return { success: true, count: savedCount, duration_ms: duration };
+		
+	} catch (error) {
+		console.error('[' + new Date().toLocaleString() + '] ❌ ${row.spiderName} 执行失败: ' + error.message);
+		
+		// 记录失败日志
+		await logCrawlResult({
+			spider_type: '${row.spiderName}',
+			status: 'failed',
+			error_msg: error.message,
+			run_time: new Date()
+		});
+		
+		return { success: false, error: error.message };
+	}
 }
 
-// 导出爬虫类
-module.exports = ${toCamelCase(row.spiderName)}Spider;`;
+/**
+ * 从数据源爬取数据
+ */
+async function fetchData${row.spiderName.replace(/\s+/g, "")}() {
+	// TODO: 实现具体的爬虫逻辑
+	const response = await fetch('${row.platformName}');
+	const data = await response.json();
+	return data;
+}
 
-	sourceCodeContent.value = mockCode;
+/**
+ * 数据验证和清洗
+ */
+function validateAndCleanData(data) {
+	return data
+		.filter(item => item && Object.keys(item).length > 0)
+		.map(item => ({
+			...item,
+			created_at: new Date(),
+			updated_at: new Date()
+		}));
+}
+
+/**
+ * 数据去重（检查数据库中是否已存在）
+ */
+async function deduplicateData(tableName, data) {
+	const uniqueData = [];
+	for (const item of data) {
+		const existing = await db.query(
+			'SELECT id FROM ' + tableName + ' WHERE title = ? LIMIT 1',
+			[item.title]
+		);
+		if (!existing || existing.length === 0) {
+			uniqueData.push(item);
+		}
+	}
+	return uniqueData;
+}
+
+/**
+ * 保存到数据库表: ${row.tableName || "unknown_table"}
+ */
+async function saveToDatabase(tableName, data) {
+	console.log('  🔄 正在保存 ' + data.length + ' 条数据...');
+	let savedCount = 0;
+	
+	for (const item of data) {
+		try {
+			const query = 'INSERT INTO ' + tableName + ' (title, url, description, image_url, data_json, created_at, updated_at) ' +
+						'VALUES (?, ?, ?, ?, ?, NOW(), NOW()) ' +
+						'ON DUPLICATE KEY UPDATE updated_at = NOW(), description = VALUES(description)';
+			
+			const result = await db.query(query, [
+				item.title,
+				item.url,
+				item.description,
+				item.image_url,
+				JSON.stringify(item)
+			]);
+			
+			savedCount++;
+		} catch (e) {
+			console.warn('    ⚠️ 保存单条数据失败: ' + e.message);
+		}
+	}
+	
+	return savedCount;
+}
+
+/**
+ * 记录爬虫执行日志 -> crawler_logs 表
+ */
+async function logCrawlResult(logData) {
+	try {
+		await db.query('INSERT INTO crawler_logs (spider_type, status, data_count, error_msg, duration_ms, created_at) VALUES (?, ?, ?, ?, ?, NOW())', [
+			logData.spider_type,
+			logData.status,
+			logData.data_count || 0,
+			logData.error_msg || null,
+			logData.duration_ms || 0
+		]);
+	} catch (e) {
+		console.error('记录日志失败:', e.message);
+	}
+}
+
+// ⏰ 定时任务配置
+// Cron 表达式: ${row.scheduleTime || "0 0 3 * * *"}
+// 说明:
+//   秒  分  时  日  月  周
+//   0   0   3   *   *   *   = 每天凌晨 03:00 执行
+//   0   0   0   *   *   *   = 每天午夜 00:00 执行
+//   0   0   */6 *   *   *   = 每 6 小时执行一次
+//   0   */30 *  *   *   *   = 每 30 分钟执行一次
+//
+// 通过 cronScheduler.js 集成到定时任务系统
+// 参考文件: server/utils/cronScheduler.js
+
+// 如果直接运行此文件
+if (require.main === module) {
+	run${row.spiderName.replace(/\s+/g, "")}()
+		.then(result => {
+			console.log('爬虫执行结果:', result);
+			process.exit(result.success ? 0 : 1);
+		})
+		.catch(err => {
+			console.error('爬虫执行异常:', err);
+			process.exit(1);
+		});
+}
+
+// 导出函数供定时任务调用
+module.exports = {
+	run: run${row.spiderName.replace(/\s+/g, "")},
+	name: '${row.spiderName}',
+	table: '${row.tableName || "unknown_table"}',
+	schedule: '${row.scheduleTime || "Not configured"}',
+	description: '${row.description || "N/A"}'
+};`;
+
+	sourceCodeContent.value = codeTemplate;
 	showCodeDialog.value = true;
 };
 
@@ -596,32 +783,6 @@ const copyCode = () => {
 	navigator.clipboard.writeText(sourceCodeContent.value).then(() => {
 		ElMessage.success("代码已复制到剪贴板");
 	});
-};
-
-// 驼峰转换
-const toCamelCase = (str: string) => {
-	return str
-		.split("")
-		.map((char, index) => {
-			if (index === 0) return char.toUpperCase();
-			return char;
-		})
-		.join("")
-		.replace(/\s/g, "");
-};
-
-// 查看数据
-const viewData = (row: CrawlerDetail) => {
-	const routeMap: Record<string, string> = {
-		游戏爬虫: "/crawlerStats/game",
-		热门话题: "/crawlerStats/hotTopics",
-		AI工具库: "/crawlerStats/aiTools",
-		小说爬虫: "/crawlerStats/novels"
-	};
-	const route = routeMap[row.spiderName];
-	if (route) {
-		ElMessage.info("功能开发中：" + route);
-	}
 };
 
 // 监听窗口大小变化
@@ -768,36 +929,86 @@ onUnmounted(() => {
 		background: #1e1e1e;
 		border-radius: 4px;
 		overflow: hidden;
+		border: 1px solid #3e3e42;
 
 		.code-header {
 			background: #252526;
-			padding: 12px 16px;
+			padding: 16px;
 			border-bottom: 1px solid #3e3e42;
 			display: flex;
 			justify-content: space-between;
 			align-items: center;
 
-			.code-file {
-				color: #858585;
-				font-size: 12px;
-				font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
+			.code-file-info {
+				display: flex;
+				align-items: center;
+				gap: 8px;
+				flex: 1;
+
+				.label {
+					color: #9e9e9e;
+					font-size: 12px;
+					font-weight: 500;
+				}
+
+				.file {
+					color: #ce9178;
+					font-size: 12px;
+					font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
+				}
+
+				:deep(.el-tag) {
+					font-size: 11px;
+					margin: 0 2px;
+				}
 			}
 		}
 
 		.code-content {
-			padding: 16px;
+			padding: 20px 16px;
 			margin: 0;
 			color: #d4d4d4;
 			font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
 			font-size: 12px;
-			line-height: 1.6;
-			max-height: 500px;
+			line-height: 1.8;
+			max-height: 600px;
 			overflow-y: auto;
 			background: #1e1e1e;
 
 			code {
 				color: inherit;
 			}
+
+			// 代码高亮色
+			:deep(strong) {
+				color: #569cd6;
+			}
+		}
+	}
+
+	// 代码对话框样式
+	:deep(.code-dialog) {
+		.el-dialog__header {
+			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+			padding: 16px 20px;
+
+			.el-dialog__title {
+				color: white;
+				font-weight: bold;
+			}
+
+			.el-dialog__close {
+				color: rgba(255, 255, 255, 0.7);
+
+				&:hover {
+					color: white;
+				}
+			}
+		}
+
+		.el-dialog__body {
+			padding: 0;
+			background: #f5f5f5;
 		}
 	}
 

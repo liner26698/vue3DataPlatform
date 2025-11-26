@@ -1,11 +1,5 @@
 <template>
-	<el-dialog
-		v-model="visible"
-		:title="`活跃爬虫 (${spidersData.length})`"
-		width="70%"
-		class="spider-modal"
-		@close="handleClose"
-	>
+	<el-dialog v-model="visible" :title="`活跃爬虫 (${spidersData.length})`" width="70%" class="spider-modal" @close="handleClose">
 		<!-- 爬虫列表 -->
 		<el-row :gutter="20" class="spiders-grid">
 			<el-col v-for="spider in spidersData" :key="spider.spiderName" :xs="24" :sm="12" :md="8">
@@ -26,17 +20,11 @@
 						</div>
 						<div class="spider-info-row">
 							<span class="label">成功率：</span>
-							<el-progress
-								:percentage="spider.successRate"
-								color="#409EFF"
-								class="progress-inline"
-							/>
+							<el-progress :percentage="spider.successRate" color="#409EFF" class="progress-inline" />
 						</div>
 						<div class="spider-info-row">
 							<span class="label">状态：</span>
-							<el-tag type="success" size="small">
-								<i class="el-icon-circle-check"></i> 运行中
-							</el-tag>
+							<el-tag type="success" size="small"> <i class="el-icon-circle-check"></i> 运行中 </el-tag>
 						</div>
 						<div class="spider-info-row">
 							<span class="label">最后更新：</span>
@@ -54,12 +42,7 @@
 		</el-row>
 
 		<!-- 代码预览 -->
-		<el-dialog
-			v-model="codeDialogVisible"
-			:title="`${selectedSpider?.spiderName} - 源代码`"
-			width="80%"
-			class="code-dialog"
-		>
+		<el-dialog v-model="codeDialogVisible" :title="`${selectedSpider?.spiderName} - 源代码`" width="80%" class="code-dialog">
 			<div class="code-container">
 				<div class="code-header">
 					<span class="code-file">{{ selectedSpider?.sourceCode }}</span>

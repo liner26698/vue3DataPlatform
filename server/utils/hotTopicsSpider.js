@@ -1,19 +1,19 @@
 /**
  * 热门话题爬虫 - 使用 Cheerio 爬取各平台热门话题
  * 支持平台: 抖音、百度、知乎、微博、B站
- * 
+ *
  * 安装依赖: npm install axios cheerio iconv-lite
- * 
+ *
  * 使用方式:
  * 1. 直接运行: node hotTopicsSpider.js
  * 2. 定时任务: 使用 node-cron 或 systemd 定时执行
- * 
+ *
  * author: kris
  * date: 2025年11月25日
  */
 
 // Node 18 polyfill for undici compatibility
-if (typeof global.File === 'undefined') {
+if (typeof global.File === "undefined") {
 	global.File = class File {
 		constructor(bits, filename, options) {
 			this.bits = bits;
@@ -51,10 +51,11 @@ async function crawlBaiduTrending() {
 		const response = await axios.get(url, {
 			timeout: 12000,
 			headers: {
-				"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
+				"User-Agent":
+					"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
 				"Accept-Language": "zh-CN,zh;q=0.9",
-				"Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-				"Referer": "https://www.baidu.com/"
+				Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+				Referer: "https://www.baidu.com/"
 			}
 		});
 
@@ -67,10 +68,10 @@ async function crawlBaiduTrending() {
 		const topics = [];
 
 		// 从表格中提取热搜数据
-		$('tbody tr').each((index, element) => {
+		$("tbody tr").each((index, element) => {
 			if (topics.length >= 15) return;
 
-			const cells = $(element).find('td');
+			const cells = $(element).find("td");
 			if (cells.length >= 2) {
 				const rankText = $(cells[0]).text().trim();
 				const titleText = $(cells[1]).text().trim();
@@ -100,7 +101,6 @@ async function crawlBaiduTrending() {
 
 		console.warn("⚠️  百度暂无数据");
 		return [];
-
 	} catch (error) {
 		console.error("❌ 百度热搜爬取失败:", error.message);
 		return [];
@@ -113,14 +113,15 @@ async function crawlBaiduTrending() {
 async function crawlToutiaoTrending() {
 	try {
 		console.log("📰 正在爬取今日头条热榜...");
-		
-		const response = await axios.get('https://www.toutiao.com/', {
+
+		const response = await axios.get("https://www.toutiao.com/", {
 			timeout: 10000,
 			headers: {
-				'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
-				'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-				'Accept-Language': 'zh-CN,zh;q=0.9',
-				'Referer': 'https://www.toutiao.com/'
+				"User-Agent":
+					"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
+				Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+				"Accept-Language": "zh-CN,zh;q=0.9",
+				Referer: "https://www.toutiao.com/"
 			}
 		});
 
@@ -128,16 +129,16 @@ async function crawlToutiaoTrending() {
 		const topics = [];
 		const seenTitles = new Set();
 
-		const selectors = ['a', 'h3', 'span', 'div'];
+		const selectors = ["a", "h3", "span", "div"];
 
 		for (const selector of selectors) {
 			$(selector).each((index, element) => {
 				if (topics.length >= 15) return;
-				
+
 				const $el = $(element);
-				let title = ($el.text() || $el.attr('title') || '').trim();
-				title = title.replace(/\s+/g, ' ').trim();
-				
+				let title = ($el.text() || $el.attr("title") || "").trim();
+				title = title.replace(/\s+/g, " ").trim();
+
 				if (title && title.length > 4 && title.length < 100 && !seenTitles.has(title)) {
 					seenTitles.add(title);
 					topics.push({
@@ -164,7 +165,6 @@ async function crawlToutiaoTrending() {
 
 		console.warn("⚠️  头条暂无数据");
 		return [];
-
 	} catch (error) {
 		console.error("❌ 头条热榜爬取失败:", error.message);
 		return [];
@@ -178,67 +178,69 @@ async function crawlWeiboTrending() {
 	let browser;
 	try {
 		console.log("✨ 正在爬取微博热搜（Puppeteer 模式）...");
-		const puppeteer = require('puppeteer');
-		
+		const puppeteer = require("puppeteer");
+
 		browser = await puppeteer.launch({
-			headless: 'new',
+			headless: "new",
 			args: [
-				'--no-sandbox',
-				'--disable-setuid-sandbox',
-				'--disable-blink-features=AutomationControlled',
-				'--disable-dev-shm-usage'
+				"--no-sandbox",
+				"--disable-setuid-sandbox",
+				"--disable-blink-features=AutomationControlled",
+				"--disable-dev-shm-usage"
 			]
 		});
-		
+
 		const page = await browser.newPage();
-		
+
 		await page.evaluateOnNewDocument(() => {
-			Object.defineProperty(navigator, 'webdriver', {
-				get: () => false,
+			Object.defineProperty(navigator, "webdriver", {
+				get: () => false
 			});
 		});
-		
+
 		await page.setViewport({ width: 1920, height: 1080 });
-		await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36');
-		
+		await page.setUserAgent(
+			"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36"
+		);
+
 		await page.setExtraHTTPHeaders({
-			'Accept-Language': 'zh-CN,zh;q=0.9',
-			'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-			'Referer': 'https://s.weibo.com/'
+			"Accept-Language": "zh-CN,zh;q=0.9",
+			Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+			Referer: "https://s.weibo.com/"
 		});
-		
+
 		console.log("   📄 访问微博热搜榜...");
 		try {
-			await page.goto('https://s.weibo.com/top/summary', {
-				waitUntil: 'domcontentloaded',
+			await page.goto("https://s.weibo.com/top/summary", {
+				waitUntil: "domcontentloaded",
 				timeout: 45000
 			});
 		} catch (navErr) {
 			console.log("   ⏱️  页面加载超时，继续尝试...");
 		}
-		
+
 		console.log("   ⏳ 等待页面稳定...");
 		await new Promise(resolve => setTimeout(resolve, 2000));
-		
+
 		const html = await page.content();
 		console.log(`   ✅ 获取 HTML: ${(html.length / 1024).toFixed(2)} KB`);
-		
+
 		const $ = cheerio.load(html);
 		const topics = [];
-		
+
 		// 从表格中提取热搜
-		$('tr:not(:first-child)').each((index, element) => {
+		$("tr:not(:first-child)").each((index, element) => {
 			if (topics.length >= 15) return;
-			
+
 			const $row = $(element);
-			const cells = $row.find('td');
-			
+			const cells = $row.find("td");
+
 			if (cells.length >= 2) {
-				const $link = $row.find('a').first();
+				const $link = $row.find("a").first();
 				const title = $link.text().trim();
 				const rankText = cells.first().text().trim();
-				
-				if (title && title.length > 2 && title.length < 100 && !title.includes('javascript')) {
+
+				if (title && title.length > 2 && title.length < 100 && !title.includes("javascript")) {
 					topics.push({
 						platform: "weibo",
 						rank: topics.length + 1,
@@ -254,17 +256,16 @@ async function crawlWeiboTrending() {
 				}
 			}
 		});
-		
+
 		await browser.close();
-		
+
 		if (topics.length > 0) {
 			console.log(`✅ 微博热搜爬取成功: ${topics.length} 条`);
 			return topics;
 		}
-		
+
 		console.warn("⚠️  微博暂无数据");
 		return [];
-
 	} catch (error) {
 		if (browser) {
 			try {
@@ -287,10 +288,11 @@ async function crawlBilibiliTrending() {
 		const response = await axios.get(url, {
 			timeout: 10000,
 			headers: {
-				"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
+				"User-Agent":
+					"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
 				"Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
-				"Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-				"Referer": "https://www.bilibili.com/"
+				Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+				Referer: "https://www.bilibili.com/"
 			}
 		});
 
@@ -298,12 +300,7 @@ async function crawlBilibiliTrending() {
 		const topics = [];
 
 		// B站热门视频 - 尝试多个选择器
-		const selectors = [
-			"h3 a, .title, [class*='title'] a, [title]",
-			".feed-item a",
-			".video-card a",
-			"a[title]"
-		];
+		const selectors = ["h3 a, .title, [class*='title'] a, [title]", ".feed-item a", ".video-card a", "a[title]"];
 
 		for (const selector of selectors) {
 			$(selector).each((index, element) => {
@@ -321,7 +318,9 @@ async function crawlBilibiliTrending() {
 						heat: (100 - topics.length) * 60000,
 						trend: "stable",
 						tags: ["B站", "视频"],
-						url: $item.attr("href") ? (($item.attr("href").startsWith("http") ? "" : "https://www.bilibili.com") + $item.attr("href")) : "https://www.bilibili.com",
+						url: $item.attr("href")
+							? ($item.attr("href").startsWith("http") ? "" : "https://www.bilibili.com") + $item.attr("href")
+							: "https://www.bilibili.com",
 						description: title.substring(0, 100),
 						is_active: 1
 					});
@@ -353,14 +352,15 @@ async function crawlBilibiliTrending() {
 async function crawlXiaohongshuTrending() {
 	try {
 		console.log("❤️  正在爬取小红书热榜...");
-		
-		const response = await axios.get('https://www.xiaohongshu.com/homefeed_recommend', {
+
+		const response = await axios.get("https://www.xiaohongshu.com/homefeed_recommend", {
 			timeout: 10000,
 			headers: {
-				'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
-				'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-				'Accept-Language': 'zh-CN,zh;q=0.9',
-				'Referer': 'https://www.xiaohongshu.com/'
+				"User-Agent":
+					"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
+				Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+				"Accept-Language": "zh-CN,zh;q=0.9",
+				Referer: "https://www.xiaohongshu.com/"
 			}
 		});
 
@@ -368,16 +368,16 @@ async function crawlXiaohongshuTrending() {
 		const topics = [];
 		const seenTitles = new Set();
 
-		const selectors = ['a', 'h3', 'span', 'div'];
+		const selectors = ["a", "h3", "span", "div"];
 
 		for (const selector of selectors) {
 			$(selector).each((index, element) => {
 				if (topics.length >= 15) return;
-				
+
 				const $el = $(element);
-				let title = ($el.text() || $el.attr('title') || '').trim();
-				title = title.replace(/\s+/g, ' ').trim();
-				
+				let title = ($el.text() || $el.attr("title") || "").trim();
+				title = title.replace(/\s+/g, " ").trim();
+
 				if (title && title.length > 4 && title.length < 100 && !seenTitles.has(title)) {
 					seenTitles.add(title);
 					topics.push({
@@ -404,7 +404,6 @@ async function crawlXiaohongshuTrending() {
 
 		console.warn("⚠️  小红书暂无数据");
 		return [];
-
 	} catch (error) {
 		console.error("❌ 小红书热榜爬取失败:", error.message);
 		return [];
@@ -565,7 +564,7 @@ if (require.main === module) {
 
 module.exports = {
 	runAllSpiders,
-	fetchAllTrending: runAllSpiders,  // 别名，用于 API 调用
+	fetchAllTrending: runAllSpiders, // 别名，用于 API 调用
 	crawlBaiduTrending,
 	crawlToutiaoTrending,
 	crawlWeiboTrending,

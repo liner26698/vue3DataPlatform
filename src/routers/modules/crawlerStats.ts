@@ -55,17 +55,6 @@ const crawlerStatsRouter: Array<RouteRecordRaw> = [
 					title: "AI工具统计",
 					key: "aiToolsStats"
 				}
-			},
-			{
-				path: "/crawler-stats/novels",
-				name: "crawlerStatsNovels",
-				component: () => import("@/views/crawlerStats/novels/index.vue"),
-				meta: {
-					keepAlive: true,
-					requiresAuth: true,
-					title: "小说数据统计",
-					key: "novelsStats"
-				}
 			}
 		]
 	}

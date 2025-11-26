@@ -218,48 +218,80 @@ const openTopic = (topic: Topic) => {
 	}
 };
 
-// 模拟数据加载
+// 加载真实数据
 const loadTopicsData = async () => {
-	// 这里应该调用真实的 API
-	// const res = await getHotTopicsApi();
+	try {
+		const res = await fetch("/statistics/getHotTopics", {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json"
+			}
+		});
 
-	const mockData: Topic[] = [
-		// 百度
-		...Array.from({ length: 20 }, (_, i) => ({
-			id: `baidu-${i}`,
-			platform: "baidu",
-			title: `百度热搜话题 ${i + 1}`,
-			description: "这是一条来自百度热搜的热门话题",
-			heat: 1000000 - i * 50000,
-			category: "热搜",
-			tags: ["百度", "热搜"],
-			url: "#"
-		})),
-		// 微博
-		...Array.from({ length: 20 }, (_, i) => ({
-			id: `weibo-${i}`,
-			platform: "weibo",
-			title: `微博热搜话题 ${i + 1}`,
-			description: "这是一条来自微博热搜的热门话题",
-			heat: 900000 - i * 45000,
-			category: "热搜",
-			tags: ["微博", "热搜"],
-			url: "#"
-		})),
-		// B站
-		...Array.from({ length: 20 }, (_, i) => ({
-			id: `bilibili-${i}`,
-			platform: "bilibili",
-			title: `B站热门话题 ${i + 1}`,
-			description: "这是一条来自B站的热门话题",
-			heat: 800000 - i * 40000,
-			category: "热门",
-			tags: ["B站", "视频"],
-			url: "#"
-		}))
-	];
+		if (!res.ok) {
+			throw new Error("获取热门话题数据失败");
+		}
 
-	allTopics.value = mockData;
+		const data = await res.json();
+
+		// 如果成功获取数据，转换格式
+		if (data && data.data && data.data.topics) {
+			const topics: Topic[] = [];
+			const topicsData = data.data.topics;
+
+			// 将分组的数据展平为一维数组
+			if (topicsData.baidu) {
+				topics.push(
+					...topicsData.baidu.map((item: any) => ({
+						id: item.id || `baidu-${item.title}`,
+						platform: "baidu",
+						title: item.title,
+						description: item.content || item.description || "",
+						heat: item.heat || 0,
+						category: item.category || "热搜",
+						tags: [item.source || "百度", item.category || "热搜"],
+						url: item.url || "#"
+					}))
+				);
+			}
+
+			if (topicsData.weibo) {
+				topics.push(
+					...topicsData.weibo.map((item: any) => ({
+						id: item.id || `weibo-${item.title}`,
+						platform: "weibo",
+						title: item.title,
+						description: item.content || item.description || "",
+						heat: item.heat || 0,
+						category: item.category || "热搜",
+						tags: [item.source || "微博", item.category || "热搜"],
+						url: item.url || "#"
+					}))
+				);
+			}
+
+			if (topicsData.bilibili) {
+				topics.push(
+					...topicsData.bilibili.map((item: any) => ({
+						id: item.id || `bilibili-${item.title}`,
+						platform: "bilibili",
+						title: item.title,
+						description: item.content || item.description || "",
+						heat: item.heat || 0,
+						category: item.category || "热门",
+						tags: [item.source || "B站", item.category || "视频"],
+						url: item.url || "#"
+					}))
+				);
+			}
+
+			allTopics.value = topics;
+		}
+	} catch (error) {
+		console.error("加载热门话题数据出错:", error);
+		// 出错时使用空数组
+		allTopics.value = [];
+	}
 };
 
 onMounted(() => {

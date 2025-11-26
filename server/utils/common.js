@@ -88,15 +88,9 @@ const menuList = [
 				path: "/crawler-stats/ai-tools",
 				title: "AI工具统计",
 				icon: "menu"
-			},
-			{
-				path: "/crawler-stats/novels",
-				title: "小说数据统计",
-				icon: "menu"
 			}
 		]
-	},
-
+	}
 ];
 
 // 按钮权限配置

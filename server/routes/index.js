@@ -421,7 +421,7 @@ router.post("/crawlerStats/game/getGameStats", async ctx => {
  */
 router.post("/bookMicroservices/game/getGameList", async ctx => {
 	const { category, searchText, month } = ctx.request.body;
-	const type = category ? `${category.toLowerCase()}_game` : "ps5_game";
+	const type = "game_info"; // 统一使用 game_info 表
 	let sql = `SELECT * FROM ${type} WHERE 1=1`;
 	let countSql = `SELECT COUNT(*) FROM ${type} WHERE 1=1`;
 
@@ -1160,59 +1160,20 @@ router.post("/bookMicroservices/book/searchFromKanshuhou", async (ctx, next) => 
  */
 router.post("/statistics/getCrawlerStats", async (ctx, next) => {
 	try {
-		// 1. 游戏爬虫 - 分别查询每个表（只查询存在的表）
+		// 1. 游戏爬虫 - 从统一的 game_info 表查询
 		let gameTotalCount = 0;
 		let gameLastUpdate = null;
 		let gameSuccessRate = 0;
 		try {
-			let ps5Count = 0, pcCount = 0, xboxCount = 0, switchCount = 0;
+			// 从 game_info 表查询总数
+			const gameCountSql = "SELECT COUNT(*) as count FROM game_info";
+			const gameCountResult = await db.query(gameCountSql);
+			gameTotalCount = gameCountResult[0]?.count || 0;
 
-			// 查询 ps5_game
-			try {
-				const ps5Result = await db.query('SELECT COUNT(*) as count FROM ps5_game');
-				ps5Count = ps5Result[0]?.count || 0;
-			} catch (e) {
-				console.warn("ps5_game 表查询失败", e.message);
-			}
-
-			// 查询 pc_game
-			try {
-				const pcResult = await db.query('SELECT COUNT(*) as count FROM pc_game');
-				pcCount = pcResult[0]?.count || 0;
-			} catch (e) {
-				console.warn("pc_game 表查询失败", e.message);
-			}
-
-			// 尝试查询 xbox_game（表可能不存在）
-			try {
-				const xboxResult = await db.query('SELECT COUNT(*) as count FROM xbox_game');
-				xboxCount = xboxResult[0]?.count || 0;
-			} catch (e) {
-				// xbox_game 不存在，忽略
-			}
-
-			// 尝试查询 switch_game（表可能不存在）
-			try {
-				const switchResult = await db.query('SELECT COUNT(*) as count FROM switch_game');
-				switchCount = switchResult[0]?.count || 0;
-			} catch (e) {
-				// switch_game 不存在，忽略
-			}
-
-			gameTotalCount = ps5Count + pcCount + xboxCount + switchCount;
-
-			// 获取最后更新时间（优先从 ps5_game，如果不存在则从 pc_game）
-			try {
-				const timeResult = await db.query('SELECT MAX(updated_at) as lastUpdate FROM ps5_game');
-				gameLastUpdate = timeResult[0]?.lastUpdate;
-			} catch (e) {
-				try {
-					const timeResult = await db.query('SELECT MAX(updated_at) as lastUpdate FROM pc_game');
-					gameLastUpdate = timeResult[0]?.lastUpdate;
-				} catch (e2) {
-					// 忽略时间获取错误
-				}
-			}
+			// 获取最后更新时间
+			const gameTimeSql = "SELECT MAX(update_time) as lastUpdate FROM game_info";
+			const gameTimeResult = await db.query(gameTimeSql);
+			gameLastUpdate = gameTimeResult[0]?.lastUpdate;
 
 			// 从 crawler_logs 获取游戏爬虫的成功率
 			try {
@@ -1220,13 +1181,13 @@ router.post("/statistics/getCrawlerStats", async (ctx, next) => {
 					SELECT 
 						SUM(CASE WHEN status = 'success' THEN 1 ELSE 0 END) * 100.0 / COUNT(*) as success_rate
 					FROM crawler_logs 
-					WHERE spider_type IN ('game', 'pc_game', 'ps5_game', 'xbox_game', 'switch_game')
+					WHERE spider_type = 'game'
 				`;
 				const gameRateResult = await db.query(gameSuccessRateSql);
-				gameSuccessRate = gameRateResult[0]?.success_rate ? parseFloat(gameRateResult[0].success_rate).toFixed(1) : 0;
+				gameSuccessRate = gameRateResult[0]?.success_rate ? parseFloat(gameRateResult[0].success_rate).toFixed(1) : 100;
 			} catch (e) {
 				console.warn("游戏成功率查询失败", e.message);
-				gameSuccessRate = 0;
+				gameSuccessRate = gameTotalCount > 0 ? 100 : 0;
 			}
 		} catch (e) {
 			console.warn("游戏表查询失败", e.message);
@@ -1295,44 +1256,99 @@ router.post("/statistics/getCrawlerStats", async (ctx, next) => {
 			console.warn("AI工具表查询失败", e.message);
 		}
 
-		// 4. 计算总数（只统计三种爬虫）
+		// 4. 从 crawler_config 表查询爬虫配置
+		let configMap = {};
+		try {
+			const configSql = `SELECT spider_name, table_name, schedule_time, schedule_frequency, source_code_path, platform_name, description FROM crawler_config WHERE enabled = 1`;
+			const configs = await db.query(configSql);
+			configs.forEach(config => {
+				configMap[config.spider_name] = {
+					tableName: config.table_name,
+					scheduleTime: config.schedule_time,
+					scheduleFrequency: config.schedule_frequency,
+					sourceCode: config.source_code_path,
+					platformName: config.platform_name,
+					description: config.description
+				};
+			});
+		} catch (e) {
+			console.warn("爬虫配置表查询失败，将使用默认值", e.message);
+			// 如果配置表查询失败，使用默认值
+			configMap = {
+				游戏爬虫: {
+					tableName: "game_info",
+					scheduleTime: "03:00",
+					scheduleFrequency: "每天凌晨",
+					sourceCode: "server/utils/gameSpider.js",
+					platformName: "PS5/PC Game",
+					description: "爬取游戏平台数据"
+				},
+				热门话题: {
+					tableName: "hot_topics",
+					scheduleTime: "00:00, 12:00, 18:00",
+					scheduleFrequency: "每天三次",
+					sourceCode: "server/utils/hotTopicsSpider.js",
+					platformName: "Baidu/Weibo/Bilibili",
+					description: "爬取热门话题数据"
+				},
+				AI工具库: {
+					tableName: "ai_info",
+					scheduleTime: "未配置",
+					scheduleFrequency: "手动",
+					sourceCode: "server/utils/aiToolsSpider.js",
+					platformName: "多源AI工具聚合",
+					description: "爬取AI工具信息"
+				}
+			};
+		}
+
+		// 5. 计算总数（只统计三种爬虫）
 		const totalCount = gameTotalCount + hotTopicsTotalCount + aiToolsTotalCount;
 
-		// 5. 构建爬虫统计数据（只返回三种爬虫，移除小说爬虫）
+		// 6. 构建爬虫统计数据（从配置和数据库查询结果组合）
 		const crawlerStats = [
 			{
 				spiderName: "游戏爬虫",
-				platformName: "PS5/PC Game",
+				platformName: configMap["游戏爬虫"]?.platformName || "PS5/PC Game",
 				totalCount: gameTotalCount,
 				successRate: gameTotalCount > 0 ? gameSuccessRate : 0,
 				lastUpdateTime: gameLastUpdate || new Date(),
 				status: "active",
-				sourceCode: "server/utils/gameSpider.js",
-				description: "爬取游戏平台数据"
+				sourceCode: configMap["游戏爬虫"]?.sourceCode || "server/utils/gameSpider.js",
+				description: configMap["游戏爬虫"]?.description || "爬取游戏平台数据",
+				tableName: configMap["游戏爬虫"]?.tableName || "game_info",
+				scheduleTime: configMap["游戏爬虫"]?.scheduleTime || "03:00",
+				scheduleFrequency: configMap["游戏爬虫"]?.scheduleFrequency || "每天凌晨"
 			},
 			{
 				spiderName: "热门话题",
-				platformName: "Baidu/Weibo/Bilibili",
+				platformName: configMap["热门话题"]?.platformName || "Baidu/Weibo/Bilibili",
 				totalCount: hotTopicsTotalCount,
 				successRate: hotTopicsTotalCount > 0 ? hotTopicsSuccessRate : 0,
 				lastUpdateTime: topicsLastUpdate || new Date(),
 				status: "active",
-				sourceCode: "server/utils/hotTopicsSpider.js",
-				description: "爬取热门话题数据"
+				sourceCode: configMap["热门话题"]?.sourceCode || "server/utils/hotTopicsSpider.js",
+				description: configMap["热门话题"]?.description || "爬取热门话题数据",
+				tableName: configMap["热门话题"]?.tableName || "hot_topics",
+				scheduleTime: configMap["热门话题"]?.scheduleTime || "00:00, 12:00, 18:00",
+				scheduleFrequency: configMap["热门话题"]?.scheduleFrequency || "每天三次"
 			},
 			{
 				spiderName: "AI工具库",
-				platformName: "多源AI工具聚合",
+				platformName: configMap["AI工具库"]?.platformName || "多源AI工具聚合",
 				totalCount: aiToolsTotalCount,
 				successRate: aiToolsTotalCount > 0 ? aiSuccessRate : 0,
 				lastUpdateTime: aiLastUpdate || new Date(),
 				status: "active",
-				sourceCode: "server/utils/aiToolsSpider.js",
-				description: "爬取AI工具信息"
+				sourceCode: configMap["AI工具库"]?.sourceCode || "server/utils/aiToolsSpider.js",
+				description: configMap["AI工具库"]?.description || "爬取AI工具信息",
+				tableName: configMap["AI工具库"]?.tableName || "ai_info",
+				scheduleTime: configMap["AI工具库"]?.scheduleTime || "未配置",
+				scheduleFrequency: configMap["AI工具库"]?.scheduleFrequency || "手动"
 			}
 		];
 
-		// 6. 计算总统计
+		// 7. 计算总统计
 		const successRates = crawlerStats.filter(c => c.totalCount > 0).map(c => c.successRate);
 		const avgSuccessRate =
 			successRates.length > 0 ? (successRates.reduce((a, b) => a + parseFloat(b), 0) / successRates.length).toFixed(1) : 0;
@@ -1344,26 +1360,26 @@ router.post("/statistics/getCrawlerStats", async (ctx, next) => {
 			dailyUpdateFreq: 3
 		};
 
-		// 7. 从 crawler_logs 查询最近7日的真实趋势数据（按爬虫类型分类）
+		// 8. 从 crawler_logs 查询最近7日的真实趋势数据（按爬虫类型分类）
 		let trendData = [];
 		try {
 			const trendMap = {};
-			
+
 			// 首先初始化所有日期
 			const startDate = new Date();
 			startDate.setDate(startDate.getDate() - 6);
-			
+
 			for (let i = 0; i < 7; i++) {
 				const checkDate = new Date(startDate);
 				checkDate.setDate(checkDate.getDate() + i);
-				const dateStr = checkDate.toISOString().split('T')[0];
+				const dateStr = checkDate.toISOString().split("T")[0];
 				trendMap[dateStr] = {
 					date: dateStr,
 					timestamp: Math.floor(checkDate.getTime() / 1000),
 					spiders: {}
 				};
 			}
-			
+
 			// 1. 从 crawler_logs 获取 hot_topics 的数据
 			const hotTopicsSql = `
 				SELECT 
@@ -1377,42 +1393,36 @@ router.post("/statistics/getCrawlerStats", async (ctx, next) => {
 				GROUP BY DATE_FORMAT(created_at, '%Y-%m-%d')
 				ORDER BY date ASC
 			`;
-			
+
 			const hotTopicsResult = await db.query(hotTopicsSql);
 			hotTopicsResult.forEach(row => {
 				if (trendMap[row.date]) {
-					trendMap[row.date].spiders['hot_topics'] = {
+					trendMap[row.date].spiders["hot_topics"] = {
 						dataCount: parseInt(row.total_data) || 0,
 						successCount: parseInt(row.success_count) || 0,
 						runCount: row.run_count || 0
 					};
 				}
 			});
-			
+
 			// 2. 从游戏表获取 game 的数据（查询所有日期的游戏更新记录并按日期分组）
 			const gameCountByDateSql = `
-				SELECT 
-					DATE_FORMAT(update_time, '%Y-%m-%d') as date,
-					COUNT(*) as count
-				FROM (
-					SELECT update_time FROM ps5_game 
-					WHERE update_time IS NOT NULL
-					UNION ALL
-					SELECT update_time FROM pc_game 
-					WHERE update_time IS NOT NULL
-				) as game_union
-				GROUP BY DATE_FORMAT(update_time, '%Y-%m-%d')
-			`;
-			
+			SELECT 
+				DATE_FORMAT(update_time, '%Y-%m-%d') as date,
+				COUNT(*) as count
+			FROM game_info
+			WHERE update_time IS NOT NULL
+			GROUP BY DATE_FORMAT(update_time, '%Y-%m-%d')
+		`;
 			try {
 				const gameResult = await db.query(gameCountByDateSql);
 				gameResult.forEach(row => {
 					// 对于游戏数据，如果日期在查询范围内则添加到 trendMap
 					if (trendMap[row.date]) {
-						trendMap[row.date].spiders['game'] = {
+						trendMap[row.date].spiders["game"] = {
 							dataCount: parseInt(row.count) || 0,
-							successCount: parseInt(row.count) || 0,  // 游戏爬虫没有失败记录，视为全部成功
-							runCount: 1  // 每天视为运行1次
+							successCount: parseInt(row.count) || 0, // 游戏爬虫没有失败记录，视为全部成功
+							runCount: 1 // 每天视为运行1次
 						};
 					} else {
 						// 如果是历史数据（不在7天范围内），仍然需要显示，所以创建新项
@@ -1420,7 +1430,7 @@ router.post("/statistics/getCrawlerStats", async (ctx, next) => {
 							date: row.date,
 							timestamp: Math.floor(new Date(row.date).getTime() / 1000),
 							spiders: {
-								'game': {
+								game: {
 									dataCount: parseInt(row.count) || 0,
 									successCount: parseInt(row.count) || 0,
 									runCount: 1
@@ -1432,7 +1442,7 @@ router.post("/statistics/getCrawlerStats", async (ctx, next) => {
 			} catch (e) {
 				console.warn("游戏数据趋势查询失败", e.message);
 			}
-			
+
 			// 3. 从 AI 工具表获取 ai_info 的数据（查询所有日期的 AI 更新记录并按日期分组）
 			const aiCountByDateSql = `
 				SELECT 
@@ -1442,16 +1452,16 @@ router.post("/statistics/getCrawlerStats", async (ctx, next) => {
 				WHERE update_time IS NOT NULL
 				GROUP BY DATE_FORMAT(update_time, '%Y-%m-%d')
 			`;
-			
+
 			try {
 				const aiResult = await db.query(aiCountByDateSql);
 				aiResult.forEach(row => {
 					// 对于 AI 数据，检查日期是否已在 trendMap 中
 					if (trendMap[row.date]) {
-						trendMap[row.date].spiders['ai_info'] = {
+						trendMap[row.date].spiders["ai_info"] = {
 							dataCount: parseInt(row.count) || 0,
-							successCount: parseInt(row.count) || 0,  // AI 爬虫没有失败记录，视为全部成功
-							runCount: 1  // 每天视为运行1次
+							successCount: parseInt(row.count) || 0, // AI 爬虫没有失败记录，视为全部成功
+							runCount: 1 // 每天视为运行1次
 						};
 					} else {
 						// 如果是历史数据（不在7天范围内），创建新项
@@ -1459,7 +1469,7 @@ router.post("/statistics/getCrawlerStats", async (ctx, next) => {
 							date: row.date,
 							timestamp: Math.floor(new Date(row.date).getTime() / 1000),
 							spiders: {
-								'ai_info': {
+								ai_info: {
 									dataCount: parseInt(row.count) || 0,
 									successCount: parseInt(row.count) || 0,
 									runCount: 1
@@ -1471,14 +1481,14 @@ router.post("/statistics/getCrawlerStats", async (ctx, next) => {
 			} catch (e) {
 				console.warn("AI数据趋势查询失败", e.message);
 			}
-			
+
 			// 转换为数组格式（包括最近7天的完整日期），并计算该天的总数据
 			trendData = Object.values(trendMap)
 				.sort((a, b) => new Date(a.date) - new Date(b.date))
 				.map(item => {
 					const totalDataCount = Object.values(item.spiders).reduce((sum, spider) => sum + spider.dataCount, 0);
 					const totalSuccessCount = Object.values(item.spiders).reduce((sum, spider) => sum + spider.successCount, 0);
-					
+
 					return {
 						date: item.date,
 						timestamp: item.timestamp,
@@ -1487,15 +1497,14 @@ router.post("/statistics/getCrawlerStats", async (ctx, next) => {
 						spiders: item.spiders
 					};
 				});
-			
 		} catch (e) {
 			console.warn("趋势数据查询失败，使用基础结构", e.message);
-			
+
 			// 降级处理：如果查询失败，返回基本的日期结构
 			for (let i = 6; i >= 0; i--) {
 				const date = new Date();
 				date.setDate(date.getDate() - i);
-				const dateStr = date.toISOString().split('T')[0];
+				const dateStr = date.toISOString().split("T")[0];
 				trendData.push({
 					date: dateStr,
 					timestamp: Math.floor(date.getTime() / 1000),

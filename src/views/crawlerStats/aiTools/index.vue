@@ -274,65 +274,64 @@ const visitTool = (tool: AiTool) => {
 	}
 };
 
-// 加载数据
+// 加载真实数据
 const loadToolsData = async () => {
-	// 应该调用真实API
-	const mockData: AiTool[] = [
-		// 生产力工具
-		...Array.from({ length: 8 }, (_, i) => ({
-			id: `productivity-${i}`,
-			name: `生产力工具 ${i + 1}`,
-			description: "提高工作效率的AI助手",
-			category: "productivity",
-			icon: "📝",
-			rating: 4.5 + Math.random() * 0.5,
-			users: 50000 + Math.random() * 100000,
-			popularity: 8000 + Math.random() * 2000,
-			features: ["AI助手", "自动化", "协作"],
-			url: "#"
-		})),
-		// 创意工具
-		...Array.from({ length: 8 }, (_, i) => ({
-			id: `creative-${i}`,
-			name: `创意工具 ${i + 1}`,
-			description: "创意设计和内容生成工具",
-			category: "creative",
-			icon: "🎨",
-			rating: 4.6 + Math.random() * 0.4,
-			users: 80000 + Math.random() * 100000,
-			popularity: 9000 + Math.random() * 1000,
-			features: ["生成式AI", "图像处理", "创意"],
-			url: "#"
-		})),
-		// 开发工具
-		...Array.from({ length: 8 }, (_, i) => ({
-			id: `development-${i}`,
-			name: `开发工具 ${i + 1}`,
-			description: "代码生成和开发辅助工具",
-			category: "development",
-			icon: "💻",
-			rating: 4.7 + Math.random() * 0.3,
-			users: 100000 + Math.random() * 150000,
-			popularity: 9500 + Math.random() * 500,
-			features: ["代码生成", "调试", "优化"],
-			url: "#"
-		})),
-		// 学习工具
-		...Array.from({ length: 8 }, (_, i) => ({
-			id: `learning-${i}`,
-			name: `学习工具 ${i + 1}`,
-			description: "个性化学习和教育工具",
-			category: "learning",
-			icon: "📚",
-			rating: 4.4 + Math.random() * 0.6,
-			users: 60000 + Math.random() * 100000,
-			popularity: 7500 + Math.random() * 2500,
-			features: ["个性化", "交互式", "智能"],
-			url: "#"
-		}))
-	];
+	try {
+		const res = await fetch("/bookMicroservices/ai/getAiList", {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json"
+			},
+			body: JSON.stringify({
+				current: 1,
+				pageSize: 1000 // 一次性获取所有数据
+			})
+		});
 
-	allTools.value = mockData;
+		if (!res.ok) {
+			throw new Error("获取AI工具数据失败");
+		}
+
+		const data = await res.json();
+
+		// 如果成功获取数据
+		if (data && data.data && data.data.records) {
+			const tools: AiTool[] = data.data.records.map((item: any) => {
+				// 根据数据库返回的category或字段名确定分类
+				let category = "productivity";
+				if (item.category) {
+					const catLower = item.category.toLowerCase();
+					if (catLower.includes("creative") || catLower.includes("创意")) {
+						category = "creative";
+					} else if (catLower.includes("development") || catLower.includes("开发")) {
+						category = "development";
+					} else if (catLower.includes("learning") || catLower.includes("学习")) {
+						category = "learning";
+					}
+				}
+
+				return {
+					id: item.id || `ai-${item.name}`,
+					name: item.name || "未知工具",
+					description: item.description || "",
+					category: category,
+					icon: "🤖", // 默认图标
+					rating: item.rating || 4.5,
+					users: item.users || 0,
+					popularity: item.popularity || item.visit_count || 0,
+					features: item.features ? (Array.isArray(item.features) ? item.features : [item.features]) : [],
+					url: item.url || "#",
+					isPaid: item.isPaid || false
+				};
+			});
+
+			allTools.value = tools;
+		}
+	} catch (error) {
+		console.error("加载AI工具数据出错:", error);
+		// 出错时使用空数组
+		allTools.value = [];
+	}
 };
 
 onMounted(() => {

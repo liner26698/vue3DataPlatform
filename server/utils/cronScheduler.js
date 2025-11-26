@@ -1,23 +1,23 @@
 /**
  * 定时爬虫任务管理
  * 使用 node-cron 实现定时任务
- * 
+ *
  * 安装: npm install node-cron
- * 
+ *
  * Cron 表达式说明:
  * 秒  分  时  日  月  周
- * 
+ *
  * 示例:
  * - 每隔6小时执行一次（00:00, 06:00, 12:00, 18:00）: '0 0 0/6 * * *'
  * - 每天 00:00 执行: '0 0 0 * * *'
  * - 每30分钟执行一次: '0 0/30 * * * *'
- * 
+ *
  * author: kris
  * date: 2025年11月25日
  */
 
 // Node 18 polyfill for undici compatibility
-if (typeof global.File === 'undefined') {
+if (typeof global.File === "undefined") {
 	global.File = class File {
 		constructor(bits, filename, options) {
 			this.bits = bits;
@@ -29,23 +29,33 @@ if (typeof global.File === 'undefined') {
 
 const cron = require("node-cron");
 const { runAllSpiders } = require("./hotTopicsSpider");
+const { runGameSpiders } = require("./gameSpider");
 
 // 任务配置
 const TASKS = [
 	{
 		name: "热门话题爬虫 - 每天凌晨",
 		schedule: "0 0 0 * * *", // 每天 00:00:00 执行
-		enabled: true
+		enabled: true,
+		handler: runAllSpiders
 	},
 	{
 		name: "热门话题爬虫 - 每天中午",
 		schedule: "0 0 12 * * *", // 每天 12:00:00 执行
-		enabled: true
+		enabled: true,
+		handler: runAllSpiders
 	},
 	{
 		name: "热门话题爬虫 - 每天傍晚",
 		schedule: "0 0 18 * * *", // 每天 18:00:00 执行
-		enabled: true
+		enabled: true,
+		handler: runAllSpiders
+	},
+	{
+		name: "游戏爬虫 - 每天凌晨3点",
+		schedule: "0 0 3 * * *", // 每天 03:00:00 执行
+		enabled: true,
+		handler: runGameSpiders
 	}
 ];
 
@@ -63,7 +73,7 @@ function startScheduledTasks() {
 			const scheduledTask = cron.schedule(task.schedule, async () => {
 				console.log(`\n⏰ [${new Date().toLocaleString()}] 触发任务: ${task.name}`);
 				try {
-					await runAllSpiders();
+					await task.handler();
 				} catch (error) {
 					console.error(`❌ 任务执行失败: ${error.message}`);
 				}

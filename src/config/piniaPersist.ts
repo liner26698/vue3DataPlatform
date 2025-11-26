@@ -7,8 +7,8 @@ const piniaPersistConfig = (key: string) => {
 		strategies: [
 			{
 				key,
-				// storage: localStorage
-				storage: sessionStorage
+				// 改为 localStorage 以实现登录状态持久化
+				storage: localStorage
 			}
 		]
 	};
