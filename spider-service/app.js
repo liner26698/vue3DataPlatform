@@ -25,6 +25,9 @@
  * date: 2025年11月26日
  */
 
+// 加载环境变量
+require('dotenv').config();
+
 const { startScheduledTasks, runNow } = require('./utils/cronScheduler');
 
 console.log('\n' + '='.repeat(50));
