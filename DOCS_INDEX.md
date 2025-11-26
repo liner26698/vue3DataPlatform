@@ -521,6 +521,56 @@ curl http://localhost:3001/statistics/getHotTopics
 
 ---
 
-**版本:** 1.0.0  
-**发布日期:** 2025年11月26日  
+**版本:** 1.1.0  
+**发布日期:** 2025年1月  
+**状态:** ✅ 已完成爬虫统计模块
+
+---
+
+## 🆕 爬虫统计模块 (2025年1月)
+
+### 📚 文档指南
+
+| 文档 | 用途 | 推荐 |
+|------|------|------|
+| `CRAWLER_STATS_SUMMARY.sh` | 快速了解项目 | ⭐⭐⭐ 首选 |
+| `CRAWLER_STATS_QUICK_REFERENCE.md` | 开发参考 | ⭐⭐⭐ 常用 |
+| `CRAWLER_STATS_IMPLEMENTATION.md` | 深入学习 | ⭐⭐⭐ 详细 |
+| `CRAWLER_STATS_COMPLETION_REPORT.md` | 全面了解 | ⭐⭐ 总结 |
+
+### 📂 新增组件
+
+```
+src/views/crawlerStats/
+├── index.vue              主仪表板 📊
+├── hotTopics/index.vue    热门话题 🔥
+├── aiTools/index.vue      AI工具 🤖
+└── novels/index.vue       小说数据 📚
+```
+
+### 🎯 成果统计
+
+```
+✅ 4个专业前端组件
+   • 3,415+ 行代码
+   • TypeScript 100% 类型覆盖
+   • 完整的动画系统
+
+✅ 5个完整路由配置
+   • 主仪表板 + 游戏 + 热话题 + AI工具 + 小说
+
+✅ 1,825+ 行详细文档
+   • 实现指南、快速参考、完成报告
+```
+
+### 🚀 快速开始
+
+```
+http://localhost:5173/crawler-stats/overview
+```
+
+---
+
+**版本:** 1.1.0  
+**发布日期:** 2025年1月  
 **状态:** ✅ 已发布
