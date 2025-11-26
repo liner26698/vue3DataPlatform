@@ -390,69 +390,107 @@ async function crawlBilibiliTrending() {
 async function crawlDouyinTrending() {
 	try {
 		console.log("▶ 正在爬取抖音热点...");
-		const topics = [];
-
-		const response = await axios.get("https://www.douyin.com/", {
-			timeout: 12000,
-			headers: {
-				"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
-				"Accept-Language": "zh-CN,zh;q=0.9",
-				"Referer": "https://www.douyin.com/",
-				"Accept": "text/html,application/xhtml+xml"
+		
+		// 抖音防爬虫过于强大，使用 Axios + Cheerio 无法获取 JavaScript 渲染内容
+		// Puppeteer 会被检测到自动化特征
+		// 因此采用 "缓存 + 备用数据源" 策略
+		
+		const fs = require('fs');
+		const path = require('path');
+		const cacheFile = path.join(__dirname, '../../.cache/douyin_cache.json');
+		
+		// 确保缓存目录存在
+		const cacheDir = path.dirname(cacheFile);
+		if (!fs.existsSync(cacheDir)) {
+			fs.mkdirSync(cacheDir, { recursive: true });
+		}
+		
+		// 检查缓存是否存在且未过期（6小时）
+		let cachedData = null;
+		if (fs.existsSync(cacheFile)) {
+			try {
+				const cacheContent = JSON.parse(fs.readFileSync(cacheFile, 'utf8'));
+				const cacheAge = Date.now() - cacheContent.timestamp;
+				const sixHours = 6 * 60 * 60 * 1000;
+				
+				if (cacheAge < sixHours && cacheContent.data && cacheContent.data.length > 0) {
+					console.log(`   ✅ 使用缓存数据 (${Math.round(cacheAge / 1000 / 60)} 分钟前)`);
+					return cacheContent.data;
+				}
+			} catch (e) {
+				console.log('   ℹ️  缓存文件损坏，重新爬取...');
 			}
-		});
-
-		if (response.status !== 200) {
-			console.warn(`⚠️  抖音返回 HTTP ${response.status}`);
-			return [];
 		}
-
-		// 检查是否是 JavaScript 渲染页面（大量使用 <noscript>）
-		if (response.data.includes('<noscript>') && response.data.length < 10000) {
-			console.warn("⚠️  抖音返回 JavaScript 渲染页面（无静态 HTML 内容）");
-			console.warn("   💡 需要 Puppeteer 或 Selenium 来执行 JavaScript");
-			return [];
-		}
-
-		const $ = cheerio.load(response.data);
-		const selectors = [
-			"[class*='hot'] a",
-			"[class*='trending'] a",
-			"h2 a, h3 a",
-			"[class*='title'] a"
-		];
-
-		for (const selector of selectors) {
-			$(selector).each((index, element) => {
-				if (topics.length >= 15) return;
-				const $item = $(element);
-				let title = ($item.text() || $item.attr("title") || "").trim();
-
-				if (title && title.length > 2 && title.length < 200) {
-					topics.push({
-						platform: "douyin",
-						rank: topics.length + 1,
-						title: title.substring(0, 100),
-						category: "热点",
-						heat: (100 - topics.length) * 80000,
-						trend: "stable",
-						tags: ["抖音", "热点"],
-						url: $(element).attr("href") ? "https://www.douyin.com" + $(element).attr("href") : "https://www.douyin.com",
-						description: title.substring(0, 100),
-						is_active: 1
-					});
+		
+		// 尝试从官方热榜 API（部分开放）
+		try {
+			console.log('   📄 尝试从热榜数据源...');
+			const response = await axios.get('https://www.iesdouyin.com/web/api/v2/hotsearch/search/trending/', {
+				timeout: 10000,
+				headers: {
+					'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
 				}
 			});
-			if (topics.length >= 15) break;
+			
+			if (response.data && Array.isArray(response.data)) {
+				const topics = response.data.slice(0, 15).map((item, idx) => ({
+					platform: "douyin",
+					rank: idx + 1,
+					title: (item.keyword || item.title || item.name || '').substring(0, 100),
+					category: "热点",
+					heat: (100 - idx) * 80000,
+					trend: "stable",
+					tags: ["抖音", "热点"],
+					url: "https://www.douyin.com",
+					description: (item.keyword || item.title || item.name || '').substring(0, 100),
+					is_active: 1
+				})).filter(t => t.title && t.title.length > 2);
+				
+				if (topics.length > 0) {
+					// 保存到缓存
+					fs.writeFileSync(cacheFile, JSON.stringify({
+						timestamp: Date.now(),
+						data: topics
+					}), 'utf8');
+					
+					console.log(`✅ 抖音热点爬取成功: ${topics.length} 条`);
+					return topics;
+				}
+			}
+		} catch (apiErr) {
+			console.log('   ℹ️  热榜 API 暂不可用');
 		}
-
-		if (topics.length > 0) {
-			console.log(`✅ 抖音热点爬取成功: ${topics.length} 条`);
-			return topics;
+		
+		// 若缓存过期且无法获取新数据，返回过期缓存
+		if (fs.existsSync(cacheFile)) {
+			try {
+				const fallback = JSON.parse(fs.readFileSync(cacheFile, 'utf8'));
+				if (fallback.data && fallback.data.length > 0) {
+					console.log('   ⚠️  返回过期缓存数据');
+					return fallback.data;
+				}
+			} catch (e) {}
 		}
-
-		console.warn("⚠️  抖音暂无数据");
-		return [];
+		
+		// 最后兜底：返回模拟热点（不是真实数据，但保证服务可用）
+		const fallbackTopics = [
+			{ rank: 1, title: "抖音热搜加载中...", category: "热点" },
+			{ rank: 2, title: "请稍候", category: "热点" }
+		].map((item, idx) => ({
+			platform: "douyin",
+			rank: item.rank,
+			title: item.title,
+			category: item.category,
+			heat: (100 - idx) * 80000,
+			trend: "stable",
+			tags: ["抖音", "热点"],
+			url: "https://www.douyin.com",
+			description: item.title,
+			is_active: 1
+		}));
+		
+		console.warn("⚠️  抖音暂无数据（反爬虫限制）");
+		return fallbackTopics;
 
 	} catch (error) {
 		console.error("❌ 抖音热点爬取失败:", error.message);
