@@ -108,105 +108,65 @@ async function crawlBaiduTrending() {
 }
 
 /**
- * 2. 爬取知乎热榜 - 使用 Puppeteer + Cheerio
+ * 2. 爬取今日头条热榜
  */
-async function crawlZhihuTrending() {
-	let browser;
+async function crawlToutiaoTrending() {
 	try {
-		console.log("🔍 正在爬取知乎热榜（Puppeteer 模式）...");
+		console.log("📰 正在爬取今日头条热榜...");
 		
-		// 动态导入 puppeteer（只在需要时导入）
-		const puppeteer = require('puppeteer');
-		
-		browser = await puppeteer.launch({
-			headless: 'new',
-			args: [
-				'--no-sandbox',
-				'--disable-setuid-sandbox',
-				'--disable-blink-features=AutomationControlled',
-				'--disable-dev-shm-usage'
-			]
+		const response = await axios.get('https://www.toutiao.com/', {
+			timeout: 10000,
+			headers: {
+				'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+				'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+				'Accept-Language': 'zh-CN,zh;q=0.9',
+				'Referer': 'https://www.toutiao.com/'
+			}
 		});
-		
-		const page = await browser.newPage();
-		
-		// 隐藏 webdriver 标记
-		await page.evaluateOnNewDocument(() => {
-			Object.defineProperty(navigator, 'webdriver', {
-				get: () => false,
-			});
-		});
-		
-		await page.setViewport({ width: 1920, height: 1080 });
-		await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36');
-		
-		await page.setExtraHTTPHeaders({
-			'Accept-Language': 'zh-CN,zh;q=0.9',
-			'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-		});
-		
-		console.log("   📄 访问知乎热榜页面...");
-		try {
-			await page.goto('https://www.zhihu.com/hot', {
-				waitUntil: 'domcontentloaded',
-				timeout: 45000
-			});
-		} catch (navErr) {
-			console.log("   ⏱️  页面加载超时，继续尝试...");
-		}
-		
-		console.log("   ⏳ 等待页面渲染...");
-		await new Promise(resolve => setTimeout(resolve, 2000));
-		
-		const html = await page.content();
-		console.log(`   ✅ 获取 HTML: ${(html.length / 1024).toFixed(2)} KB`);
-		
-		const $ = cheerio.load(html);
+
+		const $ = cheerio.load(response.data);
 		const topics = [];
-		
-		// 通过问题链接提取热榜
-		$('a[href*="/question/"]').each((index, element) => {
-			if (topics.length >= 15) return;
-			
-			const $link = $(element);
-			let title = $link.text().trim();
-			
-			if (title && title.length > 2 && title.length < 200 && !title.includes('https')) {
-				// 避免重复
-				if (!topics.find(t => t.title === title)) {
+		const seenTitles = new Set();
+
+		const selectors = ['a', 'h3', 'span', 'div'];
+
+		for (const selector of selectors) {
+			$(selector).each((index, element) => {
+				if (topics.length >= 15) return;
+				
+				const $el = $(element);
+				let title = ($el.text() || $el.attr('title') || '').trim();
+				title = title.replace(/\s+/g, ' ').trim();
+				
+				if (title && title.length > 4 && title.length < 100 && !seenTitles.has(title)) {
+					seenTitles.add(title);
 					topics.push({
-						platform: "zhihu",
+						platform: "toutiao",
 						rank: topics.length + 1,
 						title: title,
 						category: "热榜",
-						heat: (100 - topics.length) * 50000,
+						heat: (100 - topics.length) * 60000,
 						trend: "stable",
-						tags: ["知乎", "热榜"],
-						url: $link.attr('href') || 'https://www.zhihu.com/hot',
+						tags: ["头条", "热榜"],
+						url: "https://www.toutiao.com",
 						description: title,
 						is_active: 1
 					});
 				}
-			}
-		});
-		
-		await browser.close();
-		
+			});
+			if (topics.length >= 15) break;
+		}
+
 		if (topics.length > 0) {
-			console.log(`✅ 知乎热榜爬取成功: ${topics.length} 条`);
+			console.log(`✅ 头条热榜爬取成功: ${topics.length} 条`);
 			return topics;
 		}
-		
-		console.warn("⚠️  知乎暂无数据");
+
+		console.warn("⚠️  头条暂无数据");
 		return [];
 
 	} catch (error) {
-		if (browser) {
-			try {
-				await browser.close();
-			} catch (e) {}
-		}
-		console.error("❌ 知乎热榜爬取失败:", error.message);
+		console.error("❌ 头条热榜爬取失败:", error.message);
 		return [];
 	}
 }
@@ -281,7 +241,7 @@ async function crawlWeiboTrending() {
 				if (title && title.length > 2 && title.length < 100 && !title.includes('javascript')) {
 					topics.push({
 						platform: "weibo",
-						rank: rankText || topics.length + 1,
+						rank: topics.length + 1,
 						title: title,
 						category: "热搜",
 						heat: (100 - topics.length) * 100000,
@@ -387,113 +347,66 @@ async function crawlBilibiliTrending() {
 /**
  * 5. 爬取抖音热点
  */
-async function crawlDouyinTrending() {
+/**
+ * 5. 爬取小红书热榜
+ */
+async function crawlXiaohongshuTrending() {
 	try {
-		console.log("▶ 正在爬取抖音热点...");
+		console.log("❤️  正在爬取小红书热榜...");
 		
-		// 抖音防爬虫过于强大，使用 Axios + Cheerio 无法获取 JavaScript 渲染内容
-		// Puppeteer 会被检测到自动化特征
-		// 因此采用 "缓存 + 备用数据源" 策略
-		
-		const fs = require('fs');
-		const path = require('path');
-		const cacheFile = path.join(__dirname, '../../.cache/douyin_cache.json');
-		
-		// 确保缓存目录存在
-		const cacheDir = path.dirname(cacheFile);
-		if (!fs.existsSync(cacheDir)) {
-			fs.mkdirSync(cacheDir, { recursive: true });
-		}
-		
-		// 检查缓存是否存在且未过期（6小时）
-		let cachedData = null;
-		if (fs.existsSync(cacheFile)) {
-			try {
-				const cacheContent = JSON.parse(fs.readFileSync(cacheFile, 'utf8'));
-				const cacheAge = Date.now() - cacheContent.timestamp;
-				const sixHours = 6 * 60 * 60 * 1000;
-				
-				if (cacheAge < sixHours && cacheContent.data && cacheContent.data.length > 0) {
-					console.log(`   ✅ 使用缓存数据 (${Math.round(cacheAge / 1000 / 60)} 分钟前)`);
-					return cacheContent.data;
-				}
-			} catch (e) {
-				console.log('   ℹ️  缓存文件损坏，重新爬取...');
+		const response = await axios.get('https://www.xiaohongshu.com/homefeed_recommend', {
+			timeout: 10000,
+			headers: {
+				'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+				'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+				'Accept-Language': 'zh-CN,zh;q=0.9',
+				'Referer': 'https://www.xiaohongshu.com/'
 			}
-		}
-		
-		// 尝试从官方热榜 API（部分开放）
-		try {
-			console.log('   📄 尝试从热榜数据源...');
-			const response = await axios.get('https://www.iesdouyin.com/web/api/v2/hotsearch/search/trending/', {
-				timeout: 10000,
-				headers: {
-					'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+		});
+
+		const $ = cheerio.load(response.data);
+		const topics = [];
+		const seenTitles = new Set();
+
+		const selectors = ['a', 'h3', 'span', 'div'];
+
+		for (const selector of selectors) {
+			$(selector).each((index, element) => {
+				if (topics.length >= 15) return;
+				
+				const $el = $(element);
+				let title = ($el.text() || $el.attr('title') || '').trim();
+				title = title.replace(/\s+/g, ' ').trim();
+				
+				if (title && title.length > 4 && title.length < 100 && !seenTitles.has(title)) {
+					seenTitles.add(title);
+					topics.push({
+						platform: "xiaohongshu",
+						rank: topics.length + 1,
+						title: title,
+						category: "热榜",
+						heat: (100 - topics.length) * 70000,
+						trend: "stable",
+						tags: ["小红书", "热榜"],
+						url: "https://www.xiaohongshu.com",
+						description: title,
+						is_active: 1
+					});
 				}
 			});
-			
-			if (response.data && Array.isArray(response.data)) {
-				const topics = response.data.slice(0, 15).map((item, idx) => ({
-					platform: "douyin",
-					rank: idx + 1,
-					title: (item.keyword || item.title || item.name || '').substring(0, 100),
-					category: "热点",
-					heat: (100 - idx) * 80000,
-					trend: "stable",
-					tags: ["抖音", "热点"],
-					url: "https://www.douyin.com",
-					description: (item.keyword || item.title || item.name || '').substring(0, 100),
-					is_active: 1
-				})).filter(t => t.title && t.title.length > 2);
-				
-				if (topics.length > 0) {
-					// 保存到缓存
-					fs.writeFileSync(cacheFile, JSON.stringify({
-						timestamp: Date.now(),
-						data: topics
-					}), 'utf8');
-					
-					console.log(`✅ 抖音热点爬取成功: ${topics.length} 条`);
-					return topics;
-				}
-			}
-		} catch (apiErr) {
-			console.log('   ℹ️  热榜 API 暂不可用');
+			if (topics.length >= 15) break;
 		}
-		
-		// 若缓存过期且无法获取新数据，返回过期缓存
-		if (fs.existsSync(cacheFile)) {
-			try {
-				const fallback = JSON.parse(fs.readFileSync(cacheFile, 'utf8'));
-				if (fallback.data && fallback.data.length > 0) {
-					console.log('   ⚠️  返回过期缓存数据');
-					return fallback.data;
-				}
-			} catch (e) {}
+
+		if (topics.length > 0) {
+			console.log(`✅ 小红书热榜爬取成功: ${topics.length} 条`);
+			return topics;
 		}
-		
-		// 最后兜底：返回模拟热点（不是真实数据，但保证服务可用）
-		const fallbackTopics = [
-			{ rank: 1, title: "抖音热搜加载中...", category: "热点" },
-			{ rank: 2, title: "请稍候", category: "热点" }
-		].map((item, idx) => ({
-			platform: "douyin",
-			rank: item.rank,
-			title: item.title,
-			category: item.category,
-			heat: (100 - idx) * 80000,
-			trend: "stable",
-			tags: ["抖音", "热点"],
-			url: "https://www.douyin.com",
-			description: item.title,
-			is_active: 1
-		}));
-		
-		console.warn("⚠️  抖音暂无数据（反爬虫限制）");
-		return fallbackTopics;
+
+		console.warn("⚠️  小红书暂无数据");
+		return [];
 
 	} catch (error) {
-		console.error("❌ 抖音热点爬取失败:", error.message);
+		console.error("❌ 小红书热榜爬取失败:", error.message);
 		return [];
 	}
 }
@@ -596,10 +509,10 @@ async function runAllSpiders() {
 
 	const platforms = [
 		{ name: "百度", fn: crawlBaiduTrending },
-		{ name: "知乎", fn: crawlZhihuTrending },
+		{ name: "头条", fn: crawlToutiaoTrending },
 		{ name: "微博", fn: crawlWeiboTrending },
 		{ name: "B站", fn: crawlBilibiliTrending },
-		{ name: "抖音", fn: crawlDouyinTrending }
+		{ name: "小红书", fn: crawlXiaohongshuTrending }
 	];
 
 	for (const platform of platforms) {
@@ -649,9 +562,9 @@ module.exports = {
 	runAllSpiders,
 	fetchAllTrending: runAllSpiders,  // 别名，用于 API 调用
 	crawlBaiduTrending,
-	crawlZhihuTrending,
+	crawlToutiaoTrending,
 	crawlWeiboTrending,
 	crawlBilibiliTrending,
-	crawlDouyinTrending,
+	crawlXiaohongshuTrending,
 	saveTopicsToDatabase
 };
