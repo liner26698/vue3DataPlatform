@@ -108,53 +108,72 @@ async function crawlBaiduTrending() {
 }
 
 /**
- * 2. 爬取知乎热榜
+ * 2. 爬取知乎热榜 - 使用 Puppeteer + Cheerio
  */
 async function crawlZhihuTrending() {
+	let browser;
 	try {
-		console.log("❓ 正在爬取知乎热榜...");
-		const url = "https://www.zhihu.com/hot";
-
-		const response = await axios.get(url, {
-			timeout: 12000,
-			validateStatus: () => true,
-			headers: {
-				"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
-				"Accept-Language": "zh-CN,zh;q=0.9",
-				"Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-				"Referer": "https://www.zhihu.com/",
-				"Cookie": "z_c0=test"
-			}
+		console.log("🔍 正在爬取知乎热榜（Puppeteer 模式）...");
+		
+		// 动态导入 puppeteer（只在需要时导入）
+		const puppeteer = require('puppeteer');
+		
+		browser = await puppeteer.launch({
+			headless: 'new',
+			args: [
+				'--no-sandbox',
+				'--disable-setuid-sandbox',
+				'--disable-blink-features=AutomationControlled',
+				'--disable-dev-shm-usage'
+			]
 		});
-
-		if (response.status === 403) {
-			console.warn("⚠️  知乎返回 403 Forbidden（反爬虫保护）");
-			console.warn("   💡 需要 Puppeteer 或代理来绕过");
-			return [];
+		
+		const page = await browser.newPage();
+		
+		// 隐藏 webdriver 标记
+		await page.evaluateOnNewDocument(() => {
+			Object.defineProperty(navigator, 'webdriver', {
+				get: () => false,
+			});
+		});
+		
+		await page.setViewport({ width: 1920, height: 1080 });
+		await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36');
+		
+		await page.setExtraHTTPHeaders({
+			'Accept-Language': 'zh-CN,zh;q=0.9',
+			'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+		});
+		
+		console.log("   📄 访问知乎热榜页面...");
+		try {
+			await page.goto('https://www.zhihu.com/hot', {
+				waitUntil: 'domcontentloaded',
+				timeout: 45000
+			});
+		} catch (navErr) {
+			console.log("   ⏱️  页面加载超时，继续尝试...");
 		}
-
-		if (response.status !== 200) {
-			console.warn(`⚠️  知乎返回 HTTP ${response.status}`);
-			return [];
-		}
-
-		const $ = cheerio.load(response.data);
+		
+		console.log("   ⏳ 等待页面渲染...");
+		await new Promise(resolve => setTimeout(resolve, 2000));
+		
+		const html = await page.content();
+		console.log(`   ✅ 获取 HTML: ${(html.length / 1024).toFixed(2)} KB`);
+		
+		const $ = cheerio.load(html);
 		const topics = [];
-		const selectors = [
-			"[role='feed'] [role='article']",
-			".Card.CardBase",
-			"h2 a, h3 a",
-			"div[data-testid='hotItem']"
-		];
-
-		for (const selector of selectors) {
-			$(selector).each((index, element) => {
-				if (topics.length >= 15) return;
-				const $item = $(element);
-				const titleElem = $item.find("a").first();
-				let title = (titleElem.text() || $item.text()).trim();
-
-				if (title && title.length > 2 && title.length < 200) {
+		
+		// 通过问题链接提取热榜
+		$('a[href*="/question/"]').each((index, element) => {
+			if (topics.length >= 15) return;
+			
+			const $link = $(element);
+			let title = $link.text().trim();
+			
+			if (title && title.length > 2 && title.length < 200 && !title.includes('https')) {
+				// 避免重复
+				if (!topics.find(t => t.title === title)) {
 					topics.push({
 						platform: "zhihu",
 						rank: topics.length + 1,
@@ -163,86 +182,106 @@ async function crawlZhihuTrending() {
 						heat: (100 - topics.length) * 50000,
 						trend: "stable",
 						tags: ["知乎", "热榜"],
-						url: "https://www.zhihu.com/hot",
+						url: $link.attr('href') || 'https://www.zhihu.com/hot',
 						description: title,
 						is_active: 1
 					});
 				}
-			});
-			if (topics.length >= 15) break;
-		}
-
+			}
+		});
+		
+		await browser.close();
+		
 		if (topics.length > 0) {
 			console.log(`✅ 知乎热榜爬取成功: ${topics.length} 条`);
 			return topics;
 		}
-
+		
 		console.warn("⚠️  知乎暂无数据");
 		return [];
 
 	} catch (error) {
+		if (browser) {
+			try {
+				await browser.close();
+			} catch (e) {}
+		}
 		console.error("❌ 知乎热榜爬取失败:", error.message);
 		return [];
 	}
 }
 
 /**
- * 3. 爬取微博热搜
+ * 3. 爬取微博热搜 - 使用 Puppeteer + Cheerio
  */
 async function crawlWeiboTrending() {
+	let browser;
 	try {
-		console.log("✨ 正在爬取微博热搜...");
-		const topics = [];
-
-		const response = await axios.get("https://s.weibo.com/top/summary", {
-			timeout: 12000,
-			validateStatus: () => true,
-			headers: {
-				"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
-				"Accept-Language": "zh-CN,zh;q=0.9",
-				"Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-				"Referer": "https://s.weibo.com/",
-				"Accept-Encoding": "gzip, deflate"
-			}
+		console.log("✨ 正在爬取微博热搜（Puppeteer 模式）...");
+		const puppeteer = require('puppeteer');
+		
+		browser = await puppeteer.launch({
+			headless: 'new',
+			args: [
+				'--no-sandbox',
+				'--disable-setuid-sandbox',
+				'--disable-blink-features=AutomationControlled',
+				'--disable-dev-shm-usage'
+			]
 		});
-
-		if (response.status !== 200) {
-			console.warn(`⚠️  微博返回 HTTP ${response.status}`);
-			return [];
+		
+		const page = await browser.newPage();
+		
+		await page.evaluateOnNewDocument(() => {
+			Object.defineProperty(navigator, 'webdriver', {
+				get: () => false,
+			});
+		});
+		
+		await page.setViewport({ width: 1920, height: 1080 });
+		await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36');
+		
+		await page.setExtraHTTPHeaders({
+			'Accept-Language': 'zh-CN,zh;q=0.9',
+			'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+			'Referer': 'https://s.weibo.com/'
+		});
+		
+		console.log("   📄 访问微博热搜榜...");
+		try {
+			await page.goto('https://s.weibo.com/top/summary', {
+				waitUntil: 'domcontentloaded',
+				timeout: 45000
+			});
+		} catch (navErr) {
+			console.log("   ⏱️  页面加载超时，继续尝试...");
 		}
-
-		// 检查是否被重定向到登录页
-		if (response.data.includes('login') || response.data.includes('visitor') || response.data.includes('Visitor System')) {
-			console.warn("⚠️  微博被重定向到登录/访客页面（需要 Cookie 或代理）");
-			return [];
-		}
-
-		const $ = cheerio.load(response.data);
-		const selectors = [
-			"tr:not(:first-child) td:nth-child(2)",
-			"tr:not(:first-child)",
-			"table tr",
-			".tr-item"
-		];
-
-		for (const selector of selectors) {
-			$(selector).each((index, element) => {
-				if (topics.length >= 15) return;
-				const $item = $(element);
-
-				let title = '';
-				if (selector.includes('nth-child')) {
-					title = $item.text().trim();
-				} else {
-					const $link = $item.find("a[href*='keyword']").first();
-					title = $link.text().trim() || $item.find("td").eq(1).text().trim();
-				}
-
-				if (title && title.length > 2 && title.length < 100) {
-					title = title.replace(/\s+/g, " ").trim();
+		
+		console.log("   ⏳ 等待页面稳定...");
+		await new Promise(resolve => setTimeout(resolve, 2000));
+		
+		const html = await page.content();
+		console.log(`   ✅ 获取 HTML: ${(html.length / 1024).toFixed(2)} KB`);
+		
+		const $ = cheerio.load(html);
+		const topics = [];
+		
+		// 从表格中提取热搜
+		$('tr:not(:first-child)').each((index, element) => {
+			if (topics.length >= 15) return;
+			
+			const $row = $(element);
+			const cells = $row.find('td');
+			
+			if (cells.length >= 2) {
+				const $link = $row.find('a').first();
+				const title = $link.text().trim();
+				const rankText = cells.first().text().trim();
+				
+				if (title && title.length > 2 && title.length < 100 && !title.includes('javascript')) {
 					topics.push({
 						platform: "weibo",
-						rank: topics.length + 1,
+						rank: rankText || topics.length + 1,
 						title: title,
 						category: "热搜",
 						heat: (100 - topics.length) * 100000,
@@ -253,19 +292,25 @@ async function crawlWeiboTrending() {
 						is_active: 1
 					});
 				}
-			});
-			if (topics.length >= 15) break;
-		}
-
+			}
+		});
+		
+		await browser.close();
+		
 		if (topics.length > 0) {
 			console.log(`✅ 微博热搜爬取成功: ${topics.length} 条`);
 			return topics;
 		}
-
+		
 		console.warn("⚠️  微博暂无数据");
 		return [];
 
 	} catch (error) {
+		if (browser) {
+			try {
+				await browser.close();
+			} catch (e) {}
+		}
 		console.error("❌ 微博热搜爬取失败:", error.message);
 		return [];
 	}
