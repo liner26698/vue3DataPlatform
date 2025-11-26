@@ -70,11 +70,30 @@ const menuList = [
 		path: "/crawler-stats",
 		children: [
 			{
+				path: "/crawler-stats/overview",
+				title: "数据概览",
+				icon: "menu"
+			},
+			{
 				path: "/crawler-stats/game",
 				title: "游戏数据统计",
 				icon: "menu"
+			},
+			{
+				path: "/crawler-stats/hot-topics",
+				title: "热门话题统计",
+				icon: "menu"
+			},
+			{
+				path: "/crawler-stats/ai-tools",
+				title: "AI工具统计",
+				icon: "menu"
+			},
+			{
+				path: "/crawler-stats/novels",
+				title: "小说数据统计",
+				icon: "menu"
 			}
-			// 后续可以添加更多子菜单项，如新闻数据统计、AI数据统计等
 		]
 	},
 

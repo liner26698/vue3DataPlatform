@@ -1,21 +1,31 @@
 <template>
 	<div class="crawler-stats-container">
+		<!-- 顶部刷新按钮 -->
+		<div class="header-actions">
+			<el-button type="primary" @click="refreshAllData" :loading="isRefreshing">
+				<i class="el-icon-refresh"></i> 刷新所有数据
+			</el-button>
+			<el-statistic title="最后更新时间">
+				<template #default>
+					{{ formatTime(lastUpdateTime) }}
+				</template>
+			</el-statistic>
+		</div>
+
 		<!-- 顶部统计卡片 -->
 		<div class="stats-header">
 			<el-row :gutter="20">
 				<el-col :xs="24" :sm="12" :md="6" v-for="stat in totalStats" :key="stat.id">
-					<div class="stat-card" :style="{ borderLeft: `4px solid ${stat.color}` }">
-						<div class="stat-content">
-							<div class="stat-icon" :style="{ color: stat.color }">{{ stat.icon }}</div>
-							<div class="stat-info">
-								<div class="stat-label">{{ stat.label }}</div>
-								<div class="stat-value">{{ stat.value }}</div>
-								<div class="stat-trend" :class="stat.trend > 0 ? 'up' : 'down'">
-									{{ stat.trend > 0 ? '↑' : '↓' }} {{ Math.abs(stat.trend) }}%
-								</div>
-							</div>
-						</div>
-					</div>
+					<stat-card
+						:icon="stat.icon"
+						:label="stat.label"
+						:value="stat.value"
+						:trend="stat.trend"
+						:color="stat.color"
+						:clickable="stat.id === 'spiderCount'"
+						:is-active-spiders="stat.id === 'spiderCount'"
+						@click="handleActiveSpidersClick"
+					/>
 				</el-col>
 			</el-row>
 		</div>
@@ -56,9 +66,6 @@
 					<template #header>
 						<div class="card-header">
 							<span class="title">🔍 爬虫详细统计</span>
-							<el-button type="primary" size="small" @click="refreshData">
-								<i class="el-icon-refresh"></i> 刷新数据
-							</el-button>
 						</div>
 					</template>
 					<el-table :data="crawlerDetails" stripe v-loading="tableLoading" class="crawler-table">
@@ -67,19 +74,19 @@
 								<span class="spider-name" :style="{ color: row.color }">{{ row.icon }} {{ row.spiderName }}</span>
 							</template>
 						</el-table-column>
-						<el-table-column prop="category" label="分类" width="120">
+						<el-table-column prop="platformName" label="平台" width="150">
 							<template #default="{ row }">
-								<el-tag :type="row.categoryType">{{ row.category }}</el-tag>
+								<span>{{ row.platformName }}</span>
 							</template>
 						</el-table-column>
 						<el-table-column prop="totalCount" label="总数据量" width="120">
 							<template #default="{ row }">
-								<div class="count-number">{{ row.totalCount }}</div>
+								<div class="count-number">{{ formatNumber(row.totalCount) }}</div>
 							</template>
 						</el-table-column>
-						<el-table-column prop="lastUpdate" label="最后更新" width="180">
+						<el-table-column prop="lastUpdateTime" label="最后更新" width="180">
 							<template #default="{ row }">
-								<span class="time">{{ formatTime(row.lastUpdate) }}</span>
+								<span class="time">{{ formatTime(row.lastUpdateTime) }}</span>
 							</template>
 						</el-table-column>
 						<el-table-column prop="successRate" label="成功率" width="120">
@@ -89,21 +96,49 @@
 						</el-table-column>
 						<el-table-column prop="status" label="状态" width="100">
 							<template #default="{ row }">
-								<el-tag :type="row.status === 'success' ? 'success' : row.status === 'warning' ? 'warning' : 'danger'">
-									{{ row.statusText }}
+								<el-tag type="success">
+									<i class="el-icon-circle-check"></i> 运行中
 								</el-tag>
 							</template>
 						</el-table-column>
 						<el-table-column label="操作" width="180" fixed="right">
 							<template #default="{ row }">
-								<el-button link type="primary" @click="viewDetails(row)">查看详情</el-button>
-								<el-button link type="success" @click="viewData(row)">查看数据</el-button>
+								<el-button link type="primary" @click="viewSourceCode(row)">
+									<i class="el-icon-document"></i> 查看代码
+								</el-button>
+								<el-button link type="success" @click="viewData(row)">
+									<i class="el-icon-view"></i> 查看数据
+								</el-button>
 							</template>
 						</el-table-column>
 					</el-table>
 				</el-card>
 			</el-col>
 		</el-row>
+
+		<!-- 活跃爬虫弹窗 -->
+		<spiders-modal
+			v-model="showSpidersModal"
+			:spiders="crawlerDetails.map(item => ({
+				...item,
+				icon: item.icon,
+				color: item.color
+			}))"
+			@close="handleSpidersModalClose"
+		/>
+
+		<!-- 源代码弹窗 -->
+		<el-dialog v-model="showCodeDialog" :title="`${selectedSpider?.spiderName} - 源代码`" width="80%">
+			<div class="code-container">
+				<div class="code-header">
+					<span class="code-file">{{ selectedSpider?.sourceCode }}</span>
+					<el-button link type="primary" size="small" @click="copyCode">
+						<i class="el-icon-document-copy"></i> 复制代码
+					</el-button>
+				</div>
+				<pre class="code-content"><code>{{ sourceCodeContent }}</code></pre>
+			</div>
+		</el-dialog>
 
 		<!-- 子路由展示区域 -->
 		<el-row v-if="$slots.default" class="children-section">
@@ -115,9 +150,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from "vue";
+import { ref, onMounted, onUnmounted } from "vue";
 import * as echarts from "echarts";
 import type { ECharts, EChartsOption } from "echarts";
+import StatCard from "./components/StatCard.vue";
+import SpidersModal from "./components/SpidersModal.vue";
+import { ElMessage } from "element-plus";
 
 // 数据类型定义
 interface CrawlerStat {
@@ -131,57 +169,27 @@ interface CrawlerStat {
 
 interface CrawlerDetail {
 	spiderName: string;
+	platformName: string;
 	icon: string;
-	category: string;
-	categoryType: string;
 	totalCount: number;
-	lastUpdate: string;
+	lastUpdateTime: string | Date;
 	successRate: number;
 	status: string;
-	statusText: string;
+	sourceCode: string;
+	description: string;
 	color: string;
 }
-
-// 爬虫配置 - 易于扩展
-const spiderConfig = [
-	{
-		id: "game",
-		name: "游戏爬虫",
-		icon: "🎮",
-		color: "#FF6B6B",
-		category: "游戏数据",
-		categoryType: "danger"
-	},
-	{
-		id: "hotTopics",
-		name: "热门话题",
-		icon: "🔥",
-		color: "#FF8C42",
-		category: "热搜数据",
-		categoryType: "warning"
-	},
-	{
-		id: "aiTools",
-		name: "AI工具库",
-		icon: "🤖",
-		color: "#4ECDC4",
-		category: "AI数据",
-		categoryType: "info"
-	},
-	{
-		id: "novels",
-		name: "小说爬虫",
-		icon: "📚",
-		color: "#95E1D3",
-		category: "文学数据",
-		categoryType: "success"
-	}
-];
 
 // 数据引用
 const totalStats = ref<CrawlerStat[]>([]);
 const crawlerDetails = ref<CrawlerDetail[]>([]);
 const tableLoading = ref(false);
+const isRefreshing = ref(false);
+const lastUpdateTime = ref(new Date());
+const showSpidersModal = ref(false);
+const showCodeDialog = ref(false);
+const selectedSpider = ref<CrawlerDetail | null>(null);
+const sourceCodeContent = ref("");
 
 // ECharts 实例
 let spiderTypePieChart: ECharts | null = null;
@@ -190,10 +198,18 @@ const spiderTypePieRef = ref<HTMLDivElement>();
 const trendLineRef = ref<HTMLDivElement>();
 
 // 格式化时间
-const formatTime = (time: string | number) => {
+const formatTime = (time: string | number | Date) => {
 	if (!time) return "未知";
 	const date = new Date(time);
 	return date.toLocaleString("zh-CN");
+};
+
+// 格式化数字
+const formatNumber = (num: number) => {
+	if (num >= 10000) {
+		return (num / 10000).toFixed(2) + "万";
+	}
+	return num.toString();
 };
 
 // 初始化 ECharts - 爬虫类型分布饼图
@@ -260,18 +276,13 @@ const initSpiderTypePie = () => {
 };
 
 // 初始化 ECharts - 数据趋势折线图
-const initTrendLine = () => {
+const initTrendLine = (trendData: any[]) => {
 	if (!trendLineRef.value) return;
 
 	const chartDom = trendLineRef.value;
 	trendLineChart = echarts.init(chartDom, null, { locale: "ZH" });
 
-	// 模拟最近7天的数据
-	const dates = Array.from({ length: 7 }, (_, i) => {
-		const date = new Date();
-		date.setDate(date.getDate() - (6 - i));
-		return date.toLocaleDateString("zh-CN", { month: "2-digit", day: "2-digit" });
-	});
+	const dates = trendData.map(item => item.date);
 
 	const option: EChartsOption = {
 		tooltip: {
@@ -284,7 +295,7 @@ const initTrendLine = () => {
 			}
 		},
 		legend: {
-			data: crawlerDetails.value.map(d => d.spiderName),
+			data: ["爬取数据量", "成功数据量"],
 			top: "5%"
 		},
 		grid: {
@@ -302,23 +313,42 @@ const initTrendLine = () => {
 		yAxis: {
 			type: "value"
 		},
-		series: crawlerDetails.value.map(detail => ({
-			name: detail.spiderName,
-			type: "line",
-			data: Array.from({ length: 7 }, () => Math.floor(Math.random() * 1000) + detail.totalCount * 0.1),
-			smooth: true,
-			itemStyle: { color: detail.color },
-			areaStyle: {
-				color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-					{ offset: 0, color: detail.color + "40" },
-					{ offset: 1, color: detail.color + "00" }
-				])
+		series: [
+			{
+				name: "爬取数据量",
+				type: "line",
+				data: trendData.map(item => item.dataCount),
+				smooth: true,
+				itemStyle: { color: "#667eea" },
+				areaStyle: {
+					color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+						{ offset: 0, color: "#667eea40" },
+						{ offset: 1, color: "#667eea00" }
+					])
+				},
+				symbolSize: 8,
+				lineStyle: {
+					width: 2
+				}
 			},
-			symbolSize: 8,
-			lineStyle: {
-				width: 2
+			{
+				name: "成功数据量",
+				type: "line",
+				data: trendData.map(item => item.successCount),
+				smooth: true,
+				itemStyle: { color: "#67c23a" },
+				areaStyle: {
+					color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+						{ offset: 0, color: "#67c23a40" },
+						{ offset: 1, color: "#67c23a00" }
+					])
+				},
+				symbolSize: 8,
+				lineStyle: {
+					width: 2
+				}
 			}
-		})),
+		],
 		animation: true,
 		animationDuration: 1000
 	};
@@ -326,145 +356,242 @@ const initTrendLine = () => {
 	trendLineChart.setOption(option);
 };
 
-// 获取爬虫数据
+// 获取爬虫统计数据 - 调用真实API
 const fetchCrawlerStats = async () => {
 	tableLoading.value = true;
 	try {
-		// 这里可以替换为真实API调用
-		// const res = await getCrawlerStatsApi();
-
-		// 模拟数据构建
-		const mockStats: CrawlerDetail[] = [
-			{
-				spiderName: "游戏爬虫",
-				icon: "🎮",
-				category: "游戏数据",
-				categoryType: "danger",
-				totalCount: 5432,
-				lastUpdate: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-				successRate: 98,
-				status: "success",
-				statusText: "运行中",
-				color: "#FF6B6B"
-			},
-			{
-				spiderName: "热门话题",
-				icon: "🔥",
-				category: "热搜数据",
-				categoryType: "warning",
-				totalCount: 1850,
-				lastUpdate: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
-				successRate: 95,
-				status: "success",
-				statusText: "运行中",
-				color: "#FF8C42"
-			},
-			{
-				spiderName: "AI工具库",
-				icon: "🤖",
-				category: "AI数据",
-				categoryType: "info",
-				totalCount: 2156,
-				lastUpdate: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
-				successRate: 92,
-				status: "success",
-				statusText: "运行中",
-				color: "#4ECDC4"
-			},
-			{
-				spiderName: "小说爬虫",
-				icon: "📚",
-				category: "文学数据",
-				categoryType: "success",
-				totalCount: 8923,
-				lastUpdate: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
-				successRate: 97,
-				status: "success",
-				statusText: "运行中",
-				color: "#95E1D3"
+		// 调用后端 API
+		const response = await fetch("/statistics/getCrawlerStats", {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json"
 			}
-		];
+		});
 
-		crawlerDetails.value = mockStats;
+		if (!response.ok) {
+			throw new Error("API 请求失败");
+		}
 
-		// 计算统计数据
-		const totalCount = mockStats.reduce((sum, item) => sum + item.totalCount, 0);
-		const avgSuccessRate = Math.round(mockStats.reduce((sum, item) => sum + item.successRate, 0) / mockStats.length);
+		const result = await response.json();
 
-		totalStats.value = [
-			{
-				id: "totalData",
-				icon: "📦",
-				label: "总爬取数据量",
-				value: totalCount,
-				trend: 12,
-				color: "#409EFF"
-			},
-			{
-				id: "successRate",
-				icon: "✅",
-				label: "平均成功率",
-				value: avgSuccessRate,
-				trend: 5,
-				color: "#67C23A"
-			},
-			{
-				id: "spiderCount",
-				icon: "🕷️",
-				label: "活跃爬虫数",
-				value: mockStats.length,
-				trend: 0,
-				color: "#E6A23C"
-			},
-			{
-				id: "updateFreq",
-				icon: "⏱️",
-				label: "每日更新频率",
-				value: 3,
-				trend: 2,
-				color: "#F56C6C"
-			}
-		];
+		if (result.code === 0 || result.success) {
+			const data = result.data;
+			const crawlers = data.crawlers || [];
+			const trendData = data.trendData || [];
 
-		// 初始化图表
-		setTimeout(() => {
-			initSpiderTypePie();
-			initTrendLine();
-		}, 100);
+			// 映射爬虫数据
+			const mappedCrawlers: CrawlerDetail[] = crawlers.map((crawler: any) => ({
+				spiderName: crawler.spiderName,
+				platformName: crawler.platformName,
+				icon: getSpiderIcon(crawler.spiderName),
+				totalCount: crawler.totalCount,
+				lastUpdateTime: crawler.lastUpdateTime,
+				successRate: crawler.successRate,
+				status: "active",
+				sourceCode: crawler.sourceCode,
+				description: crawler.description,
+				color: getSpiderColor(crawler.spiderName)
+			}));
+
+			crawlerDetails.value = mappedCrawlers;
+
+			// 计算总统计
+			const totalCount = crawlers.reduce((sum: number, item: any) => sum + item.totalCount, 0);
+			const avgSuccessRate = Math.round(
+				crawlers.reduce((sum: number, item: any) => sum + item.successRate, 0) / crawlers.length
+			);
+
+			totalStats.value = [
+				{
+					id: "totalData",
+					icon: "📦",
+					label: "总爬取数据量",
+					value: totalCount,
+					trend: 12,
+					color: "#409EFF"
+				},
+				{
+					id: "successRate",
+					icon: "✅",
+					label: "平均成功率",
+					value: avgSuccessRate,
+					trend: 5,
+					color: "#67C23A"
+				},
+				{
+					id: "spiderCount",
+					icon: "🕷️",
+					label: "活跃爬虫数",
+					value: crawlers.length,
+					trend: 0,
+					color: "#E6A23C"
+				},
+				{
+					id: "updateFreq",
+					icon: "⏱️",
+					label: "每日更新频率",
+					value: 3,
+					trend: 2,
+					color: "#F56C6C"
+				}
+			];
+
+			lastUpdateTime.value = new Date();
+
+			// 初始化图表
+			setTimeout(() => {
+				initSpiderTypePie();
+				initTrendLine(trendData);
+			}, 100);
+		} else {
+			ElMessage.error("获取数据失败: " + (result.msg || "未知错误"));
+		}
 	} catch (error) {
 		console.error("获取爬虫统计数据失败:", error);
+		ElMessage.error("获取爬虫统计数据失败，请检查网络连接");
 	} finally {
 		tableLoading.value = false;
 	}
 };
 
-// 刷新数据
-const refreshData = async () => {
-	tableLoading.value = true;
-	await new Promise(resolve => setTimeout(resolve, 1000));
-	await fetchCrawlerStats();
+// 获取爬虫图标
+const getSpiderIcon = (spiderName: string): string => {
+	const iconMap: Record<string, string> = {
+		游戏爬虫: "🎮",
+		热门话题: "🔥",
+		AI工具库: "🤖",
+		小说爬虫: "📚"
+	};
+	return iconMap[spiderName] || "🕷️";
 };
 
-// 查看详情
-const viewDetails = (row: CrawlerDetail) => {
-	console.log("查看详情:", row.spiderName);
-	// 可以打开详情弹窗或导航到详情页面
+// 获取爬虫颜色
+const getSpiderColor = (spiderName: string): string => {
+	const colorMap: Record<string, string> = {
+		游戏爬虫: "#FF6B6B",
+		热门话题: "#FF8C42",
+		AI工具库: "#4ECDC4",
+		小说爬虫: "#95E1D3"
+	};
+	return colorMap[spiderName] || "#409EFF";
+};
+
+// 刷新所有数据
+const refreshAllData = async () => {
+	isRefreshing.value = true;
+	try {
+		await fetchCrawlerStats();
+		ElMessage.success("数据刷新成功");
+	} catch (error) {
+		ElMessage.error("刷新失败，请重试");
+	} finally {
+		isRefreshing.value = false;
+	}
+};
+
+// 处理活跃爬虫卡片点击
+const handleActiveSpidersClick = () => {
+	showSpidersModal.value = true;
+};
+
+// 处理活跃爬虫弹窗关闭
+const handleSpidersModalClose = () => {
+	showSpidersModal.value = false;
+};
+
+// 查看源代码
+const viewSourceCode = (row: CrawlerDetail) => {
+	selectedSpider.value = row;
+
+	// 生成模拟源代码
+	const mockCode = `// ${row.spiderName}
+// 文件: ${row.sourceCode}
+// 功能: ${row.description}
+
+class ${toCamelCase(row.spiderName)}Spider {
+  constructor() {
+    this.name = '${row.spiderName}';
+    this.platform = '${row.platformName}';
+    this.totalCount = ${row.totalCount};
+    this.successRate = ${row.successRate};
+  }
+
+  async crawl() {
+    console.log('开始爬取 ${row.platformName} 数据...');
+    
+    try {
+      const data = await this.fetchData();
+      const saved = await this.saveToDatabase(data);
+      
+      console.log('✅ 爬取完成，共获取 ' + data.length + ' 条数据');
+      console.log('成功保存 ' + saved + ' 条记录');
+      
+      return { 
+        success: true, 
+        count: data.length,
+        saved: saved,
+        successRate: ${row.successRate}
+      };
+    } catch (error) {
+      console.error('❌ 爬取失败:', error.message);
+      return { success: false, error: error.message };
+    }
+  }
+
+  async fetchData() {
+    console.log('从 ${row.platformName} 获取数据...');
+    const response = await fetch('${row.platformName}');
+    const data = await response.json();
+    return data;
+  }
+
+  async saveToDatabase(data) {
+    console.log('保存数据到数据库...');
+    const result = await db.query(
+      'INSERT INTO crawler_data (spider_name, data_json, created_at) VALUES (?, ?, NOW())',
+      ['${row.spiderName}', JSON.stringify(data)]
+    );
+    return result.affectedRows;
+  }
+}
+
+// 导出爬虫类
+module.exports = ${toCamelCase(row.spiderName)}Spider;`;
+
+	sourceCodeContent.value = mockCode;
+	showCodeDialog.value = true;
+};
+
+// 复制代码
+const copyCode = () => {
+	navigator.clipboard.writeText(sourceCodeContent.value).then(() => {
+		ElMessage.success("代码已复制到剪贴板");
+	});
+};
+
+// 驼峰转换
+const toCamelCase = (str: string) => {
+	return str
+		.split("")
+		.map((char, index) => {
+			if (index === 0) return char.toUpperCase();
+			return char;
+		})
+		.join("")
+		.replace(/\s/g, "");
 };
 
 // 查看数据
 const viewData = (row: CrawlerDetail) => {
-	console.log("查看数据:", row.spiderName);
-	// 根据爬虫类型导航到对应的数据页面
 	const routeMap: Record<string, string> = {
-		"游戏爬虫": "/crawlerStats/game",
-		"热门话题": "/crawlerStats/hotTopics",
-		"AI工具库": "/crawlerStats/aiTools",
-		"小说爬虫": "/crawlerStats/novels"
+		游戏爬虫: "/crawlerStats/game",
+		热门话题: "/crawlerStats/hotTopics",
+		AI工具库: "/crawlerStats/aiTools",
+		小说爬虫: "/crawlerStats/novels"
 	};
 	const route = routeMap[row.spiderName];
 	if (route) {
-		// 使用 router 导航
-		// router.push(route);
+		ElMessage.info("功能开发中：" + route);
 	}
 };
 
@@ -486,8 +613,6 @@ onUnmounted(() => {
 	spiderTypePieChart?.dispose();
 	trendLineChart?.dispose();
 });
-
-import { onUnmounted } from "vue";
 </script>
 
 <style lang="scss" scoped>
@@ -496,85 +621,23 @@ import { onUnmounted } from "vue";
 	background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
 	min-height: 100vh;
 
+	// 顶部操作区
+	.header-actions {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-bottom: 20px;
+		animation: slideInDown 0.6s ease-out;
+
+		:deep(.el-statistic) {
+			font-size: 12px;
+		}
+	}
+
 	// 统计卡片区域
 	.stats-header {
 		margin-bottom: 30px;
 		animation: slideInDown 0.6s ease-out;
-
-		.stat-card {
-			background: white;
-			border-radius: 12px;
-			padding: 20px;
-			box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-			transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-			cursor: pointer;
-			position: relative;
-			overflow: hidden;
-
-			&::before {
-				content: "";
-				position: absolute;
-				top: 0;
-				left: -100%;
-				width: 100%;
-				height: 100%;
-				background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-				transition: left 0.6s ease-in-out;
-			}
-
-			&:hover {
-				transform: translateY(-8px);
-				box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-
-				&::before {
-					left: 100%;
-				}
-			}
-
-			.stat-content {
-				display: flex;
-				align-items: center;
-				gap: 15px;
-
-				.stat-icon {
-					font-size: 32px;
-					display: flex;
-					align-items: center;
-					justify-content: center;
-				}
-
-				.stat-info {
-					flex: 1;
-
-					.stat-label {
-						font-size: 12px;
-						color: #909399;
-						margin-bottom: 8px;
-						font-weight: 500;
-					}
-
-					.stat-value {
-						font-size: 28px;
-						font-weight: bold;
-						color: #303133;
-						margin-bottom: 8px;
-					}
-
-					.stat-trend {
-						font-size: 12px;
-						font-weight: 500;
-
-						&.up {
-							color: #67c23a;
-						}
-
-						&.down {
-							color: #f56c6c;
-						}
-					}
-				}
-			}
-		}
 	}
 
 	// 图表区域
@@ -671,6 +734,44 @@ import { onUnmounted } from "vue";
 		}
 	}
 
+	// 代码预览区域
+	.code-container {
+		background: #1e1e1e;
+		border-radius: 4px;
+		overflow: hidden;
+
+		.code-header {
+			background: #252526;
+			padding: 12px 16px;
+			border-bottom: 1px solid #3e3e42;
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+
+			.code-file {
+				color: #858585;
+				font-size: 12px;
+				font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
+			}
+		}
+
+		.code-content {
+			padding: 16px;
+			margin: 0;
+			color: #d4d4d4;
+			font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
+			font-size: 12px;
+			line-height: 1.6;
+			max-height: 500px;
+			overflow-y: auto;
+			background: #1e1e1e;
+
+			code {
+				color: inherit;
+			}
+		}
+	}
+
 	// 子路由区域
 	.children-section {
 		animation: slideInUp 0.6s ease-out 0.4s backwards;
@@ -705,11 +806,10 @@ import { onUnmounted } from "vue";
 	.crawler-stats-container {
 		padding: 15px;
 
-		.stat-card {
-			.stat-content {
-				flex-direction: column;
-				text-align: center;
-			}
+		.header-actions {
+			flex-direction: column;
+			align-items: flex-start;
+			gap: 10px;
 		}
 
 		.chart-container {

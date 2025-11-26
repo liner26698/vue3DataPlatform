@@ -36,7 +36,7 @@
 		<!-- 热门话题展示 -->
 		<div class="topics-grid">
 			<el-empty v-if="filteredTopics.length === 0" description="暂无数据" />
-			
+
 			<transition-group name="list" tag="div" class="grid-container">
 				<div
 					v-for="(topic, index) in filteredTopics"
@@ -73,9 +73,7 @@
 
 					<!-- 操作按钮 -->
 					<div class="topic-actions">
-						<el-button link type="primary" size="small" @click="openTopic(topic)">
-							查看详情 →
-						</el-button>
+						<el-button link type="primary" size="small" @click="openTopic(topic)"> 查看详情 → </el-button>
 					</div>
 				</div>
 			</transition-group>
@@ -157,9 +155,7 @@ const filteredTopics = computed(() => {
 	if (searchKeyword.value) {
 		const keyword = searchKeyword.value.toLowerCase();
 		result = result.filter(
-			topic =>
-				topic.title.toLowerCase().includes(keyword) ||
-				topic.description.toLowerCase().includes(keyword)
+			topic => topic.title.toLowerCase().includes(keyword) || topic.description.toLowerCase().includes(keyword)
 		);
 	}
 
@@ -184,9 +180,7 @@ const totalCount = computed(() => {
 	if (searchKeyword.value) {
 		const keyword = searchKeyword.value.toLowerCase();
 		result = result.filter(
-			topic =>
-				topic.title.toLowerCase().includes(keyword) ||
-				topic.description.toLowerCase().includes(keyword)
+			topic => topic.title.toLowerCase().includes(keyword) || topic.description.toLowerCase().includes(keyword)
 		);
 	}
 	return result.length;

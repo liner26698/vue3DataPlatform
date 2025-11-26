@@ -38,9 +38,7 @@
 		<el-row :gutter="20" class="stats-row">
 			<el-col :xs="24" :sm="12" :md="6">
 				<div class="stat-card">
-					<div class="stat-icon" style="background: linear-gradient(135deg, #667eea, #764ba2)">
-						📊
-					</div>
+					<div class="stat-icon" style="background: linear-gradient(135deg, #667eea, #764ba2)">📊</div>
 					<div class="stat-content">
 						<div class="stat-value">{{ allTools.length }}</div>
 						<div class="stat-label">总工具数</div>
@@ -49,9 +47,7 @@
 			</el-col>
 			<el-col :xs="24" :sm="12" :md="6">
 				<div class="stat-card">
-					<div class="stat-icon" style="background: linear-gradient(135deg, #f093fb, #f5576c)">
-						⭐
-					</div>
+					<div class="stat-icon" style="background: linear-gradient(135deg, #f093fb, #f5576c)">⭐</div>
 					<div class="stat-content">
 						<div class="stat-value">{{ avgRating }}</div>
 						<div class="stat-label">平均评分</div>
@@ -60,9 +56,7 @@
 			</el-col>
 			<el-col :xs="24" :sm="12" :md="6">
 				<div class="stat-card">
-					<div class="stat-icon" style="background: linear-gradient(135deg, #4facfe, #00f2fe)">
-						👥
-					</div>
+					<div class="stat-icon" style="background: linear-gradient(135deg, #4facfe, #00f2fe)">👥</div>
 					<div class="stat-content">
 						<div class="stat-value">{{ totalUsers }}</div>
 						<div class="stat-label">总用户数</div>
@@ -71,9 +65,7 @@
 			</el-col>
 			<el-col :xs="24" :sm="12" :md="6">
 				<div class="stat-card">
-					<div class="stat-icon" style="background: linear-gradient(135deg, #43e97b, #38f9d7)">
-						🔥
-					</div>
+					<div class="stat-icon" style="background: linear-gradient(135deg, #43e97b, #38f9d7)">🔥</div>
 					<div class="stat-content">
 						<div class="stat-value">{{ hotToolsCount }}</div>
 						<div class="stat-label">热门工具</div>
@@ -130,9 +122,7 @@
 								<span class="stat">👥 {{ tool.users }}位用户</span>
 								<span class="stat">📈 热度: {{ tool.popularity }}</span>
 							</div>
-							<el-button type="primary" link size="small" @click="visitTool(tool)">
-								访问 →
-							</el-button>
+							<el-button type="primary" link size="small" @click="visitTool(tool)"> 访问 → </el-button>
 						</div>
 					</div>
 				</div>
@@ -224,11 +214,7 @@ const filteredTools = computed(() => {
 	// 关键词搜索
 	if (searchKeyword.value) {
 		const keyword = searchKeyword.value.toLowerCase();
-		result = result.filter(
-			tool =>
-				tool.name.toLowerCase().includes(keyword) ||
-				tool.description.toLowerCase().includes(keyword)
-		);
+		result = result.filter(tool => tool.name.toLowerCase().includes(keyword) || tool.description.toLowerCase().includes(keyword));
 	}
 
 	// 排序
@@ -251,11 +237,7 @@ const totalCount = computed(() => {
 	}
 	if (searchKeyword.value) {
 		const keyword = searchKeyword.value.toLowerCase();
-		result = result.filter(
-			tool =>
-				tool.name.toLowerCase().includes(keyword) ||
-				tool.description.toLowerCase().includes(keyword)
-		);
+		result = result.filter(tool => tool.name.toLowerCase().includes(keyword) || tool.description.toLowerCase().includes(keyword));
 	}
 	return result.length;
 });

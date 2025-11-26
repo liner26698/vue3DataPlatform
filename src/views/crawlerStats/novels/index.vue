@@ -81,9 +81,7 @@
 					<div class="novel-card">
 						<!-- 左侧：书籍封面 -->
 						<div class="novel-cover">
-							<div class="cover-placeholder">
-								📖
-							</div>
+							<div class="cover-placeholder">📖</div>
 							<div class="cover-status" :class="`status-${novel.status}`">
 								{{ getStatusName(novel.status) }}
 							</div>
@@ -130,9 +128,7 @@
 							<!-- 最后更新 -->
 							<div class="novel-footer">
 								<span class="update-time">最后更新: {{ novel.lastUpdated }}</span>
-								<el-button type="primary" link @click="readNovel(novel)">
-									阅读 →
-								</el-button>
+								<el-button type="primary" link @click="readNovel(novel)"> 阅读 → </el-button>
 							</div>
 						</div>
 					</div>
@@ -236,11 +232,7 @@ const filteredNovels = computed(() => {
 	// 搜索
 	if (searchKeyword.value) {
 		const keyword = searchKeyword.value.toLowerCase();
-		result = result.filter(
-			n =>
-				n.title.toLowerCase().includes(keyword) ||
-				n.author.toLowerCase().includes(keyword)
-		);
+		result = result.filter(n => n.title.toLowerCase().includes(keyword) || n.author.toLowerCase().includes(keyword));
 	}
 
 	// 排序
@@ -267,11 +259,7 @@ const totalCount = computed(() => {
 	}
 	if (searchKeyword.value) {
 		const keyword = searchKeyword.value.toLowerCase();
-		result = result.filter(
-			n =>
-				n.title.toLowerCase().includes(keyword) ||
-				n.author.toLowerCase().includes(keyword)
-		);
+		result = result.filter(n => n.title.toLowerCase().includes(keyword) || n.author.toLowerCase().includes(keyword));
 	}
 	return result.length;
 });
@@ -310,11 +298,7 @@ const readNovel = (novel: Novel) => {
 // 加载数据
 const loadNovelsData = async () => {
 	const genres = ["mystery", "romance", "fantasy", "urban"];
-	const statuses: Array<"completed" | "serializing" | "paused"> = [
-		"completed",
-		"serializing",
-		"paused"
-	];
+	const statuses: Array<"completed" | "serializing" | "paused"> = ["completed", "serializing", "paused"];
 
 	const mockData: Novel[] = Array.from({ length: 100 }, (_, i) => ({
 		id: `novel-${i}`,
@@ -327,8 +311,7 @@ const loadNovelsData = async () => {
 		rating: 3 + Math.random() * 2,
 		status: statuses[Math.floor(Math.random() * statuses.length)],
 		progress: Math.floor(Math.random() * 100),
-		lastUpdated: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000)
-			.toLocaleDateString("zh-CN"),
+		lastUpdated: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toLocaleDateString("zh-CN"),
 		url: "#"
 	}));
 
