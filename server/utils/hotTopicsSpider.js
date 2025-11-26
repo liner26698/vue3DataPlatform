@@ -171,92 +171,65 @@ async function crawlBaiduBoardTrending() {
 }
 
 /**
- * 2. 爬取知乎热榜 - 改进版（带备选方案）
+ * 2. 爬取知乎热榜
  */
 async function crawlZhihuTrending() {
 	try {
 		console.log("❓ 正在爬取知乎热榜...");
 		const topics = [];
 
-		// 方案1: 尝试直接爬取
-		try {
-			const url = "https://www.zhihu.com/hot";
-			const response = await axios.get(url, {
-				timeout: 8000,
-				headers: {
-					"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
-					"Accept-Language": "zh-CN,zh;q=0.9",
-					"Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-					"Referer": "https://www.zhihu.com/",
-					"Cookie": "z_c0=; _zap=; _xsrf="
+		const url = "https://www.zhihu.com/hot";
+		const response = await axios.get(url, {
+			timeout: 10000,
+			headers: {
+				"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
+				"Accept-Language": "zh-CN,zh;q=0.9",
+				"Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+				"Referer": "https://www.zhihu.com/",
+				"Cookie": "_zap=123; z_c0=test"
+			}
+		});
+
+		const $ = cheerio.load(response.data);
+		const selectors = [
+			"[role='feed'] [role='article']",
+			".Card.CardBase",
+			"[class*='HotList'] [class*='Item']",
+			"div[data-testid='hotItem']"
+		];
+
+		for (const selector of selectors) {
+			$(selector).each((index, element) => {
+				if (topics.length >= 15) return;
+				const $item = $(element);
+				const titleElem = $item.find("h2 a, h3 a, a[class*='Title']").first();
+				const title = titleElem.text().trim();
+
+				if (title && title.length > 2 && title.length < 200 && !topics.some(t => t.title === title)) {
+					topics.push({
+						platform: "zhihu",
+						rank: topics.length + 1,
+						title: title,
+						category: "热榜",
+						heat: (100 - topics.length) * 50000,
+						trend: "stable",
+						tags: ["知乎", "热榜"],
+						url: `https://www.zhihu.com/hot`,
+						description: title,
+						is_active: 1
+					});
 				}
 			});
-
-			const $ = cheerio.load(response.data);
-			const selectors = [
-				"[role='feed'] [role='article']",
-				".Card.CardBase",
-				"[class*='HotList'] [class*='Item']",
-				"div[data-testid='hotItem']"
-			];
-
-			for (const selector of selectors) {
-				$(selector).each((index, element) => {
-					if (topics.length >= 15) return;
-					const $item = $(element);
-					const titleElem = $item.find("h2 a, h3 a, a[class*='Title']").first();
-					const title = titleElem.text().trim();
-
-					if (title && title.length > 2 && title.length < 200 && !topics.some(t => t.title === title)) {
-						topics.push({
-							platform: "zhihu",
-							rank: topics.length + 1,
-							title: title,
-							category: "热榜",
-							heat: (100 - topics.length) * 50000,
-							trend: "stable",
-							tags: ["知乎", "热榜"],
-							url: `https://www.zhihu.com/hot`,
-							description: title,
-							is_active: 1
-						});
-					}
-				});
-				if (topics.length >= 15) break;
-			}
-		} catch (err) {
-			console.warn("⚠️  方案1（直接爬取）失败:", err.message);
+			if (topics.length >= 15) break;
 		}
 
-		// 方案2: 如果直接爬取失败，使用备选数据
-		if (topics.length === 0) {
-			console.log("📡 使用知乎备选数据...");
-			const zhihuBackupTopics = [
-				{ title: "2025年中国经济形势分析", heat: 2600000, category: "经济" },
-				{ title: "AI技术最新突破", heat: 2450000, category: "科技" },
-				{ title: "职场发展如何规划", heat: 2200000, category: "职业" },
-				{ title: "年轻人如何理财", heat: 1950000, category: "财务" },
-				{ title: "程序员的职业困境", heat: 1750000, category: "技术" }
-			];
-
-			zhihuBackupTopics.forEach((topic, idx) => {
-				topics.push({
-					platform: "zhihu",
-					rank: idx + 1,
-					title: topic.title,
-					category: topic.category,
-					heat: topic.heat,
-					trend: "stable",
-					tags: ["知乎", "热榜"],
-					url: "https://www.zhihu.com/hot",
-					description: topic.title,
-					is_active: 1
-				});
-			});
+		if (topics.length > 0) {
+			console.log(`✅ 知乎热榜爬取成功: ${topics.length} 条`);
+			return topics;
 		}
 
-		console.log(`✅ 知乎热榜爬取成功: ${topics.length} 条`);
-		return topics;
+		console.warn("⚠️  知乎热榜暂无数据");
+		return [];
 	} catch (error) {
 		console.error("❌ 知乎热榜爬取失败:", error.message);
 		return [];
@@ -264,128 +237,83 @@ async function crawlZhihuTrending() {
 }
 
 /**
- * 3. 爬取微博热搜 - 改进版（带重试机制）
+ * 3. 爬取微博热搜
  */
 async function crawlWeiboTrending() {
 	try {
 		console.log("✨ 正在爬取微博热搜...");
 		const topics = [];
-		const maxRetries = 2;
 
-		// 添加延迟函数
-		const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
-
-		// 重试机制
-		for (let attempt = 1; attempt <= maxRetries; attempt++) {
-			try {
-				if (attempt > 1) {
-					console.log(`   重试第 ${attempt - 1} 次...`);
-					await delay(2000); // 延迟2秒后重试
-				}
-
-				const response = await axios.get("https://s.weibo.com/top/summary", {
-					timeout: 8000,
-					headers: {
-						"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
-						"Accept-Language": "zh-CN,zh;q=0.9",
-						"Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-						"Accept-Encoding": "gzip, deflate",
-						"Referer": "https://s.weibo.com/",
-						"Sec-Fetch-Dest": "document",
-						"Sec-Fetch-Mode": "navigate"
-					}
-				});
-
-				const $ = cheerio.load(response.data);
-
-				// 微博热搜结构 - 尝试多个选择器
-				const selectors = [
-					"tr:not(:first-child)",
-					"table tr",
-					".tr-item",
-					"[class*='rank']"
-				];
-
-				for (const selector of selectors) {
-					$(selector).each((index, element) => {
-						if (topics.length >= 15) return;
-
-						const $item = $(element);
-						const $link = $item.find("a[href*='keyword']").first();
-						let title = $link.text().trim() || $item.find("td").eq(1).text().trim();
-
-						if (title) {
-							title = title.replace(/\s+/g, " ").trim().substring(0, 100);
-						}
-
-						if (title && title.length > 2 && !topics.some(t => t.title === title)) {
-							const heatText = $item.find("td").eq(2).text() || "";
-							const heatMatch = heatText.match(/(\d+(?:\.\d+)?)(万|K|M)?/);
-							let heat = 0;
-							if (heatMatch) {
-								heat = parseInt(heatMatch[1]);
-								if (heatMatch[2] === "万") heat *= 10000;
-								else if (heatMatch[2] === "M") heat *= 1000000;
-								else if (heatMatch[2] === "K") heat *= 1000;
-							}
-
-							topics.push({
-								platform: "weibo",
-								rank: topics.length + 1,
-								title: title,
-								category: "热搜",
-								heat: heat || (100 - topics.length) * 55000,
-								trend: "stable",
-								tags: ["微博", "热搜"],
-								url: `https://s.weibo.com/weibo?q=${encodeURIComponent(title)}`,
-								description: title,
-								is_active: 1
-							});
-						}
-					});
-					if (topics.length >= 15) break;
-				}
-
-				if (topics.length > 0) {
-					console.log(`✅ 微博热搜爬取成功: ${topics.length} 条`);
-					return topics;
-				}
-			} catch (err) {
-				if (attempt === maxRetries) {
-					console.warn("⚠️  微博重试失败，使用备选数据");
-				}
-				if (attempt < maxRetries) {
-					continue;
-				}
+		const response = await axios.get("https://s.weibo.com/top/summary", {
+			timeout: 10000,
+			headers: {
+				"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
+				"Accept-Language": "zh-CN,zh;q=0.9",
+				"Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+				"Accept-Encoding": "gzip, deflate",
+				"Referer": "https://s.weibo.com/",
+				"Sec-Fetch-Dest": "document",
+				"Sec-Fetch-Mode": "navigate"
 			}
-		}
-
-		// 备选数据
-		const weiboBackupTopics = [
-			{ title: "国家领导人会见外国客人", heat: 3800000 },
-			{ title: "明星八卦热点话题", heat: 3200000 },
-			{ title: "体育赛事实时讨论", heat: 2900000 },
-			{ title: "社会热点话题评论", heat: 2600000 },
-			{ title: "粉丝应援互动活动", heat: 2300000 }
-		];
-
-		weiboBackupTopics.forEach((topic, idx) => {
-			topics.push({
-				platform: "weibo",
-				rank: idx + 1,
-				title: topic.title,
-				category: "热搜",
-				heat: topic.heat,
-				trend: "stable",
-				tags: ["微博", "热搜"],
-				url: `https://s.weibo.com/weibo?q=${encodeURIComponent(topic.title)}`,
-				description: topic.title,
-				is_active: 1
-			});
 		});
 
-		console.log(`✅ 微博热搜爬取成功（备选）: ${topics.length} 条`);
-		return topics;
+		const $ = cheerio.load(response.data);
+
+		// 微博热搜结构 - 尝试多个选择器
+		const selectors = [
+			"tr:not(:first-child)",
+			"table tr",
+			".tr-item",
+			"[class*='rank']"
+		];
+
+		for (const selector of selectors) {
+			$(selector).each((index, element) => {
+				if (topics.length >= 15) return;
+
+				const $item = $(element);
+				const $link = $item.find("a[href*='keyword']").first();
+				let title = $link.text().trim() || $item.find("td").eq(1).text().trim();
+
+				if (title) {
+					title = title.replace(/\s+/g, " ").trim().substring(0, 100);
+				}
+
+				if (title && title.length > 2 && !topics.some(t => t.title === title)) {
+					const heatText = $item.find("td").eq(2).text() || "";
+					const heatMatch = heatText.match(/(\d+(?:\.\d+)?)(万|K|M)?/);
+					let heat = 0;
+					if (heatMatch) {
+						heat = parseInt(heatMatch[1]);
+						if (heatMatch[2] === "万") heat *= 10000;
+						else if (heatMatch[2] === "M") heat *= 1000000;
+						else if (heatMatch[2] === "K") heat *= 1000;
+					}
+
+					topics.push({
+						platform: "weibo",
+						rank: topics.length + 1,
+						title: title,
+						category: "热搜",
+						heat: heat || (100 - topics.length) * 55000,
+						trend: "stable",
+						tags: ["微博", "热搜"],
+						url: `https://s.weibo.com/weibo?q=${encodeURIComponent(title)}`,
+						description: title,
+						is_active: 1
+					});
+				}
+			});
+			if (topics.length >= 15) break;
+		}
+
+		if (topics.length > 0) {
+			console.log(`✅ 微博热搜爬取成功: ${topics.length} 条`);
+			return topics;
+		}
+
+		console.warn("⚠️  微博热搜暂无数据");
+		return [];
 	} catch (error) {
 		console.error("❌ 微博热搜爬取失败:", error.message);
 		return [];
@@ -509,40 +437,16 @@ async function crawlDouyinTrending() {
 				if (topics.length >= 15) break;
 			}
 		} catch (err) {
-			console.warn("⚠️  方案1（直接爬取）失败:", err.message);
+			console.warn("⚠️  抖音爬取失败:", err.message);
 		}
 
-		// 方案2: 如果爬取失败，使用备选数据
-		if (topics.length === 0) {
-			console.log("📡 使用抖音备选数据...");
-			const douyinBackupTopics = [
-				{ title: "职场新人如何快速成长", heat: 2500000, tags: ["职场", "成长"] },
-				{ title: "年轻人的生活压力", heat: 2100000, tags: ["生活", "心理"] },
-				{ title: "冬季养生小妙招", heat: 1800000, tags: ["健康", "养生"] },
-				{ title: "明星八卦热议话题", heat: 1500000, tags: ["娱乐", "明星"] },
-				{ title: "新晋演员的表演之路", heat: 1300000, tags: ["电影", "演员"] },
-				{ title: "美食探店推荐", heat: 1200000, tags: ["美食", "探店"] },
-				{ title: "时尚穿搭趋势", heat: 1100000, tags: ["时尚", "穿搭"] }
-			];
-
-			douyinBackupTopics.forEach((topic, idx) => {
-				topics.push({
-					platform: "douyin",
-					rank: idx + 1,
-					title: topic.title,
-					category: "热点",
-					heat: topic.heat,
-					trend: "stable",
-					tags: topic.tags || ["抖音", "热点"],
-					url: `https://www.douyin.com/search?keyword=${encodeURIComponent(topic.title)}`,
-					description: topic.title,
-					is_active: 1
-				});
-			});
+		if (topics.length > 0) {
+			console.log(`✅ 抖音热点爬取成功: ${topics.length} 条`);
+			return topics;
 		}
 
-		console.log(`✅ 抖音热点爬取成功: ${topics.length} 条`);
-		return topics;
+		console.warn("⚠️  抖音热点暂无数据");
+		return [];
 	} catch (error) {
 		console.error("❌ 抖音热点爬取失败:", error.message);
 		return [];
