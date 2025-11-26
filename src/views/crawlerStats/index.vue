@@ -95,10 +95,8 @@
 							</template>
 						</el-table-column>
 						<el-table-column prop="status" label="状态" width="100">
-							<template #default="{ row }">
-								<el-tag type="success">
-									<i class="el-icon-circle-check"></i> 运行中
-								</el-tag>
+							<template #default>
+								<el-tag type="success"> <i class="el-icon-circle-check"></i> 运行中 </el-tag>
 							</template>
 						</el-table-column>
 						<el-table-column label="操作" width="180" fixed="right">
@@ -106,9 +104,7 @@
 								<el-button link type="primary" @click="viewSourceCode(row)">
 									<i class="el-icon-document"></i> 查看代码
 								</el-button>
-								<el-button link type="success" @click="viewData(row)">
-									<i class="el-icon-view"></i> 查看数据
-								</el-button>
+								<el-button link type="success" @click="viewData(row)"> <i class="el-icon-view"></i> 查看数据 </el-button>
 							</template>
 						</el-table-column>
 					</el-table>
@@ -119,11 +115,13 @@
 		<!-- 活跃爬虫弹窗 -->
 		<spiders-modal
 			v-model="showSpidersModal"
-			:spiders="crawlerDetails.map(item => ({
-				...item,
-				icon: item.icon,
-				color: item.color
-			}))"
+			:spiders="
+				crawlerDetails.map(item => ({
+					...item,
+					icon: item.icon,
+					color: item.color
+				}))
+			"
 			@close="handleSpidersModalClose"
 		/>
 
@@ -275,7 +273,7 @@ const initSpiderTypePie = () => {
 	spiderTypePieChart.setOption(option);
 };
 
-// 初始化 ECharts - 数据趋势折线图
+// 初始化 ECharts - 数据趋势折线图（按爬虫类型分类）
 const initTrendLine = (trendData: any[]) => {
 	if (!trendLineRef.value) return;
 
@@ -283,6 +281,64 @@ const initTrendLine = (trendData: any[]) => {
 	trendLineChart = echarts.init(chartDom, null, { locale: "ZH" });
 
 	const dates = trendData.map(item => item.date);
+
+	// 收集所有爬虫类型
+	const spiderTypes = new Set<string>();
+	trendData.forEach(item => {
+		Object.keys(item.spiders || {}).forEach(type => {
+			spiderTypes.add(type);
+		});
+	});
+
+	// 定义爬虫类型的颜色
+	const spiderColors: Record<string, string> = {
+		hot_topics: "#667eea",
+		ai_tools: "#4ECDC4",
+		ai_info: "#4ECDC4",
+		ps5_game: "#FF6B6B",
+		pc_game: "#FF8C42",
+		xbox_game: "#FFD93D",
+		switch_game: "#95E1D3",
+		game: "#FF6B6B",
+		novel: "#C39BD3",
+		book: "#D7BDE2"
+	};
+
+	// 生成图例数据和数据系列
+	const legendData: string[] = [];
+	const seriesData: any[] = [];
+
+	const spiderTypeArray = Array.from(spiderTypes).sort();
+
+	spiderTypeArray.forEach((spiderType, index) => {
+		const displayName = spiderType; // 使用原始名称
+		legendData.push(displayName);
+
+		const data = trendData.map(item => {
+			const spiderData = item.spiders[spiderType];
+			return spiderData ? spiderData.dataCount : 0;
+		});
+
+		const color = spiderColors[spiderType] || `hsl(${(index * 360) / spiderTypeArray.length}, 70%, 50%)`;
+
+		seriesData.push({
+			name: displayName,
+			type: "line",
+			data: data,
+			smooth: true,
+			itemStyle: { color: color },
+			areaStyle: {
+				color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+					{ offset: 0, color: color + "40" },
+					{ offset: 1, color: color + "00" }
+				])
+			},
+			symbolSize: 6,
+			lineStyle: {
+				width: 2
+			}
+		});
+	});
 
 	const option: EChartsOption = {
 		tooltip: {
@@ -292,10 +348,19 @@ const initTrendLine = (trendData: any[]) => {
 				label: {
 					backgroundColor: "#6a7985"
 				}
+			},
+			formatter: (params: any) => {
+				let result = params[0]?.axisValue + "<br/>";
+				params.forEach((param: any) => {
+					if (param.value !== undefined && param.value !== null) {
+						result += `<span style="color:${param.color}">●</span> ${param.seriesName}: ${param.value}<br/>`;
+					}
+				});
+				return result;
 			}
 		},
 		legend: {
-			data: ["爬取数据量", "成功数据量"],
+			data: legendData,
 			top: "5%"
 		},
 		grid: {
@@ -311,44 +376,10 @@ const initTrendLine = (trendData: any[]) => {
 			boundaryGap: false
 		},
 		yAxis: {
-			type: "value"
+			type: "value",
+			name: "数据量"
 		},
-		series: [
-			{
-				name: "爬取数据量",
-				type: "line",
-				data: trendData.map(item => item.dataCount),
-				smooth: true,
-				itemStyle: { color: "#667eea" },
-				areaStyle: {
-					color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-						{ offset: 0, color: "#667eea40" },
-						{ offset: 1, color: "#667eea00" }
-					])
-				},
-				symbolSize: 8,
-				lineStyle: {
-					width: 2
-				}
-			},
-			{
-				name: "成功数据量",
-				type: "line",
-				data: trendData.map(item => item.successCount),
-				smooth: true,
-				itemStyle: { color: "#67c23a" },
-				areaStyle: {
-					color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-						{ offset: 0, color: "#67c23a40" },
-						{ offset: 1, color: "#67c23a00" }
-					])
-				},
-				symbolSize: 8,
-				lineStyle: {
-					width: 2
-				}
-			}
-		],
+		series: seriesData,
 		animation: true,
 		animationDuration: 1000
 	};
@@ -397,9 +428,7 @@ const fetchCrawlerStats = async () => {
 
 			// 计算总统计
 			const totalCount = crawlers.reduce((sum: number, item: any) => sum + item.totalCount, 0);
-			const avgSuccessRate = Math.round(
-				crawlers.reduce((sum: number, item: any) => sum + item.successRate, 0) / crawlers.length
-			);
+			const avgSuccessRate = Math.round(crawlers.reduce((sum: number, item: any) => sum + item.successRate, 0) / crawlers.length);
 
 			totalStats.value = [
 				{

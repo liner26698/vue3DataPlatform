@@ -1160,27 +1160,58 @@ router.post("/bookMicroservices/book/searchFromKanshuhou", async (ctx, next) => 
  */
 router.post("/statistics/getCrawlerStats", async (ctx, next) => {
 	try {
-		// 1. 游戏爬虫 - 安全查询（处理表不存在的情况）
+		// 1. 游戏爬虫 - 分别查询每个表（只查询存在的表）
 		let gameTotalCount = 0;
 		let gameLastUpdate = null;
 		let gameSuccessRate = 0;
 		try {
-			const gameSql = `
-				SELECT 
-					(SELECT COUNT(*) FROM ps5_game) as ps5Count,
-					(SELECT COUNT(*) FROM xbox_game) as xboxCount,
-					(SELECT COUNT(*) FROM switch_game) as switchCount
-			`;
-			const gameStats = await db.query(gameSql);
-			gameTotalCount = (gameStats[0]?.ps5Count || 0) + (gameStats[0]?.xboxCount || 0) + (gameStats[0]?.switchCount || 0);
+			let ps5Count = 0, pcCount = 0, xboxCount = 0, switchCount = 0;
 
-			// 尝试获取最后更新时间
+			// 查询 ps5_game
 			try {
-				const gameTimeSql = `SELECT MAX(updated_at) as lastUpdate FROM ps5_game`;
-				const timeResult = await db.query(gameTimeSql);
+				const ps5Result = await db.query('SELECT COUNT(*) as count FROM ps5_game');
+				ps5Count = ps5Result[0]?.count || 0;
+			} catch (e) {
+				console.warn("ps5_game 表查询失败", e.message);
+			}
+
+			// 查询 pc_game
+			try {
+				const pcResult = await db.query('SELECT COUNT(*) as count FROM pc_game');
+				pcCount = pcResult[0]?.count || 0;
+			} catch (e) {
+				console.warn("pc_game 表查询失败", e.message);
+			}
+
+			// 尝试查询 xbox_game（表可能不存在）
+			try {
+				const xboxResult = await db.query('SELECT COUNT(*) as count FROM xbox_game');
+				xboxCount = xboxResult[0]?.count || 0;
+			} catch (e) {
+				// xbox_game 不存在，忽略
+			}
+
+			// 尝试查询 switch_game（表可能不存在）
+			try {
+				const switchResult = await db.query('SELECT COUNT(*) as count FROM switch_game');
+				switchCount = switchResult[0]?.count || 0;
+			} catch (e) {
+				// switch_game 不存在，忽略
+			}
+
+			gameTotalCount = ps5Count + pcCount + xboxCount + switchCount;
+
+			// 获取最后更新时间（优先从 ps5_game，如果不存在则从 pc_game）
+			try {
+				const timeResult = await db.query('SELECT MAX(updated_at) as lastUpdate FROM ps5_game');
 				gameLastUpdate = timeResult[0]?.lastUpdate;
 			} catch (e) {
-				// 忽略时间获取错误
+				try {
+					const timeResult = await db.query('SELECT MAX(updated_at) as lastUpdate FROM pc_game');
+					gameLastUpdate = timeResult[0]?.lastUpdate;
+				} catch (e2) {
+					// 忽略时间获取错误
+				}
 			}
 
 			// 从 crawler_logs 获取游戏爬虫的成功率
@@ -1189,7 +1220,7 @@ router.post("/statistics/getCrawlerStats", async (ctx, next) => {
 					SELECT 
 						SUM(CASE WHEN status = 'success' THEN 1 ELSE 0 END) * 100.0 / COUNT(*) as success_rate
 					FROM crawler_logs 
-					WHERE spider_type = 'game' OR spider_type = 'pc_game' OR spider_type = 'ps5_game'
+					WHERE spider_type IN ('game', 'pc_game', 'ps5_game', 'xbox_game', 'switch_game')
 				`;
 				const gameRateResult = await db.query(gameSuccessRateSql);
 				gameSuccessRate = gameRateResult[0]?.success_rate ? parseFloat(gameRateResult[0].success_rate).toFixed(1) : 0;
@@ -1198,7 +1229,7 @@ router.post("/statistics/getCrawlerStats", async (ctx, next) => {
 				gameSuccessRate = 0;
 			}
 		} catch (e) {
-			console.warn("游戏表查询失败，使用默认值", e.message);
+			console.warn("游戏表查询失败", e.message);
 			gameTotalCount = 0;
 		}
 
@@ -1264,49 +1295,14 @@ router.post("/statistics/getCrawlerStats", async (ctx, next) => {
 			console.warn("AI工具表查询失败", e.message);
 		}
 
-		// 4. 小说爬虫 - 查询所有小说表的总数
-		let novelTotalCount = 0;
-		let novelLastUpdate = null;
-		let novelSuccessRate = 0;
-		try {
-			const novelCountSql = `
-				SELECT 
-					(SELECT COUNT(*) FROM novel_info) as novelCount,
-					(SELECT COUNT(*) FROM book_info) as bookCount
-			`;
-			const novelStats = await db.query(novelCountSql);
-			novelTotalCount = (novelStats[0]?.novelCount || 0) + (novelStats[0]?.bookCount || 0);
+		// 4. 计算总数（只统计三种爬虫）
+		const totalCount = gameTotalCount + hotTopicsTotalCount + aiToolsTotalCount;
 
-			const novelTimeSql = `SELECT MAX(created_time) as lastUpdate FROM novel_info`;
-			const novelTimeResult = await db.query(novelTimeSql);
-			novelLastUpdate = novelTimeResult[0]?.lastUpdate;
-
-			// 从 crawler_logs 获取小说爬虫的成功率
-			try {
-				const novelSuccessRateSql = `
-					SELECT 
-						SUM(CASE WHEN status = 'success' THEN 1 ELSE 0 END) * 100.0 / COUNT(*) as success_rate
-					FROM crawler_logs 
-					WHERE spider_type = 'novel' OR spider_type = 'book'
-				`;
-				const novelRateResult = await db.query(novelSuccessRateSql);
-				novelSuccessRate = novelRateResult[0]?.success_rate ? parseFloat(novelRateResult[0].success_rate).toFixed(1) : 0;
-			} catch (e) {
-				console.warn("小说成功率查询失败", e.message);
-				novelSuccessRate = 0;
-			}
-		} catch (e) {
-			console.warn("小说表查询失败", e.message);
-		}
-
-		// 5. 计算总数
-		const totalCount = gameTotalCount + hotTopicsTotalCount + aiToolsTotalCount + novelTotalCount;
-
-		// 7. 构建爬虫统计数据
+		// 5. 构建爬虫统计数据（只返回三种爬虫，移除小说爬虫）
 		const crawlerStats = [
 			{
 				spiderName: "游戏爬虫",
-				platformName: "PS5/Xbox/Switch",
+				platformName: "PS5/PC Game",
 				totalCount: gameTotalCount,
 				successRate: gameTotalCount > 0 ? gameSuccessRate : 0,
 				lastUpdateTime: gameLastUpdate || new Date(),
@@ -1333,23 +1329,13 @@ router.post("/statistics/getCrawlerStats", async (ctx, next) => {
 				status: "active",
 				sourceCode: "server/utils/aiToolsSpider.js",
 				description: "爬取AI工具信息"
-			},
-			{
-				spiderName: "小说爬虫",
-				platformName: "笔趣阁/看书猴",
-				totalCount: novelTotalCount,
-				successRate: novelTotalCount > 0 ? novelSuccessRate : 0,
-				lastUpdateTime: novelLastUpdate || new Date(),
-				status: "active",
-				sourceCode: "server/utils/novelSpider.js",
-				description: "爬取小说信息"
 			}
 		];
 
-		// 8. 计算总统计
+		// 6. 计算总统计
 		const successRates = crawlerStats.filter(c => c.totalCount > 0).map(c => c.successRate);
 		const avgSuccessRate =
-			successRates.length > 0 ? (successRates.reduce((a, b) => a + b, 0) / successRates.length).toFixed(1) : 0;
+			successRates.length > 0 ? (successRates.reduce((a, b) => a + parseFloat(b), 0) / successRates.length).toFixed(1) : 0;
 
 		const totalStats = {
 			totalDataCount: totalCount,
@@ -1358,72 +1344,81 @@ router.post("/statistics/getCrawlerStats", async (ctx, next) => {
 			dailyUpdateFreq: 3
 		};
 
-		// 9. 从 crawler_logs 查询最近7日的真实趋势数据
+		// 7. 从 crawler_logs 查询最近7日的真实趋势数据（按爬虫类型分类）
 		let trendData = [];
 		try {
 			const trendSql = `
 				SELECT 
 					DATE_FORMAT(created_at, '%Y-%m-%d') as date,
+					spider_type,
 					SUM(total_count) as total_data,
 					SUM(CASE WHEN status = 'success' THEN total_count ELSE 0 END) as success_count,
-					COUNT(*) as run_count,
-					MAX(created_at) as last_time
+					COUNT(*) as run_count
 				FROM crawler_logs 
 				WHERE created_at >= DATE_SUB(NOW(), INTERVAL 6 DAY)
-				GROUP BY DATE_FORMAT(created_at, '%Y-%m-%d')
+				GROUP BY DATE_FORMAT(created_at, '%Y-%m-%d'), spider_type
 				ORDER BY date ASC
 			`;
 			
 			const trendResult = await db.query(trendSql);
 			
-			// 转换为前端需要的格式
-			trendData = trendResult.map(row => ({
-				date: row.date,
-				timestamp: Math.floor(new Date(row.date + 'T00:00:00').getTime() / 1000),
-				dataCount: parseInt(row.total_data) || 0,
-				successCount: parseInt(row.success_count) || 0,
-				runCount: row.run_count || 0
-			}));
+			// 按日期和爬虫类型组织数据
+			const trendMap = {};
 			
-			// 如果查询出来的数据不足7天，用实际的日期补充（但不添加虚拟数据）
-			if (trendData.length < 7) {
-				const startDate = new Date();
-				startDate.setDate(startDate.getDate() - 6);
-				
-				for (let i = 0; i < 7; i++) {
-					const checkDate = new Date(startDate);
-					checkDate.setDate(checkDate.getDate() + i);
-					const dateStr = checkDate.toISOString().split('T')[0];
-					
-					// 检查该日期是否已存在
-					const existingIndex = trendData.findIndex(t => t.date === dateStr);
-					if (existingIndex === -1) {
-						// 该日期没有数据，添加0值数据点（表示没有爬虫运行）
-						trendData.push({
-							date: dateStr,
-							timestamp: Math.floor(checkDate.getTime() / 1000),
-							dataCount: 0,
-							successCount: 0,
-							runCount: 0
-						});
-					}
-				}
-				// 重新排序
-				trendData.sort((a, b) => new Date(a.date) - new Date(b.date));
+			// 首先初始化所有日期
+			const startDate = new Date();
+			startDate.setDate(startDate.getDate() - 6);
+			
+			for (let i = 0; i < 7; i++) {
+				const checkDate = new Date(startDate);
+				checkDate.setDate(checkDate.getDate() + i);
+				const dateStr = checkDate.toISOString().split('T')[0];
+				trendMap[dateStr] = {
+					date: dateStr,
+					timestamp: Math.floor(checkDate.getTime() / 1000),
+					spiders: {}  // 按爬虫类型分类数据
+				};
 			}
-		} catch (e) {
-			console.warn("趋势数据查询失败，使用最近运行日志", e.message);
 			
-			// 降级处理：如果查询失败，至少返回基本的日期结构
+			// 填充真实数据
+			trendResult.forEach(row => {
+				if (trendMap[row.date]) {
+					trendMap[row.date].spiders[row.spider_type] = {
+						dataCount: parseInt(row.total_data) || 0,
+						successCount: parseInt(row.success_count) || 0,
+						runCount: row.run_count || 0
+					};
+				}
+			});
+			
+			// 转换为数组格式，并计算该天的总数据
+			trendData = Object.values(trendMap).map(item => {
+				const totalDataCount = Object.values(item.spiders).reduce((sum, spider) => sum + spider.dataCount, 0);
+				const totalSuccessCount = Object.values(item.spiders).reduce((sum, spider) => sum + spider.successCount, 0);
+				
+				return {
+					date: item.date,
+					timestamp: item.timestamp,
+					total: totalDataCount,  // 该天总爬取数据量
+					success: totalSuccessCount,  // 该天总成功数据量
+					spiders: item.spiders  // 按爬虫类型分类的详细数据
+				};
+			});
+			
+		} catch (e) {
+			console.warn("趋势数据查询失败，使用基础结构", e.message);
+			
+			// 降级处理：如果查询失败，返回基本的日期结构
 			for (let i = 6; i >= 0; i--) {
 				const date = new Date();
 				date.setDate(date.getDate() - i);
+				const dateStr = date.toISOString().split('T')[0];
 				trendData.push({
-					date: date.toISOString().split('T')[0],
+					date: dateStr,
 					timestamp: Math.floor(date.getTime() / 1000),
-					dataCount: 0,
-					successCount: 0,
-					runCount: 0
+					total: 0,
+					success: 0,
+					spiders: {}
 				});
 			}
 		}
