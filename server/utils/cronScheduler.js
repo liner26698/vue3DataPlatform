@@ -16,6 +16,17 @@
  * date: 2025年11月25日
  */
 
+// Node 18 polyfill for undici compatibility
+if (typeof global.File === 'undefined') {
+	global.File = class File {
+		constructor(bits, filename, options) {
+			this.bits = bits;
+			this.filename = filename;
+			this.options = options;
+		}
+	};
+}
+
 const cron = require("node-cron");
 const { runAllSpiders } = require("./hotTopicsSpider");
 

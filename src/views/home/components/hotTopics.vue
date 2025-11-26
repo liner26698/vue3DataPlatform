@@ -86,231 +86,12 @@ const platforms = [
 	{ id: "bilibili", name: "B站", icon: "▶", color: "#fb7299" }
 ];
 
-const activePlatform = ref("douyin");
+const activePlatform = ref("baidu");
 const topics = ref<Topic[]>([]);
 
 const filteredTopics = computed(() => {
 	return topics.value.filter(topic => topic.platform === activePlatform.value);
 });
-
-// 模拟数据
-const mockData: { [key: string]: Topic[] } = {
-	douyin: [
-		{
-			title: "明年小目标: 学会Vue 3开发",
-			heat: 2500000,
-			category: "科技",
-			trend: "up",
-			tags: ["前端", "Vue"],
-			url: "https://www.douyin.com/",
-			platform: "douyin"
-		},
-		{
-			title: "年轻人的新烦恼：996工作制",
-			heat: 2100000,
-			category: "生活",
-			trend: "up",
-			tags: ["工作", "职场"],
-			url: "https://www.douyin.com/",
-			platform: "douyin"
-		},
-		{
-			title: "这个冬天如何保暖",
-			heat: 1800000,
-			category: "生活",
-			trend: "stable",
-			tags: ["冬天", "健康"],
-			url: "https://www.douyin.com/",
-			platform: "douyin"
-		},
-		{
-			title: "明星八卦热议中",
-			heat: 1500000,
-			category: "娱乐",
-			trend: "down",
-			tags: ["明星", "娱乐"],
-			url: "https://www.douyin.com/",
-			platform: "douyin"
-		},
-		{
-			title: "新晋女演员实力派表演",
-			heat: 1300000,
-			category: "娱乐",
-			trend: "up",
-			tags: ["电影", "演员"],
-			url: "https://www.douyin.com/",
-			platform: "douyin"
-		}
-	],
-	baidu: [
-		{
-			title: "2024年度流行趋势总结",
-			heat: 3200000,
-			category: "社会",
-			trend: "up",
-			url: "https://www.baidu.com/",
-			platform: "baidu"
-		},
-		{
-			title: "人工智能发展新突破",
-			heat: 2800000,
-			category: "科技",
-			trend: "up",
-			url: "https://www.baidu.com/",
-			platform: "baidu"
-		},
-		{
-			title: "健康饮食小贴士",
-			heat: 2400000,
-			category: "健康",
-			trend: "stable",
-			url: "https://www.baidu.com/",
-			platform: "baidu"
-		},
-		{
-			title: "国内经济形势分析",
-			heat: 2100000,
-			category: "财经",
-			trend: "up",
-			url: "https://www.baidu.com/",
-			platform: "baidu"
-		},
-		{
-			title: "最新天气预报信息",
-			heat: 1900000,
-			category: "天气",
-			trend: "down",
-			url: "https://www.baidu.com/",
-			platform: "baidu"
-		}
-	],
-	zhihu: [
-		{
-			title: "如何有效学习编程？",
-			heat: 2600000,
-			category: "教育",
-			trend: "up",
-			url: "https://www.zhihu.com/",
-			platform: "zhihu"
-		},
-		{
-			title: "程序员如何保持身体健康？",
-			heat: 2200000,
-			category: "健康",
-			trend: "up",
-			url: "https://www.zhihu.com/",
-			platform: "zhihu"
-		},
-		{
-			title: "2024年求职指南",
-			heat: 1950000,
-			category: "职业",
-			trend: "stable",
-			url: "https://www.zhihu.com/",
-			platform: "zhihu"
-		},
-		{
-			title: "如何理财规划未来？",
-			heat: 1750000,
-			category: "财经",
-			trend: "up",
-			url: "https://www.zhihu.com/",
-			platform: "zhihu"
-		},
-		{
-			title: "人生意义的思考",
-			heat: 1550000,
-			category: "哲学",
-			trend: "down",
-			url: "https://www.zhihu.com/",
-			platform: "zhihu"
-		}
-	],
-	weibo: [
-		{
-			title: "名人微博话题讨论",
-			heat: 3800000,
-			category: "娱乐",
-			trend: "up",
-			url: "https://www.weibo.com/",
-			platform: "weibo"
-		},
-		{
-			title: "实时热点新闻评论",
-			heat: 3200000,
-			category: "新闻",
-			trend: "up",
-			url: "https://www.weibo.com/",
-			platform: "weibo"
-		},
-		{
-			title: "体育比赛实时讨论",
-			heat: 2900000,
-			category: "体育",
-			trend: "stable",
-			url: "https://www.weibo.com/",
-			platform: "weibo"
-		},
-		{
-			title: "社会热点话题争议",
-			heat: 2600000,
-			category: "社会",
-			trend: "up",
-			url: "https://www.weibo.com/",
-			platform: "weibo"
-		},
-		{
-			title: "明星粉丝应援互动",
-			heat: 2300000,
-			category: "娱乐",
-			trend: "down",
-			url: "https://www.weibo.com/",
-			platform: "weibo"
-		}
-	],
-	bilibili: [
-		{
-			title: "热门UP主最新视频发布",
-			heat: 2700000,
-			category: "动画",
-			trend: "up",
-			url: "https://www.bilibili.com/",
-			platform: "bilibili"
-		},
-		{
-			title: "游戏直播热门内容",
-			heat: 2400000,
-			category: "游戏",
-			trend: "up",
-			url: "https://www.bilibili.com/",
-			platform: "bilibili"
-		},
-		{
-			title: "学习教程高热度视频",
-			heat: 2100000,
-			category: "教育",
-			trend: "stable",
-			url: "https://www.bilibili.com/",
-			platform: "bilibili"
-		},
-		{
-			title: "音乐视频排行榜前十",
-			heat: 1850000,
-			category: "音乐",
-			trend: "up",
-			url: "https://www.bilibili.com/",
-			platform: "bilibili"
-		},
-		{
-			title: "生活日常分享排行",
-			heat: 1600000,
-			category: "生活",
-			trend: "down",
-			url: "https://www.bilibili.com/",
-			platform: "bilibili"
-		}
-	]
-};
 
 // 格式化数字
 const formatNumber = (num: number) => {
@@ -334,18 +115,19 @@ const fetchData = async () => {
 	try {
 		// 导入 API 模块
 		const { getHotTopicsApi } = await import("@/api/modules/hotTopics");
-		
+
 		// 调用真实的 API
 		const res: any = await getHotTopicsApi();
-		
-		if (res && res.data) {
+
+		if (res && res.data && res.data.topics) {
 			// 将数据库返回的分类数据转为一维数组
 			const allTopics: Topic[] = [];
-			
+			const topicsData = res.data.topics;
+
 			// 遍历所有平台的数据
-			for (const platform of Object.keys(res.data)) {
-				if (Array.isArray(res.data[platform])) {
-					res.data[platform].forEach((topic: any) => {
+			for (const platform of Object.keys(topicsData)) {
+				if (Array.isArray(topicsData[platform])) {
+					topicsData[platform].forEach((topic: any) => {
 						allTopics.push({
 							title: topic.title || "",
 							heat: topic.heat || 0,
@@ -358,7 +140,7 @@ const fetchData = async () => {
 					});
 				}
 			}
-			
+
 			topics.value = allTopics;
 			console.log(`✅ 成功加载 ${allTopics.length} 条热门话题`);
 		} else {
@@ -366,10 +148,8 @@ const fetchData = async () => {
 		}
 	} catch (error) {
 		console.error("获取热门话题失败:", error);
-		console.log("⚠️ 降级使用模拟数据");
-		// 失败时使用模拟数据
-		const allTopics = Object.values(mockData).flat();
-		topics.value = allTopics;
+		console.log("⚠️ 无法从API获取数据，请检查后端服务");
+		topics.value = [];
 	}
 };
 

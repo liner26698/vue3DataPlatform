@@ -290,83 +290,13 @@ router.post("/statistics/getHotTopics", async ctx => {
 			}
 		});
 
-		// 如果数据库中没有数据，使用默认模拟数据
+		// 如果数据库中没有数据，返回空数组（由定时任务填充）
 		if (dbTopics.length === 0) {
-			console.log("⚠️  数据库中没有话题数据，使用模拟数据");
-			const mockTopics = {
-				douyin: [
-					{
-						title: "明年小目标: 学会Vue 3开发",
-						heat: 2500000,
-						category: "科技",
-						trend: "up",
-						tags: ["前端", "Vue"],
-						url: "https://www.douyin.com/",
-						platform: "douyin"
-					},
-					{
-						title: "年轻人的新烦恼：996工作制",
-						heat: 2100000,
-						category: "生活",
-						trend: "up",
-						tags: ["工作", "职场"],
-						url: "https://www.douyin.com/",
-						platform: "douyin"
-					}
-				],
-				baidu: [
-					{
-						title: "2024年度流行趋势总结",
-						heat: 3200000,
-						category: "社会",
-						trend: "up",
-						url: "https://www.baidu.com/",
-						platform: "baidu"
-					},
-					{
-						title: "人工智能发展新突破",
-						heat: 2800000,
-						category: "科技",
-						trend: "up",
-						url: "https://www.baidu.com/",
-						platform: "baidu"
-					}
-				],
-				zhihu: [
-					{
-						title: "如何有效学习编程？",
-						heat: 2600000,
-						category: "教育",
-						trend: "up",
-						url: "https://www.zhihu.com/",
-						platform: "zhihu"
-					}
-				],
-				weibo: [
-					{
-						title: "名人微博话题讨论",
-						heat: 3800000,
-						category: "娱乐",
-						trend: "up",
-						url: "https://www.weibo.com/",
-						platform: "weibo"
-					}
-				],
-				bilibili: [
-					{
-						title: "热门UP主最新视频发布",
-						heat: 2700000,
-						category: "动画",
-						trend: "up",
-						url: "https://www.bilibili.com/",
-						platform: "bilibili"
-					}
-				]
-			};
-			SUCCESS(ctx, true, "成功（使用模拟数据）", { topics: mockTopics });
-		} else {
-			SUCCESS(ctx, true, "成功", { topics: groupedTopics });
+			console.log("📡 数据库中暂无话题数据，请手动运行爬虫或等待定时任务执行");
 		}
+
+		// 返回数据（无论是从数据库还是爬虫得到的）
+		SUCCESS(ctx, true, "成功获取热门话题", { topics: groupedTopics });
 	} catch (err) {
 		console.error("获取热门话题失败:", err);
 		ERROR(ctx, "获取热门话题失败");
