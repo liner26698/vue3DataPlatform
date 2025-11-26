@@ -421,6 +421,13 @@ async function saveTopicsToDatabase(topics) {
 	}
 
 	try {
+		// 清空前一天及更早的数据，只保留当天数据
+		const deleteSql = `DELETE FROM hot_topics WHERE DATE(created_at) < CURDATE()`;
+		const deleteResult = await db.query(deleteSql);
+		if (deleteResult.affectedRows && deleteResult.affectedRows > 0) {
+			console.log(`🗑️  已清空 ${deleteResult.affectedRows} 条前一天的热点数据`);
+		}
+
 		for (const topic of topics) {
 			// 检查是否已存在相同的话题
 			const checkSql = `
