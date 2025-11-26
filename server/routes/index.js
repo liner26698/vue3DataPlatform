@@ -22,32 +22,32 @@ const KoaRouter = require("koa-router");
  */
 function getCategoryId(categoryName) {
 	const categoryMap = {
-		"玄幻": "1",
-		"玄幻小说": "1",
-		"言情": "2",
-		"言情小说": "2",
-		"武侠": "3",
-		"武侠小说": "3",
-		"仙侠": "4",
-		"仙侠小说": "4",
-		"都市": "5",
-		"都市小说": "5",
-		"军事": "6",
-		"军事小说": "6",
-		"历史": "7",
-		"历史小说": "7",
-		"游戏": "8",
-		"游戏小说": "8",
-		"竞技": "9",
-		"竞技小说": "9",
-		"科幻": "10",
-		"科幻小说": "10",
-		"悬疑": "11",
-		"悬疑小说": "11",
-		"灵异": "12",
-		"灵异小说": "12"
+		玄幻: "1",
+		玄幻小说: "1",
+		言情: "2",
+		言情小说: "2",
+		武侠: "3",
+		武侠小说: "3",
+		仙侠: "4",
+		仙侠小说: "4",
+		都市: "5",
+		都市小说: "5",
+		军事: "6",
+		军事小说: "6",
+		历史: "7",
+		历史小说: "7",
+		游戏: "8",
+		游戏小说: "8",
+		竞技: "9",
+		竞技小说: "9",
+		科幻: "10",
+		科幻小说: "10",
+		悬疑: "11",
+		悬疑小说: "11",
+		灵异: "12",
+		灵异小说: "12"
 	};
-	
+
 	return categoryMap[categoryName] || "1"; // 默认返回玄幻
 }
 
@@ -204,7 +204,7 @@ router.get("/statistics/getHotPlate", async ctx => {
 router.post("/statistics/chatGpt", async ctx => {
 	try {
 		const { content, role } = ctx.request.body || {};
-		
+
 		if (!content) {
 			ERROR(ctx, "content 参数不能为空");
 			return;
@@ -212,7 +212,7 @@ router.post("/statistics/chatGpt", async ctx => {
 
 		// 从环境变量或配置获取 API Key
 		const apiKey = process.env.DEEPSEEK_API_KEY || "sk-a2121cafac0e4173bbec5124027984da";
-		
+
 		const openai = new OpenAI({
 			baseURL: "https://api.deepseek.com/v1",
 			apiKey: apiKey
@@ -344,15 +344,9 @@ router.post("/statistics/getHotTopicsByPlatform", async ctx => {
 					{ title: "2024年度流行趋势总结", heat: 3200000, category: "社会", trend: "up", platform: "baidu" },
 					{ title: "人工智能发展新突破", heat: 2800000, category: "科技", trend: "up", platform: "baidu" }
 				],
-				zhihu: [
-					{ title: "如何有效学习编程？", heat: 2600000, category: "教育", trend: "up", platform: "zhihu" }
-				],
-				weibo: [
-					{ title: "名人微博话题讨论", heat: 3800000, category: "娱乐", trend: "up", platform: "weibo" }
-				],
-				bilibili: [
-					{ title: "热门UP主最新视频发布", heat: 2700000, category: "动画", trend: "up", platform: "bilibili" }
-				]
+				zhihu: [{ title: "如何有效学习编程？", heat: 2600000, category: "教育", trend: "up", platform: "zhihu" }],
+				weibo: [{ title: "名人微博话题讨论", heat: 3800000, category: "娱乐", trend: "up", platform: "weibo" }],
+				bilibili: [{ title: "热门UP主最新视频发布", heat: 2700000, category: "动画", trend: "up", platform: "bilibili" }]
 			};
 
 			const data = mockTopics[platform] || [];
@@ -762,7 +756,7 @@ router.get("/logs/export", async ctx => {
 		});
 
 		// 返回 JSON 格式，前端处理成 CSV
-		const logLines = logs.split('\n').filter(line => line.trim());
+		const logLines = logs.split("\n").filter(line => line.trim());
 		SUCCESS(ctx, true, "导出成功", logLines);
 	} catch (err) {
 		console.error("导出日志失败:", err);
@@ -784,8 +778,8 @@ router.post("/bookMicroservices/book/getBookList", async (ctx, next) => {
 	}
 
 	try {
-		console.log(`[API] getBookList 搜索: ${searchText || '首页分类'}, 分类: ${category || '所有'}`);
-		
+		console.log(`[API] getBookList 搜索: ${searchText || "首页分类"}, 分类: ${category || "所有"}`);
+
 		let books = [];
 
 		// 新策略: 优先使用看书猴爬虫 (kanshuhouSpider) 获取数据
@@ -818,7 +812,7 @@ router.post("/bookMicroservices/book/getBookList", async (ctx, next) => {
 			try {
 				let homePageBooks = [];
 				const categories = ["1", "2", "3", "5"]; // 玄幻、言情、武侠、都市
-				
+
 				for (const catId of categories) {
 					try {
 						const catBooks = await kanshuhouSpider.getNovelsByCategory(catId, 1);
@@ -829,7 +823,7 @@ router.post("/bookMicroservices/book/getBookList", async (ctx, next) => {
 						console.log(`[API] 分类 ${catId} 获取失败`);
 					}
 				}
-				
+
 				if (homePageBooks.length > 0) {
 					books = homePageBooks;
 					console.log(`[API] 首页推荐聚合了 ${books.length} 部小说`);
@@ -884,7 +878,7 @@ router.post("/bookMicroservices/book/getChapters", async (ctx, next) => {
 
 	try {
 		console.log(`[API] getChapters: ${bookId}, novelHref: ${novelHref}`);
-		
+
 		// 快速路径：如果没有novelHref，直接返回本地数据而不进行任何网络请求
 		if (!novelHref) {
 			console.log("[API] novelHref未提供，使用本地模拟数据");
@@ -900,7 +894,7 @@ router.post("/bookMicroservices/book/getChapters", async (ctx, next) => {
 			}
 			return SUCCESS(ctx, true, "成功", { data: mockChapters, total: 100 });
 		}
-		
+
 		// 有novelHref，使用爬虫获取真实数据
 		let chapters = [];
 		console.log("[API] 使用看书猴爬虫获取章节");
@@ -921,7 +915,7 @@ router.post("/bookMicroservices/book/getChapters", async (ctx, next) => {
 		} catch (err) {
 			console.log("[API] 爬虫获取失败:", err.message);
 		}
-		
+
 		// 如果爬虫失败，返回本地模拟数据
 		console.log("[API] 爬虫失败，返回模拟数据");
 		const mockChapters = [];
@@ -956,16 +950,16 @@ router.post("/bookMicroservices/book/getChapterContent", async (ctx, next) => {
 
 	try {
 		console.log(`[API] getChapterContent: ${bookId}/${chapterId}, chapterHref: ${chapterHref}`);
-		
+
 		let content = null;
-		
+
 		// 如果提供了章节href，优先使用看书猴爬虫获取真实内容
 		if (chapterHref && !chapterHref.startsWith("/local/")) {
 			try {
 				// 1️⃣ 首选：看书猴爬虫 (现在可用)
 				console.log("[API] 使用看书猴爬虫获取章节内容");
 				content = await kanshuhouSpider.getChapterContent(chapterHref);
-				
+
 				// 如果获取到内容，直接返回
 				if (content && content.content && content.content.length > 50) {
 					console.log("[API] 看书猴爬虫成功获取章节内容");
@@ -974,17 +968,17 @@ router.post("/bookMicroservices/book/getChapterContent", async (ctx, next) => {
 			} catch (err1) {
 				console.log("[API] 看书猴爬虫获取失败，尝试笔趣阁");
 			}
-			
+
 			try {
 				// 2️⃣ 备选：笔趣阁爬虫
 				console.log("[API] 使用笔趣阁爬虫获取章节内容");
 				content = await biqugeSpider.fetchChapterContent(chapterHref);
-				
+
 				// 如果爬虫返回错误内容（含"获取失败"）则降级
 				if (content && content.content && content.content.includes("获取失败")) {
 					throw new Error("笔趣阁爬虫返回失败");
 				}
-				
+
 				if (content && content.content && content.content.length > 50) {
 					console.log("[API] 笔趣阁爬虫成功获取章节内容");
 					return SUCCESS(ctx, true, "成功", content);
@@ -993,12 +987,12 @@ router.post("/bookMicroservices/book/getChapterContent", async (ctx, next) => {
 				console.log("[API] 笔趣阁爬虫也失败，降级到本地数据");
 			}
 		}
-		
+
 		// 3️⃣ 本地数据或所有爬虫都失败
 		try {
 			console.log("[API] 从本地数据库获取章节内容");
 			content = await novelFetcher.fetchChapterContentFromBiquge(bookId, chapterId);
-			
+
 			if (content && content.content && content.content.length > 50) {
 				console.log("[API] 本地数据获取成功");
 				return SUCCESS(ctx, true, "成功", content);
@@ -1011,7 +1005,8 @@ router.post("/bookMicroservices/book/getChapterContent", async (ctx, next) => {
 		console.log("[API] 所有数据源都失败，返回默认数据");
 		return SUCCESS(ctx, true, "成功", {
 			title: `第${chapterId}章 故事继续`,
-			content: "　　这是一个充满奇幻的世界。主人公在这个世界中踏上了冒险的征途。\n\n　　经过许多磨难后，他逐渐成长，变得更加强大。\n\n　　新的挑战又在前方等待着他。"
+			content:
+				"　　这是一个充满奇幻的世界。主人公在这个世界中踏上了冒险的征途。\n\n　　经过许多磨难后，他逐渐成长，变得更加强大。\n\n　　新的挑战又在前方等待着他。"
 		});
 	} catch (error) {
 		console.error("获取章节内容错误:", error);
@@ -1028,15 +1023,15 @@ router.post("/bookMicroservices/book/getCategories", async (ctx, next) => {
 	try {
 		console.log("[API] 获取分类列表");
 		const categories = await kanshuhouSpider.getCategories();
-		
+
 		if (!categories || categories.length === 0) {
 			// 返回默认分类作为备用
 			const defaultCategories = [
-				{id: "1", name: "玄幻小说", href: "/sort/1/1/"},
-				{id: "2", name: "奇幻小说", href: "/sort/2/1/"},
-				{id: "5", name: "都市小说", href: "/sort/5/1/"},
-				{id: "10", name: "科幻小说", href: "/sort/10/1/"},
-				{id: "3", name: "武侠小说", href: "/sort/3/1/"}
+				{ id: "1", name: "玄幻小说", href: "/sort/1/1/" },
+				{ id: "2", name: "奇幻小说", href: "/sort/2/1/" },
+				{ id: "5", name: "都市小说", href: "/sort/5/1/" },
+				{ id: "10", name: "科幻小说", href: "/sort/10/1/" },
+				{ id: "3", name: "武侠小说", href: "/sort/3/1/" }
 			];
 			console.log("[API] 爬虫获取失败，使用默认分类");
 			SUCCESS(ctx, true, "成功（使用默认分类）", defaultCategories);
@@ -1059,7 +1054,7 @@ router.post("/bookMicroservices/book/getCategories", async (ctx, next) => {
  */
 router.post("/bookMicroservices/book/getNovelsByCategory", async (ctx, next) => {
 	const { categoryId, page = 1, pageSize = 20 } = ctx.request.body;
-	
+
 	if (!categoryId) {
 		ERROR(ctx, "参数错误：缺少categoryId");
 		return;
@@ -1068,7 +1063,7 @@ router.post("/bookMicroservices/book/getNovelsByCategory", async (ctx, next) => 
 	try {
 		console.log(`[API] 获取分类 ${categoryId} 的小说 (第${page}页)`);
 		const novels = await kanshuhouSpider.getNovelsByCategory(categoryId, page);
-		
+
 		if (!novels || novels.length === 0) {
 			console.log("[API] 爬虫无结果");
 			ERROR(ctx, "无法获取该分类的小说");
@@ -1101,7 +1096,7 @@ router.post("/bookMicroservices/book/getNovelsByCategory", async (ctx, next) => 
  */
 router.post("/bookMicroservices/book/searchFromKanshuhou", async (ctx, next) => {
 	const { keyword, page = 1, pageSize = 20 } = ctx.request.body;
-	
+
 	if (!keyword || keyword.trim() === "") {
 		ERROR(ctx, "参数错误：缺少搜索关键词");
 		return;
@@ -1109,7 +1104,7 @@ router.post("/bookMicroservices/book/searchFromKanshuhou", async (ctx, next) => 
 
 	try {
 		console.log(`[API] 从看书猴搜索: ${keyword}`);
-		
+
 		// 使用第一个分类进行搜索（看书猴目前没有搜索接口，所以用分类作为演示）
 		// 实际应用中可以扩展为全文搜索
 		const categories = await kanshuhouSpider.getCategories();
@@ -1118,13 +1113,10 @@ router.post("/bookMicroservices/book/searchFromKanshuhou", async (ctx, next) => 
 		// 从前3个分类获取数据并搜索
 		for (let i = 0; i < Math.min(3, categories.length); i++) {
 			const categoryNovels = await kanshuhouSpider.getNovelsByCategory(categories[i].id, 1);
-			
+
 			// 按关键词过滤
-			const filtered = categoryNovels.filter(novel => 
-				novel.Name.includes(keyword) || 
-				novel.Author.includes(keyword)
-			);
-			
+			const filtered = categoryNovels.filter(novel => novel.Name.includes(keyword) || novel.Author.includes(keyword));
+
 			allNovels = allNovels.concat(filtered);
 		}
 
@@ -1180,7 +1172,7 @@ router.post("/statistics/getCrawlerStats", async (ctx, next) => {
 			`;
 			const gameStats = await db.query(gameSql);
 			gameTotalCount = (gameStats[0]?.ps5Count || 0) + (gameStats[0]?.xboxCount || 0) + (gameStats[0]?.switchCount || 0);
-			
+
 			// 尝试获取最后更新时间
 			try {
 				const gameTimeSql = `SELECT MAX(updated_at) as lastUpdate FROM ps5_game`;
@@ -1201,7 +1193,7 @@ router.post("/statistics/getCrawlerStats", async (ctx, next) => {
 			const hotTopicsCountSql = `SELECT COUNT(*) as total FROM hot_topics WHERE is_active = 1`;
 			const hotTopicsStats = await db.query(hotTopicsCountSql);
 			hotTopicsTotalCount = hotTopicsStats[0]?.total || 0;
-			
+
 			const topicsTimeSql = `SELECT MAX(updated_at) as lastUpdate FROM hot_topics`;
 			const topicsTimeResult = await db.query(topicsTimeSql);
 			topicsLastUpdate = topicsTimeResult[0]?.lastUpdate;
@@ -1216,7 +1208,7 @@ router.post("/statistics/getCrawlerStats", async (ctx, next) => {
 			const aiToolsCountSql = `SELECT COUNT(*) as total FROM ai_info`;
 			const aiToolsStats = await db.query(aiToolsCountSql);
 			aiToolsTotalCount = aiToolsStats[0]?.total || 0;
-			
+
 			const aiTimeSql = `SELECT MAX(updated_at) as lastUpdate FROM ai_info`;
 			const aiTimeResult = await db.query(aiTimeSql);
 			aiLastUpdate = aiTimeResult[0]?.lastUpdate;
@@ -1235,7 +1227,7 @@ router.post("/statistics/getCrawlerStats", async (ctx, next) => {
 			`;
 			const novelStats = await db.query(novelCountSql);
 			novelTotalCount = (novelStats[0]?.novelCount || 0) + (novelStats[0]?.bookCount || 0);
-			
+
 			const novelTimeSql = `SELECT MAX(created_time) as lastUpdate FROM novel_info`;
 			const novelTimeResult = await db.query(novelTimeSql);
 			novelLastUpdate = novelTimeResult[0]?.lastUpdate;
@@ -1292,9 +1284,8 @@ router.post("/statistics/getCrawlerStats", async (ctx, next) => {
 
 		// 8. 计算总统计
 		const successRates = crawlerStats.filter(c => c.totalCount > 0).map(c => c.successRate);
-		const avgSuccessRate = successRates.length > 0 
-			? (successRates.reduce((a, b) => a + b, 0) / successRates.length).toFixed(1)
-			: 0;
+		const avgSuccessRate =
+			successRates.length > 0 ? (successRates.reduce((a, b) => a + b, 0) / successRates.length).toFixed(1) : 0;
 
 		const totalStats = {
 			totalDataCount: totalCount,
@@ -1303,17 +1294,74 @@ router.post("/statistics/getCrawlerStats", async (ctx, next) => {
 			dailyUpdateFreq: 3
 		};
 
-		// 9. 生成7日趋势数据（示例）
-		const trendData = [];
-		for (let i = 6; i >= 0; i--) {
-			const date = new Date();
-			date.setDate(date.getDate() - i);
-			trendData.push({
-				date: date.toLocaleDateString('zh-CN'),
-				timestamp: Math.floor(date.getTime() / 1000),
-				dataCount: Math.floor(Math.random() * 5000 + totalCount * 0.1),
-				successCount: Math.floor(Math.random() * 4000 + totalCount * 0.08)
-			});
+		// 9. 从 crawler_logs 查询最近7日的真实趋势数据
+		let trendData = [];
+		try {
+			const trendSql = `
+				SELECT 
+					DATE_FORMAT(created_at, '%Y-%m-%d') as date,
+					SUM(total_count) as total_data,
+					SUM(CASE WHEN status = 'success' THEN total_count ELSE 0 END) as success_count,
+					COUNT(*) as run_count,
+					MAX(created_at) as last_time
+				FROM crawler_logs 
+				WHERE created_at >= DATE_SUB(NOW(), INTERVAL 6 DAY)
+				GROUP BY DATE_FORMAT(created_at, '%Y-%m-%d')
+				ORDER BY date ASC
+			`;
+			
+			const trendResult = await db.query(trendSql);
+			
+			// 转换为前端需要的格式
+			trendData = trendResult.map(row => ({
+				date: row.date,
+				timestamp: Math.floor(new Date(row.date + 'T00:00:00').getTime() / 1000),
+				dataCount: parseInt(row.total_data) || 0,
+				successCount: parseInt(row.success_count) || 0,
+				runCount: row.run_count || 0
+			}));
+			
+			// 如果查询出来的数据不足7天，用实际的日期补充（但不添加虚拟数据）
+			if (trendData.length < 7) {
+				const startDate = new Date();
+				startDate.setDate(startDate.getDate() - 6);
+				
+				for (let i = 0; i < 7; i++) {
+					const checkDate = new Date(startDate);
+					checkDate.setDate(checkDate.getDate() + i);
+					const dateStr = checkDate.toISOString().split('T')[0];
+					
+					// 检查该日期是否已存在
+					const existingIndex = trendData.findIndex(t => t.date === dateStr);
+					if (existingIndex === -1) {
+						// 该日期没有数据，添加0值数据点（表示没有爬虫运行）
+						trendData.push({
+							date: dateStr,
+							timestamp: Math.floor(checkDate.getTime() / 1000),
+							dataCount: 0,
+							successCount: 0,
+							runCount: 0
+						});
+					}
+				}
+				// 重新排序
+				trendData.sort((a, b) => new Date(a.date) - new Date(b.date));
+			}
+		} catch (e) {
+			console.warn("趋势数据查询失败，使用最近运行日志", e.message);
+			
+			// 降级处理：如果查询失败，至少返回基本的日期结构
+			for (let i = 6; i >= 0; i--) {
+				const date = new Date();
+				date.setDate(date.getDate() - i);
+				trendData.push({
+					date: date.toISOString().split('T')[0],
+					timestamp: Math.floor(date.getTime() / 1000),
+					dataCount: 0,
+					successCount: 0,
+					runCount: 0
+				});
+			}
 		}
 
 		SUCCESS(ctx, true, "成功获取爬虫统计数据", {
