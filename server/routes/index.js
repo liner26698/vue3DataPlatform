@@ -1347,22 +1347,6 @@ router.post("/statistics/getCrawlerStats", async (ctx, next) => {
 		// 7. 从 crawler_logs 查询最近7日的真实趋势数据（按爬虫类型分类）
 		let trendData = [];
 		try {
-			const trendSql = `
-				SELECT 
-					DATE_FORMAT(created_at, '%Y-%m-%d') as date,
-					spider_type,
-					SUM(total_count) as total_data,
-					SUM(CASE WHEN status = 'success' THEN total_count ELSE 0 END) as success_count,
-					COUNT(*) as run_count
-				FROM crawler_logs 
-				WHERE created_at >= DATE_SUB(NOW(), INTERVAL 6 DAY)
-				GROUP BY DATE_FORMAT(created_at, '%Y-%m-%d'), spider_type
-				ORDER BY date ASC
-			`;
-			
-			const trendResult = await db.query(trendSql);
-			
-			// 按日期和爬虫类型组织数据
 			const trendMap = {};
 			
 			// 首先初始化所有日期
@@ -1376,14 +1360,28 @@ router.post("/statistics/getCrawlerStats", async (ctx, next) => {
 				trendMap[dateStr] = {
 					date: dateStr,
 					timestamp: Math.floor(checkDate.getTime() / 1000),
-					spiders: {}  // 按爬虫类型分类数据
+					spiders: {}
 				};
 			}
 			
-			// 填充真实数据
-			trendResult.forEach(row => {
+			// 1. 从 crawler_logs 获取 hot_topics 的数据
+			const hotTopicsSql = `
+				SELECT 
+					DATE_FORMAT(created_at, '%Y-%m-%d') as date,
+					SUM(total_count) as total_data,
+					SUM(CASE WHEN status = 'success' THEN total_count ELSE 0 END) as success_count,
+					COUNT(*) as run_count
+				FROM crawler_logs 
+				WHERE spider_type = 'hot_topics'
+					AND created_at >= DATE_SUB(NOW(), INTERVAL 6 DAY)
+				GROUP BY DATE_FORMAT(created_at, '%Y-%m-%d')
+				ORDER BY date ASC
+			`;
+			
+			const hotTopicsResult = await db.query(hotTopicsSql);
+			hotTopicsResult.forEach(row => {
 				if (trendMap[row.date]) {
-					trendMap[row.date].spiders[row.spider_type] = {
+					trendMap[row.date].spiders['hot_topics'] = {
 						dataCount: parseInt(row.total_data) || 0,
 						successCount: parseInt(row.success_count) || 0,
 						runCount: row.run_count || 0
@@ -1391,19 +1389,104 @@ router.post("/statistics/getCrawlerStats", async (ctx, next) => {
 				}
 			});
 			
-			// 转换为数组格式，并计算该天的总数据
-			trendData = Object.values(trendMap).map(item => {
-				const totalDataCount = Object.values(item.spiders).reduce((sum, spider) => sum + spider.dataCount, 0);
-				const totalSuccessCount = Object.values(item.spiders).reduce((sum, spider) => sum + spider.successCount, 0);
-				
-				return {
-					date: item.date,
-					timestamp: item.timestamp,
-					total: totalDataCount,  // 该天总爬取数据量
-					success: totalSuccessCount,  // 该天总成功数据量
-					spiders: item.spiders  // 按爬虫类型分类的详细数据
-				};
-			});
+			// 2. 从游戏表获取 game 的数据（查询所有日期的游戏更新记录并按日期分组）
+			const gameCountByDateSql = `
+				SELECT 
+					DATE_FORMAT(update_time, '%Y-%m-%d') as date,
+					COUNT(*) as count
+				FROM (
+					SELECT update_time FROM ps5_game 
+					WHERE update_time IS NOT NULL
+					UNION ALL
+					SELECT update_time FROM pc_game 
+					WHERE update_time IS NOT NULL
+				) as game_union
+				GROUP BY DATE_FORMAT(update_time, '%Y-%m-%d')
+			`;
+			
+			try {
+				const gameResult = await db.query(gameCountByDateSql);
+				gameResult.forEach(row => {
+					// 对于游戏数据，如果日期在查询范围内则添加到 trendMap
+					if (trendMap[row.date]) {
+						trendMap[row.date].spiders['game'] = {
+							dataCount: parseInt(row.count) || 0,
+							successCount: parseInt(row.count) || 0,  // 游戏爬虫没有失败记录，视为全部成功
+							runCount: 1  // 每天视为运行1次
+						};
+					} else {
+						// 如果是历史数据（不在7天范围内），仍然需要显示，所以创建新项
+						trendMap[row.date] = {
+							date: row.date,
+							timestamp: Math.floor(new Date(row.date).getTime() / 1000),
+							spiders: {
+								'game': {
+									dataCount: parseInt(row.count) || 0,
+									successCount: parseInt(row.count) || 0,
+									runCount: 1
+								}
+							}
+						};
+					}
+				});
+			} catch (e) {
+				console.warn("游戏数据趋势查询失败", e.message);
+			}
+			
+			// 3. 从 AI 工具表获取 ai_info 的数据（查询所有日期的 AI 更新记录并按日期分组）
+			const aiCountByDateSql = `
+				SELECT 
+					DATE_FORMAT(update_time, '%Y-%m-%d') as date,
+					COUNT(*) as count
+				FROM ai_info
+				WHERE update_time IS NOT NULL
+				GROUP BY DATE_FORMAT(update_time, '%Y-%m-%d')
+			`;
+			
+			try {
+				const aiResult = await db.query(aiCountByDateSql);
+				aiResult.forEach(row => {
+					// 对于 AI 数据，检查日期是否已在 trendMap 中
+					if (trendMap[row.date]) {
+						trendMap[row.date].spiders['ai_info'] = {
+							dataCount: parseInt(row.count) || 0,
+							successCount: parseInt(row.count) || 0,  // AI 爬虫没有失败记录，视为全部成功
+							runCount: 1  // 每天视为运行1次
+						};
+					} else {
+						// 如果是历史数据（不在7天范围内），创建新项
+						trendMap[row.date] = {
+							date: row.date,
+							timestamp: Math.floor(new Date(row.date).getTime() / 1000),
+							spiders: {
+								'ai_info': {
+									dataCount: parseInt(row.count) || 0,
+									successCount: parseInt(row.count) || 0,
+									runCount: 1
+								}
+							}
+						};
+					}
+				});
+			} catch (e) {
+				console.warn("AI数据趋势查询失败", e.message);
+			}
+			
+			// 转换为数组格式（包括最近7天的完整日期），并计算该天的总数据
+			trendData = Object.values(trendMap)
+				.sort((a, b) => new Date(a.date) - new Date(b.date))
+				.map(item => {
+					const totalDataCount = Object.values(item.spiders).reduce((sum, spider) => sum + spider.dataCount, 0);
+					const totalSuccessCount = Object.values(item.spiders).reduce((sum, spider) => sum + spider.successCount, 0);
+					
+					return {
+						date: item.date,
+						timestamp: item.timestamp,
+						total: totalDataCount,
+						success: totalSuccessCount,
+						spiders: item.spiders
+					};
+				});
 			
 		} catch (e) {
 			console.warn("趋势数据查询失败，使用基础结构", e.message);
