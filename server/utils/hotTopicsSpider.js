@@ -509,7 +509,7 @@ async function runAllSpiders() {
 
 	const platforms = [
 		{ name: "百度", fn: crawlBaiduTrending },
-		{ name: "头条", fn: crawlToutiaoTrending },
+		// { name: "头条", fn: crawlToutiaoTrending },  // TODO: 头条有反爬虫机制，待修复
 		{ name: "微博", fn: crawlWeiboTrending },
 		{ name: "B站", fn: crawlBilibiliTrending },
 		{ name: "小红书", fn: crawlXiaohongshuTrending }

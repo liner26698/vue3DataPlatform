@@ -267,7 +267,6 @@ router.post("/statistics/getHotTopics", async ctx => {
 		// 按平台分组，每个平台限制20条
 		const groupedTopics = {
 			baidu: [],
-			toutiao: [],
 			weibo: [],
 			bilibili: [],
 			xiaohongshu: []
