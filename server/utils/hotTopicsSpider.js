@@ -41,131 +41,68 @@ const SPIDER_CONFIG = {
 };
 
 /**
- * 1. 爬取百度热搜 - 使用 superagent + cheerio
+ * 1. 爬取百度热搜
  */
 async function crawlBaiduTrending() {
 	try {
 		console.log("🔍 正在爬取百度热搜...");
-		const url = "https://www.baidu.com/";
+		const url = "https://top.baidu.com/board?tab=realtime";
 
 		const response = await axios.get(url, {
-			timeout: 10000,
+			timeout: 12000,
 			headers: {
-				"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+				"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
 				"Accept-Language": "zh-CN,zh;q=0.9",
 				"Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
 				"Referer": "https://www.baidu.com/"
 			}
 		});
 
-		const html = response.data;
-		const $ = cheerio.load(html);
+		if (response.status !== 200) {
+			console.warn(`⚠️  百度返回 HTTP ${response.status}`);
+			return [];
+		}
+
+		const $ = cheerio.load(response.data);
 		const topics = [];
 
-		// 查找所有 li.hotsearch-item 元素
-		$("li.hotsearch-item").each((index, element) => {
-			if (index >= 30) return; // 只取前30条
+		// 从表格中提取热搜数据
+		$('tbody tr').each((index, element) => {
+			if (topics.length >= 15) return;
 
-			const $item = $(element);
-			
-			// 获取排名 (从 span.title-content-index 中提取)
-			const rankText = $item.find("span.title-content-index").text().trim();
-			const rank = rankText ? parseInt(rankText) : index + 1;
+			const cells = $(element).find('td');
+			if (cells.length >= 2) {
+				const rankText = $(cells[0]).text().trim();
+				const titleText = $(cells[1]).text().trim();
+				const heatText = $(cells[2]).text().trim();
 
-			// 获取标题 (从 span.title-content-title 中提取)
-			const title = $item.find("span.title-content-title").text().trim();
-
-			// 获取链接
-			const link = $item.find("a.title-content").attr("href") || `https://www.baidu.com/s?wd=${encodeURIComponent(title)}`;
-
-			// 判断是否为热 (查找是否有热标记)
-			const isHot = $item.find("span.title-content-mark").length > 0;
-
-			if (title) {
-				topics.push({
-					platform: "baidu",
-					rank: rank,
-					title: title,
-					category: isHot ? "热" : "搜索",
-					heat: (100 - rank) * 100000,
-					trend: "stable",
-					tags: ["百度", "热搜"],
-					url: link,
-					description: title,
-					is_active: 1
-				});
+				if (titleText && titleText.length > 2 && titleText.length < 100) {
+					topics.push({
+						platform: "baidu",
+						rank: parseInt(rankText) || topics.length + 1,
+						title: titleText,
+						category: "热搜",
+						heat: parseInt(heatText) || (100 - topics.length) * 100000,
+						trend: "stable",
+						tags: ["百度", "热搜"],
+						url: `https://www.baidu.com/s?wd=${encodeURIComponent(titleText)}`,
+						description: titleText,
+						is_active: 1
+					});
+				}
 			}
 		});
 
 		if (topics.length > 0) {
 			console.log(`✅ 百度热搜爬取成功: ${topics.length} 条`);
-			return topics.slice(0, 15);
-		} else {
-			console.warn("⚠️  从首页提取热搜失败，尝试板块页面...");
-			return await crawlBaiduBoardTrending();
+			return topics;
 		}
+
+		console.warn("⚠️  百度暂无数据");
+		return [];
+
 	} catch (error) {
 		console.error("❌ 百度热搜爬取失败:", error.message);
-		return await crawlBaiduBoardTrending();
-	}
-}
-
-/**
- * 百度热搜板块页面备用方案
- */
-async function crawlBaiduBoardTrending() {
-	try {
-		console.log("🔍 尝试百度热搜板块页面...");
-		const url = "https://top.baidu.com/board?tab=realtime";
-
-		const response = await axios.get(url, {
-			timeout: 10000,
-			headers: {
-				"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-				"Accept-Language": "zh-CN,zh;q=0.9",
-				"Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-				"Referer": "https://www.baidu.com/"
-			}
-		});
-
-		// 尝试从响应中提取 JSON 数据
-		const jsonMatch = response.data.match(/var initialData = ({[\s\S]*?});/);
-		if (jsonMatch) {
-			try {
-				const data = JSON.parse(jsonMatch[1]);
-				const topics = [];
-
-				if (data.cards && data.cards[0] && data.cards[0].content) {
-					data.cards[0].content.forEach((item, index) => {
-						if (item.word && item.word.trim() && index < 30) {
-							topics.push({
-								platform: "baidu",
-								rank: index + 1,
-								title: item.word.trim(),
-								category: item.topic_flag ? item.topic_flag[0] : "热搜",
-								heat: item.realrank ? parseInt(item.realrank) : (100 - index) * 100000,
-								trend: item.rise_rate ? (item.rise_rate > 0 ? "up" : item.rise_rate < 0 ? "down" : "stable") : "stable",
-								tags: item.topic_flag || [],
-								url: item.query ? `https://www.baidu.com/s?wd=${encodeURIComponent(item.query)}` : `https://www.baidu.com/s?wd=${encodeURIComponent(item.word)}`,
-								description: item.word,
-								is_active: 1
-							});
-						}
-					});
-				}
-
-				if (topics.length > 0) {
-					console.log(`✅ 百度热搜板块爬取成功: ${topics.length} 条`);
-					return topics.slice(0, 15);
-				}
-			} catch (e) {
-				console.warn("⚠️  JSON 解析失败");
-			}
-		}
-
-		return [];
-	} catch (error) {
-		console.error("❌ 百度热搜板块爬取失败:", error.message);
 		return [];
 	}
 }
@@ -176,25 +113,37 @@ async function crawlBaiduBoardTrending() {
 async function crawlZhihuTrending() {
 	try {
 		console.log("❓ 正在爬取知乎热榜...");
-		const topics = [];
-
 		const url = "https://www.zhihu.com/hot";
+
 		const response = await axios.get(url, {
-			timeout: 10000,
+			timeout: 12000,
+			validateStatus: () => true,
 			headers: {
 				"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
 				"Accept-Language": "zh-CN,zh;q=0.9",
 				"Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
 				"Referer": "https://www.zhihu.com/",
-				"Cookie": "_zap=123; z_c0=test"
+				"Cookie": "z_c0=test"
 			}
 		});
 
+		if (response.status === 403) {
+			console.warn("⚠️  知乎返回 403 Forbidden（反爬虫保护）");
+			console.warn("   💡 需要 Puppeteer 或代理来绕过");
+			return [];
+		}
+
+		if (response.status !== 200) {
+			console.warn(`⚠️  知乎返回 HTTP ${response.status}`);
+			return [];
+		}
+
 		const $ = cheerio.load(response.data);
+		const topics = [];
 		const selectors = [
 			"[role='feed'] [role='article']",
 			".Card.CardBase",
-			"[class*='HotList'] [class*='Item']",
+			"h2 a, h3 a",
 			"div[data-testid='hotItem']"
 		];
 
@@ -202,10 +151,10 @@ async function crawlZhihuTrending() {
 			$(selector).each((index, element) => {
 				if (topics.length >= 15) return;
 				const $item = $(element);
-				const titleElem = $item.find("h2 a, h3 a, a[class*='Title']").first();
-				const title = titleElem.text().trim();
+				const titleElem = $item.find("a").first();
+				let title = (titleElem.text() || $item.text()).trim();
 
-				if (title && title.length > 2 && title.length < 200 && !topics.some(t => t.title === title)) {
+				if (title && title.length > 2 && title.length < 200) {
 					topics.push({
 						platform: "zhihu",
 						rank: topics.length + 1,
@@ -214,7 +163,7 @@ async function crawlZhihuTrending() {
 						heat: (100 - topics.length) * 50000,
 						trend: "stable",
 						tags: ["知乎", "热榜"],
-						url: `https://www.zhihu.com/hot`,
+						url: "https://www.zhihu.com/hot",
 						description: title,
 						is_active: 1
 					});
@@ -228,8 +177,9 @@ async function crawlZhihuTrending() {
 			return topics;
 		}
 
-		console.warn("⚠️  知乎热榜暂无数据");
+		console.warn("⚠️  知乎暂无数据");
 		return [];
+
 	} catch (error) {
 		console.error("❌ 知乎热榜爬取失败:", error.message);
 		return [];
@@ -245,57 +195,57 @@ async function crawlWeiboTrending() {
 		const topics = [];
 
 		const response = await axios.get("https://s.weibo.com/top/summary", {
-			timeout: 10000,
+			timeout: 12000,
+			validateStatus: () => true,
 			headers: {
-				"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
+				"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
 				"Accept-Language": "zh-CN,zh;q=0.9",
 				"Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-				"Accept-Encoding": "gzip, deflate",
 				"Referer": "https://s.weibo.com/",
-				"Sec-Fetch-Dest": "document",
-				"Sec-Fetch-Mode": "navigate"
+				"Accept-Encoding": "gzip, deflate"
 			}
 		});
 
-		const $ = cheerio.load(response.data);
+		if (response.status !== 200) {
+			console.warn(`⚠️  微博返回 HTTP ${response.status}`);
+			return [];
+		}
 
-		// 微博热搜结构 - 尝试多个选择器
+		// 检查是否被重定向到登录页
+		if (response.data.includes('login') || response.data.includes('visitor') || response.data.includes('Visitor System')) {
+			console.warn("⚠️  微博被重定向到登录/访客页面（需要 Cookie 或代理）");
+			return [];
+		}
+
+		const $ = cheerio.load(response.data);
 		const selectors = [
+			"tr:not(:first-child) td:nth-child(2)",
 			"tr:not(:first-child)",
 			"table tr",
-			".tr-item",
-			"[class*='rank']"
+			".tr-item"
 		];
 
 		for (const selector of selectors) {
 			$(selector).each((index, element) => {
 				if (topics.length >= 15) return;
-
 				const $item = $(element);
-				const $link = $item.find("a[href*='keyword']").first();
-				let title = $link.text().trim() || $item.find("td").eq(1).text().trim();
 
-				if (title) {
-					title = title.replace(/\s+/g, " ").trim().substring(0, 100);
+				let title = '';
+				if (selector.includes('nth-child')) {
+					title = $item.text().trim();
+				} else {
+					const $link = $item.find("a[href*='keyword']").first();
+					title = $link.text().trim() || $item.find("td").eq(1).text().trim();
 				}
 
-				if (title && title.length > 2 && !topics.some(t => t.title === title)) {
-					const heatText = $item.find("td").eq(2).text() || "";
-					const heatMatch = heatText.match(/(\d+(?:\.\d+)?)(万|K|M)?/);
-					let heat = 0;
-					if (heatMatch) {
-						heat = parseInt(heatMatch[1]);
-						if (heatMatch[2] === "万") heat *= 10000;
-						else if (heatMatch[2] === "M") heat *= 1000000;
-						else if (heatMatch[2] === "K") heat *= 1000;
-					}
-
+				if (title && title.length > 2 && title.length < 100) {
+					title = title.replace(/\s+/g, " ").trim();
 					topics.push({
 						platform: "weibo",
 						rank: topics.length + 1,
 						title: title,
 						category: "热搜",
-						heat: heat || (100 - topics.length) * 55000,
+						heat: (100 - topics.length) * 100000,
 						trend: "stable",
 						tags: ["微博", "热搜"],
 						url: `https://s.weibo.com/weibo?q=${encodeURIComponent(title)}`,
@@ -312,8 +262,9 @@ async function crawlWeiboTrending() {
 			return topics;
 		}
 
-		console.warn("⚠️  微博热搜暂无数据");
+		console.warn("⚠️  微博暂无数据");
 		return [];
+
 	} catch (error) {
 		console.error("❌ 微博热搜爬取失败:", error.message);
 		return [];
@@ -389,55 +340,65 @@ async function crawlBilibiliTrending() {
 }
 
 /**
- * 5. 爬取抖音热点 - 改进版（带备选方案）
+ * 5. 爬取抖音热点
  */
 async function crawlDouyinTrending() {
 	try {
 		console.log("▶ 正在爬取抖音热点...");
 		const topics = [];
 
-		// 方案1: 尝试爬取抖音热点页面
-		try {
-			const response = await axios.get("https://www.douyin.com/hot", {
-				timeout: 8000,
-				headers: {
-					"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
-					"Accept-Language": "zh-CN,zh;q=0.9",
-					"Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-					"Referer": "https://www.douyin.com/"
+		const response = await axios.get("https://www.douyin.com/", {
+			timeout: 12000,
+			headers: {
+				"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
+				"Accept-Language": "zh-CN,zh;q=0.9",
+				"Referer": "https://www.douyin.com/",
+				"Accept": "text/html,application/xhtml+xml"
+			}
+		});
+
+		if (response.status !== 200) {
+			console.warn(`⚠️  抖音返回 HTTP ${response.status}`);
+			return [];
+		}
+
+		// 检查是否是 JavaScript 渲染页面（大量使用 <noscript>）
+		if (response.data.includes('<noscript>') && response.data.length < 10000) {
+			console.warn("⚠️  抖音返回 JavaScript 渲染页面（无静态 HTML 内容）");
+			console.warn("   💡 需要 Puppeteer 或 Selenium 来执行 JavaScript");
+			return [];
+		}
+
+		const $ = cheerio.load(response.data);
+		const selectors = [
+			"[class*='hot'] a",
+			"[class*='trending'] a",
+			"h2 a, h3 a",
+			"[class*='title'] a"
+		];
+
+		for (const selector of selectors) {
+			$(selector).each((index, element) => {
+				if (topics.length >= 15) return;
+				const $item = $(element);
+				let title = ($item.text() || $item.attr("title") || "").trim();
+
+				if (title && title.length > 2 && title.length < 200) {
+					topics.push({
+						platform: "douyin",
+						rank: topics.length + 1,
+						title: title.substring(0, 100),
+						category: "热点",
+						heat: (100 - topics.length) * 80000,
+						trend: "stable",
+						tags: ["抖音", "热点"],
+						url: $(element).attr("href") ? "https://www.douyin.com" + $(element).attr("href") : "https://www.douyin.com",
+						description: title.substring(0, 100),
+						is_active: 1
+					});
 				}
 			});
-
-			const $ = cheerio.load(response.data);
-			const selectors = [
-				"h3 a, .item-title, [class*='title'] a, .text-truncate"
-			];
-
-			for (const selector of selectors) {
-				$(selector).each((index, element) => {
-					if (topics.length >= 15) return;
-					const $item = $(element);
-					let title = ($item.text() || $item.attr("title") || "").trim();
-
-					if (title && title.length > 2 && title.length < 100 && !topics.some(t => t.title === title)) {
-						topics.push({
-							platform: "douyin",
-							rank: topics.length + 1,
-							title: title.substring(0, 100),
-							category: "热点",
-							heat: (100 - topics.length) * 65000,
-							trend: "stable",
-							tags: ["抖音", "热点"],
-							url: `https://www.douyin.com/search?keyword=${encodeURIComponent(title)}`,
-							description: title.substring(0, 100),
-							is_active: 1
-						});
-					}
-				});
-				if (topics.length >= 15) break;
-			}
-		} catch (err) {
-			console.warn("⚠️  抖音爬取失败:", err.message);
+			if (topics.length >= 15) break;
 		}
 
 		if (topics.length > 0) {
@@ -445,8 +406,9 @@ async function crawlDouyinTrending() {
 			return topics;
 		}
 
-		console.warn("⚠️  抖音热点暂无数据");
+		console.warn("⚠️  抖音暂无数据");
 		return [];
+
 	} catch (error) {
 		console.error("❌ 抖音热点爬取失败:", error.message);
 		return [];
