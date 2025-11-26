@@ -253,30 +253,28 @@ router.get("/statistics/chatGpt2", async ctx => {
  */
 router.post("/statistics/getHotTopics", async ctx => {
 	try {
-		// 从数据库获取所有平台的热门话题
+		// 从数据库获取所有平台的热门话题（每个平台最多20条）
 		const sql = `
 			SELECT 
 				id, platform, \`rank\`, title, category, heat, trend, tags, url, description
 			FROM hot_topics
 			WHERE is_active = 1
-			AND DATE(updated_at) = CURDATE()
 			ORDER BY platform, \`rank\`
-			LIMIT 100
 		`;
 
 		const dbTopics = await db.query(sql);
 
-		// 按平台分组
+		// 按平台分组，每个平台限制20条
 		const groupedTopics = {
-			douyin: [],
 			baidu: [],
-			zhihu: [],
+			toutiao: [],
 			weibo: [],
-			bilibili: []
+			bilibili: [],
+			xiaohongshu: []
 		};
 
 		dbTopics.forEach(topic => {
-			if (groupedTopics[topic.platform]) {
+			if (groupedTopics[topic.platform] && groupedTopics[topic.platform].length < 20) {
 				groupedTopics[topic.platform].push({
 					title: topic.title,
 					category: topic.category,
