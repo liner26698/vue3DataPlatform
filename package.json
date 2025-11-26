@@ -57,6 +57,7 @@
     "pdfjs-dist": "^4.10.38",
     "pinia": "^2.0.32",
     "pinia-plugin-persist": "^1.0.0",
+    "puppeteer": "^24.31.0",
     "qs": "^6.11.0",
     "superagent": "^10.2.3",
     "three": "^0.150.1",
