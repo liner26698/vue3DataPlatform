@@ -1,0 +1,29 @@
+{
+  "name": "spider-service",
+  "version": "1.0.0",
+  "description": "独立爬虫微服务 - 热榜数据采集",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "dev": "nodemon app.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "spider",
+    "crawler",
+    "hot-topics"
+  ],
+  "author": "kris",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.6.2",
+    "cheerio": "^1.0.0-rc.12",
+    "iconv-lite": "^0.6.3",
+    "mysql2": "^3.6.5",
+    "node-cron": "^3.0.3",
+    "puppeteer": "^24.31.0"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.22"
+  }
+}

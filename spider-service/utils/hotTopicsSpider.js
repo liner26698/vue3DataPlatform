@@ -1,15 +1,15 @@
 /**
  * 热门话题爬虫 - 使用 Cheerio 爬取各平台热门话题
- * 支持平台: 抖音、百度、知乎、微博、B站
+ * 支持平台: 百度、微博、B站
  * 
- * 安装依赖: npm install axios cheerio iconv-lite
+ * 安装依赖: npm install axios cheerio iconv-lite puppeteer mysql2 node-cron
  * 
  * 使用方式:
  * 1. 直接运行: node hotTopicsSpider.js
  * 2. 定时任务: 使用 node-cron 或 systemd 定时执行
  * 
  * author: kris
- * date: 2025年11月25日
+ * date: 2025年11月26日
  */
 
 // Node 18 polyfill for undici compatibility
@@ -26,7 +26,7 @@ if (typeof global.File === 'undefined') {
 const axios = require("axios");
 const cheerio = require("cheerio");
 const iconv = require("iconv-lite");
-const db = require("../db.js");
+const db = require("./db.js");
 
 // 模拟浏览器 User-Agent
 const USER_AGENT =
@@ -108,71 +108,7 @@ async function crawlBaiduTrending() {
 }
 
 /**
- * 2. 爬取今日头条热榜
- */
-async function crawlToutiaoTrending() {
-	try {
-		console.log("📰 正在爬取今日头条热榜...");
-		
-		const response = await axios.get('https://www.toutiao.com/', {
-			timeout: 10000,
-			headers: {
-				'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
-				'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-				'Accept-Language': 'zh-CN,zh;q=0.9',
-				'Referer': 'https://www.toutiao.com/'
-			}
-		});
-
-		const $ = cheerio.load(response.data);
-		const topics = [];
-		const seenTitles = new Set();
-
-		const selectors = ['a', 'h3', 'span', 'div'];
-
-		for (const selector of selectors) {
-			$(selector).each((index, element) => {
-				if (topics.length >= 15) return;
-				
-				const $el = $(element);
-				let title = ($el.text() || $el.attr('title') || '').trim();
-				title = title.replace(/\s+/g, ' ').trim();
-				
-				if (title && title.length > 4 && title.length < 100 && !seenTitles.has(title)) {
-					seenTitles.add(title);
-					topics.push({
-						platform: "toutiao",
-						rank: topics.length + 1,
-						title: title,
-						category: "热榜",
-						heat: (100 - topics.length) * 60000,
-						trend: "stable",
-						tags: ["头条", "热榜"],
-						url: "https://www.toutiao.com",
-						description: title,
-						is_active: 1
-					});
-				}
-			});
-			if (topics.length >= 15) break;
-		}
-
-		if (topics.length > 0) {
-			console.log(`✅ 头条热榜爬取成功: ${topics.length} 条`);
-			return topics;
-		}
-
-		console.warn("⚠️  头条暂无数据");
-		return [];
-
-	} catch (error) {
-		console.error("❌ 头条热榜爬取失败:", error.message);
-		return [];
-	}
-}
-
-/**
- * 3. 爬取微博热搜 - 使用 Puppeteer + Cheerio
+ * 2. 爬取微博热搜 - 使用 Puppeteer + Cheerio
  */
 async function crawlWeiboTrending() {
 	let browser;
@@ -277,7 +213,7 @@ async function crawlWeiboTrending() {
 }
 
 /**
- * 4. 爬取B站热门
+ * 3. 爬取B站热门
  */
 async function crawlBilibiliTrending() {
 	try {
@@ -340,73 +276,6 @@ async function crawlBilibiliTrending() {
 		return [];
 	} catch (error) {
 		console.error("❌ B站热门爬取失败:", error.message);
-		return [];
-	}
-}
-
-/**
- * 5. 爬取抖音热点
- */
-/**
- * 5. 爬取小红书热榜
- */
-async function crawlXiaohongshuTrending() {
-	try {
-		console.log("❤️  正在爬取小红书热榜...");
-		
-		const response = await axios.get('https://www.xiaohongshu.com/homefeed_recommend', {
-			timeout: 10000,
-			headers: {
-				'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
-				'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-				'Accept-Language': 'zh-CN,zh;q=0.9',
-				'Referer': 'https://www.xiaohongshu.com/'
-			}
-		});
-
-		const $ = cheerio.load(response.data);
-		const topics = [];
-		const seenTitles = new Set();
-
-		const selectors = ['a', 'h3', 'span', 'div'];
-
-		for (const selector of selectors) {
-			$(selector).each((index, element) => {
-				if (topics.length >= 15) return;
-				
-				const $el = $(element);
-				let title = ($el.text() || $el.attr('title') || '').trim();
-				title = title.replace(/\s+/g, ' ').trim();
-				
-				if (title && title.length > 4 && title.length < 100 && !seenTitles.has(title)) {
-					seenTitles.add(title);
-					topics.push({
-						platform: "xiaohongshu",
-						rank: topics.length + 1,
-						title: title,
-						category: "热榜",
-						heat: (100 - topics.length) * 70000,
-						trend: "stable",
-						tags: ["小红书", "热榜"],
-						url: "https://www.xiaohongshu.com",
-						description: title,
-						is_active: 1
-					});
-				}
-			});
-			if (topics.length >= 15) break;
-		}
-
-		if (topics.length > 0) {
-			console.log(`✅ 小红书热榜爬取成功: ${topics.length} 条`);
-			return topics;
-		}
-
-		console.warn("⚠️  小红书暂无数据");
-		return [];
-
-	} catch (error) {
-		console.error("❌ 小红书热榜爬取失败:", error.message);
 		return [];
 	}
 }
@@ -560,9 +429,7 @@ module.exports = {
 	runAllSpiders,
 	fetchAllTrending: runAllSpiders,  // 别名，用于 API 调用
 	crawlBaiduTrending,
-	crawlToutiaoTrending,
 	crawlWeiboTrending,
 	crawlBilibiliTrending,
-	crawlXiaohongshuTrending,
 	saveTopicsToDatabase
 };

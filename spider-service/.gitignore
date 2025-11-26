@@ -1,0 +1,34 @@
+# 依赖
+node_modules/
+package-lock.json
+yarn.lock
+
+# 环境变量
+.env
+.env.local
+.env.*.local
+
+# 日志文件
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# 操作系统
+.DS_Store
+.env.swp
+.vscode/
+
+# 临时文件
+tmp/
+temp/
+dist/
+build/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~

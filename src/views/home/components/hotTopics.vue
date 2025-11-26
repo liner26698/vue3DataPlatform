@@ -81,8 +81,7 @@ interface Topic {
 const platforms = [
 	{ id: "baidu", name: "百度", icon: "🔍", color: "#2319dc" },
 	{ id: "weibo", name: "微博", icon: "✨", color: "#e6162d" },
-	{ id: "bilibili", name: "B站", icon: "▶", color: "#fb7299" },
-	{ id: "xiaohongshu", name: "小红书", icon: "❤️", color: "#ff1111" }
+	{ id: "bilibili", name: "B站", icon: "▶", color: "#fb7299" }
 ];
 
 const activePlatform = ref("baidu");

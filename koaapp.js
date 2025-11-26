@@ -4,7 +4,6 @@ const cors = require("koa-cors");
 const { ERROR } = require("./server/utils/common");
 const router = require("./server/routes");
 const bookApi = require("./server/routes/bookApi");
-const { startScheduledTasks } = require("./server/utils/cronScheduler");
 
 const app = new Koa();
 const port = 3001;
@@ -31,23 +30,10 @@ app.use(async (ctx, next) => {
 app.use(bookApi.routes());
 app.use(router.routes());
 
-// 启动热门话题爬虫定时任务
-console.log("\n🚀 正在启动热门话题爬虫定时任务...");
-try {
-	startScheduledTasks();
-	console.log("✅ 爬虫定时任务已启动\n");
-} catch (error) {
-	console.error("⚠️ 爬虫定时任务启动失败:", error.message);
-}
-
 // 启动服务
 app.listen(port, () => {
-	console.log(`✅ 服务启动成功，端口: ${port}`);
+	console.log(`✅ 主应用启动成功，端口: ${port}`);
+	console.log(`📝 爬虫服务已分离为独立微服务`);
+	console.log(`   位置: ../spider-service`);
+	console.log(`   启动命令: cd ../spider-service && npm start\n`);
 });
-
-// 启动服务后，立即执行一次爬虫任务（异步执行，不阻塞服务启动）
-setTimeout(() => {
-	const { runNow } = require("./server/utils/cronScheduler");
-	console.log("\n📡 启动时自动运行爬虫任务...");
-	runNow().catch(err => console.error("爬虫执行出错:", err.message));
-}, 2000);

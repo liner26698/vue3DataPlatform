@@ -268,8 +268,7 @@ router.post("/statistics/getHotTopics", async ctx => {
 		const groupedTopics = {
 			baidu: [],
 			weibo: [],
-			bilibili: [],
-			xiaohongshu: []
+			bilibili: []
 		};
 
 		dbTopics.forEach(topic => {
