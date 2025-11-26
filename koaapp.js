@@ -44,3 +44,10 @@ try {
 app.listen(port, () => {
 	console.log(`✅ 服务启动成功，端口: ${port}`);
 });
+
+// 启动服务后，立即执行一次爬虫任务（异步执行，不阻塞服务启动）
+setTimeout(() => {
+	const { runNow } = require("./server/utils/cronScheduler");
+	console.log("\n📡 启动时自动运行爬虫任务...");
+	runNow().catch(err => console.error("爬虫执行出错:", err.message));
+}, 2000);
