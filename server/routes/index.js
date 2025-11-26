@@ -1163,6 +1163,7 @@ router.post("/statistics/getCrawlerStats", async (ctx, next) => {
 		// 1. 游戏爬虫 - 安全查询（处理表不存在的情况）
 		let gameTotalCount = 0;
 		let gameLastUpdate = null;
+		let gameSuccessRate = 0;
 		try {
 			const gameSql = `
 				SELECT 
@@ -1181,6 +1182,21 @@ router.post("/statistics/getCrawlerStats", async (ctx, next) => {
 			} catch (e) {
 				// 忽略时间获取错误
 			}
+
+			// 从 crawler_logs 获取游戏爬虫的成功率
+			try {
+				const gameSuccessRateSql = `
+					SELECT 
+						SUM(CASE WHEN status = 'success' THEN 1 ELSE 0 END) * 100.0 / COUNT(*) as success_rate
+					FROM crawler_logs 
+					WHERE spider_type = 'game' OR spider_type = 'pc_game' OR spider_type = 'ps5_game'
+				`;
+				const gameRateResult = await db.query(gameSuccessRateSql);
+				gameSuccessRate = gameRateResult[0]?.success_rate ? parseFloat(gameRateResult[0].success_rate).toFixed(1) : 0;
+			} catch (e) {
+				console.warn("游戏成功率查询失败", e.message);
+				gameSuccessRate = 0;
+			}
 		} catch (e) {
 			console.warn("游戏表查询失败，使用默认值", e.message);
 			gameTotalCount = 0;
@@ -1189,6 +1205,7 @@ router.post("/statistics/getCrawlerStats", async (ctx, next) => {
 		// 2. 热门话题爬虫
 		let hotTopicsTotalCount = 0;
 		let topicsLastUpdate = null;
+		let hotTopicsSuccessRate = 0;
 		try {
 			const hotTopicsCountSql = `SELECT COUNT(*) as total FROM hot_topics WHERE is_active = 1`;
 			const hotTopicsStats = await db.query(hotTopicsCountSql);
@@ -1197,6 +1214,21 @@ router.post("/statistics/getCrawlerStats", async (ctx, next) => {
 			const topicsTimeSql = `SELECT MAX(updated_at) as lastUpdate FROM hot_topics`;
 			const topicsTimeResult = await db.query(topicsTimeSql);
 			topicsLastUpdate = topicsTimeResult[0]?.lastUpdate;
+
+			// 从 crawler_logs 获取热门话题爬虫的成功率
+			try {
+				const topicsSuccessRateSql = `
+					SELECT 
+						SUM(CASE WHEN status = 'success' THEN 1 ELSE 0 END) * 100.0 / COUNT(*) as success_rate
+					FROM crawler_logs 
+					WHERE spider_type = 'hot_topics'
+				`;
+				const topicsRateResult = await db.query(topicsSuccessRateSql);
+				hotTopicsSuccessRate = topicsRateResult[0]?.success_rate ? parseFloat(topicsRateResult[0].success_rate).toFixed(1) : 0;
+			} catch (e) {
+				console.warn("热门话题成功率查询失败", e.message);
+				hotTopicsSuccessRate = 0;
+			}
 		} catch (e) {
 			console.warn("热门话题表查询失败", e.message);
 		}
@@ -1204,6 +1236,7 @@ router.post("/statistics/getCrawlerStats", async (ctx, next) => {
 		// 3. AI工具爬虫
 		let aiToolsTotalCount = 0;
 		let aiLastUpdate = null;
+		let aiSuccessRate = 0;
 		try {
 			const aiToolsCountSql = `SELECT COUNT(*) as total FROM ai_info`;
 			const aiToolsStats = await db.query(aiToolsCountSql);
@@ -1212,6 +1245,21 @@ router.post("/statistics/getCrawlerStats", async (ctx, next) => {
 			const aiTimeSql = `SELECT MAX(updated_at) as lastUpdate FROM ai_info`;
 			const aiTimeResult = await db.query(aiTimeSql);
 			aiLastUpdate = aiTimeResult[0]?.lastUpdate;
+
+			// 从 crawler_logs 获取 AI 工具爬虫的成功率
+			try {
+				const aiSuccessRateSql = `
+					SELECT 
+						SUM(CASE WHEN status = 'success' THEN 1 ELSE 0 END) * 100.0 / COUNT(*) as success_rate
+					FROM crawler_logs 
+					WHERE spider_type = 'ai_tools' OR spider_type = 'ai_info'
+				`;
+				const aiRateResult = await db.query(aiSuccessRateSql);
+				aiSuccessRate = aiRateResult[0]?.success_rate ? parseFloat(aiRateResult[0].success_rate).toFixed(1) : 0;
+			} catch (e) {
+				console.warn("AI工具成功率查询失败", e.message);
+				aiSuccessRate = 0;
+			}
 		} catch (e) {
 			console.warn("AI工具表查询失败", e.message);
 		}
@@ -1219,6 +1267,7 @@ router.post("/statistics/getCrawlerStats", async (ctx, next) => {
 		// 4. 小说爬虫 - 查询所有小说表的总数
 		let novelTotalCount = 0;
 		let novelLastUpdate = null;
+		let novelSuccessRate = 0;
 		try {
 			const novelCountSql = `
 				SELECT 
@@ -1231,6 +1280,21 @@ router.post("/statistics/getCrawlerStats", async (ctx, next) => {
 			const novelTimeSql = `SELECT MAX(created_time) as lastUpdate FROM novel_info`;
 			const novelTimeResult = await db.query(novelTimeSql);
 			novelLastUpdate = novelTimeResult[0]?.lastUpdate;
+
+			// 从 crawler_logs 获取小说爬虫的成功率
+			try {
+				const novelSuccessRateSql = `
+					SELECT 
+						SUM(CASE WHEN status = 'success' THEN 1 ELSE 0 END) * 100.0 / COUNT(*) as success_rate
+					FROM crawler_logs 
+					WHERE spider_type = 'novel' OR spider_type = 'book'
+				`;
+				const novelRateResult = await db.query(novelSuccessRateSql);
+				novelSuccessRate = novelRateResult[0]?.success_rate ? parseFloat(novelRateResult[0].success_rate).toFixed(1) : 0;
+			} catch (e) {
+				console.warn("小说成功率查询失败", e.message);
+				novelSuccessRate = 0;
+			}
 		} catch (e) {
 			console.warn("小说表查询失败", e.message);
 		}
@@ -1244,7 +1308,7 @@ router.post("/statistics/getCrawlerStats", async (ctx, next) => {
 				spiderName: "游戏爬虫",
 				platformName: "PS5/Xbox/Switch",
 				totalCount: gameTotalCount,
-				successRate: gameTotalCount > 0 ? 96.5 : 0,
+				successRate: gameTotalCount > 0 ? gameSuccessRate : 0,
 				lastUpdateTime: gameLastUpdate || new Date(),
 				status: "active",
 				sourceCode: "server/utils/gameSpider.js",
@@ -1254,7 +1318,7 @@ router.post("/statistics/getCrawlerStats", async (ctx, next) => {
 				spiderName: "热门话题",
 				platformName: "Baidu/Weibo/Bilibili",
 				totalCount: hotTopicsTotalCount,
-				successRate: hotTopicsTotalCount > 0 ? 94.2 : 0,
+				successRate: hotTopicsTotalCount > 0 ? hotTopicsSuccessRate : 0,
 				lastUpdateTime: topicsLastUpdate || new Date(),
 				status: "active",
 				sourceCode: "server/utils/hotTopicsSpider.js",
@@ -1264,7 +1328,7 @@ router.post("/statistics/getCrawlerStats", async (ctx, next) => {
 				spiderName: "AI工具库",
 				platformName: "多源AI工具聚合",
 				totalCount: aiToolsTotalCount,
-				successRate: aiToolsTotalCount > 0 ? 98.0 : 0,
+				successRate: aiToolsTotalCount > 0 ? aiSuccessRate : 0,
 				lastUpdateTime: aiLastUpdate || new Date(),
 				status: "active",
 				sourceCode: "server/utils/aiToolsSpider.js",
@@ -1274,7 +1338,7 @@ router.post("/statistics/getCrawlerStats", async (ctx, next) => {
 				spiderName: "小说爬虫",
 				platformName: "笔趣阁/看书猴",
 				totalCount: novelTotalCount,
-				successRate: novelTotalCount > 0 ? 91.8 : 0,
+				successRate: novelTotalCount > 0 ? novelSuccessRate : 0,
 				lastUpdateTime: novelLastUpdate || new Date(),
 				status: "active",
 				sourceCode: "server/utils/novelSpider.js",
