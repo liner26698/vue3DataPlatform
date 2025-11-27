@@ -1,0 +1,219 @@
+/* 墨青色主题变量定义 */
+$ink-bg-color: #08131a; // 深墨底色 - 整体背景
+$ink-panel-bg: rgba(12, 38, 48, 0.65); // 面板背景 - 半透明墨青
+$ink-panel-border: rgba(30, 79, 94, 0.5); // 面板边框
+$ink-primary: #00ffd5; // 主色 - 青色荧光 (用于高亮、关键数据)
+$ink-secondary: #177ddc; // 辅助色 - 科技蓝 (用于图表、次要元素)
+$ink-text-main: #e0f7fa; // 主要文字 - 淡青白
+$ink-text-sub: #8daeb8; // 次要文字 - 灰青色
+$ink-gold: #ffd700; // 点缀色 - 金色 (用于强调、排名)
+
+/* 字体 */
+$font-family-main: "Helvetica Neue", Helvetica, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "微软雅黑", Arial, sans-serif;
+$font-family-number: "DIN", sans-serif; // 数字专用字体
+
+.dataScreen-container {
+	width: 100%;
+	height: 100%;
+	background: $ink-bg-color;
+	background-image: radial-gradient(circle at 50% 50%, #0d242e 0%, #08131a 100%); // 增加一点径向渐变，更有质感
+	background-size: cover;
+	background-position: center;
+	position: relative;
+	overflow: hidden;
+
+	.dataScreen {
+		position: fixed;
+		top: 50%;
+		left: 50%;
+		z-index: 999;
+		display: flex;
+		flex-direction: column;
+		overflow: hidden;
+		transition: all 0.3s;
+		transform-origin: left top;
+
+		/* 头部样式 */
+		.dataScreen-header {
+			display: flex;
+			width: 100%;
+			height: 80px;
+			background: linear-gradient(to bottom, rgba(12, 38, 48, 0.9) 0%, rgba(12, 38, 48, 0) 100%);
+			border-bottom: 1px solid rgba($ink-primary, 0.2);
+			position: relative;
+			z-index: 10;
+
+			.header-lf,
+			.header-rg {
+				flex: 1;
+				display: flex;
+				align-items: center;
+				padding: 0 40px;
+			}
+
+			.header-ct {
+				flex: 2;
+				display: flex;
+				justify-content: center;
+				align-items: center;
+				flex-direction: column;
+
+				.header-ct-title {
+					font-size: 36px;
+					font-weight: bold;
+					color: $ink-text-main;
+					letter-spacing: 4px;
+					text-shadow: 0 0 10px rgba($ink-primary, 0.5);
+					background: linear-gradient(to bottom, #fff, $ink-primary);
+					background-clip: text;
+					-webkit-background-clip: text;
+					-webkit-text-fill-color: transparent;
+				}
+
+				.header-ct-subtitle {
+					font-size: 14px;
+					color: $ink-text-sub;
+					margin-top: 5px;
+					letter-spacing: 2px;
+				}
+			}
+
+			.header-lf {
+				justify-content: flex-start;
+				.header-btn {
+					cursor: pointer;
+					color: $ink-text-main;
+					font-size: 16px;
+					padding: 8px 20px;
+					background: rgba($ink-primary, 0.1);
+					border: 1px solid rgba($ink-primary, 0.3);
+					border-radius: 4px;
+					transition: all 0.3s;
+					&:hover {
+						background: rgba($ink-primary, 0.2);
+						box-shadow: 0 0 10px rgba($ink-primary, 0.3);
+					}
+				}
+			}
+
+			.header-rg {
+				justify-content: flex-end;
+				.header-time {
+					font-family: $font-family-number;
+					font-size: 20px;
+					color: $ink-primary;
+				}
+			}
+		}
+
+		/* 主体内容样式 */
+		.dataScreen-main {
+			flex: 1;
+			display: flex;
+			padding: 20px;
+			box-sizing: border-box;
+			overflow: hidden;
+
+			/* 通用面板样式 */
+			.ink-panel {
+				background: $ink-panel-bg;
+				border: 1px solid $ink-panel-border;
+				border-radius: 8px;
+				box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+				backdrop-filter: blur(10px); // 磨砂玻璃效果
+				display: flex;
+				flex-direction: column;
+				margin-bottom: 20px;
+				position: relative;
+				overflow: hidden;
+
+				&::before {
+					content: "";
+					position: absolute;
+					top: 0;
+					left: 0;
+					width: 100%;
+					height: 2px;
+					background: linear-gradient(90deg, transparent, $ink-primary, transparent);
+					opacity: 0.5;
+				}
+
+				&:last-child {
+					margin-bottom: 0;
+				}
+
+				.ink-panel-title {
+					height: 40px;
+					line-height: 40px;
+					padding-left: 20px;
+					font-size: 18px;
+					color: $ink-text-main;
+					font-weight: bold;
+					border-bottom: 1px solid rgba($ink-text-sub, 0.1);
+					display: flex;
+					align-items: center;
+
+					&::before {
+						content: "";
+						display: inline-block;
+						width: 4px;
+						height: 16px;
+						background: $ink-primary;
+						margin-right: 10px;
+						border-radius: 2px;
+					}
+				}
+
+				.ink-panel-content {
+					flex: 1;
+					padding: 15px;
+					box-sizing: border-box;
+					position: relative;
+				}
+			}
+
+			.dataScreen-lf,
+			.dataScreen-rg {
+				width: 450px;
+				display: flex;
+				flex-direction: column;
+				justify-content: space-between;
+				z-index: 10;
+			}
+
+			.dataScreen-ct {
+				flex: 1;
+				display: flex;
+				flex-direction: column;
+				margin: 0 20px;
+				position: relative;
+
+				.dataScreen-map {
+					flex: 1;
+					width: 100%;
+					position: relative;
+					// 地图容器不需要背景色，直接透出底色
+					border-radius: 8px;
+					overflow: hidden;
+					
+					.map-title {
+						position: absolute;
+						top: 20px;
+						left: 20px;
+						z-index: 20;
+						color: $ink-text-main;
+						font-size: 20px;
+						font-weight: bold;
+						text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+					}
+				}
+				
+				.dataScreen-cb {
+					height: 280px;
+					margin-top: 20px;
+					// 底部中间的图表区域
+				}
+			}
+		}
+	}
+}
