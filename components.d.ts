@@ -9,11 +9,6 @@ export {}
 
 declare module '@vue/runtime-core' {
   export interface GlobalComponents {
-    403: typeof import('./src/components/ErrorMessage/403.vue')['default']
-    404: typeof import('./src/components/ErrorMessage/404.vue')['default']
-    500: typeof import('./src/components/ErrorMessage/500.vue')['default']
-    'BusinessCard ': typeof import('./src/components/businessCard /index.vue')['default']
-    ColSetting: typeof import('./src/components/ProTable/components/ColSetting.vue')['default']
     ElAside: typeof import('element-plus/es')['ElAside']
     ElBacktop: typeof import('element-plus/es')['ElBacktop']
     ElBreadcrumb: typeof import('element-plus/es')['ElBreadcrumb']
@@ -70,18 +65,8 @@ declare module '@vue/runtime-core' {
     ElTimePicker: typeof import('element-plus/es')['ElTimePicker']
     ElTooltip: typeof import('element-plus/es')['ElTooltip']
     ElUpload: typeof import('element-plus/es')['ElUpload']
-    GameTable: typeof import('./src/components/GameTable.vue')['default']
-    ImportExcel: typeof import('./src/components/ImportExcel/index.vue')['default']
-    Pagination: typeof import('./src/components/Pagination/index.vue')['default']
-    ProTable: typeof import('./src/components/ProTable/index.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
-    ScreenButton: typeof import('./src/components/buttons/screenButton/index.vue')['default']
-    SearchForm: typeof import('./src/components/SearchForm/index.vue')['default']
-    SearchFormItem: typeof import('./src/components/SearchForm/components/SearchFormItem.vue')['default']
-    SelectIcon: typeof import('./src/components/SelectIcon/index.vue')['default']
-    SvgIcon: typeof import('./src/components/SvgIcon/SvgIcon.vue')['default']
-    SwitchDark: typeof import('./src/components/SwitchDark/index.vue')['default']
   }
   export interface ComponentCustomProperties {
     vInfiniteScroll: typeof import('element-plus/es')['ElInfiniteScroll']

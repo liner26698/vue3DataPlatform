@@ -24,18 +24,18 @@
 		// 解析非相对模块名的基准目录
 		"baseUrl": "./",
 		"paths": {
-			"@": ["src"],
-			"@/*": ["src/*"]
+			"@": ["frontend"],
+			"@/*": ["frontend/*"]
 		},
 		// 跳过库检查，解决打包失败
 		"skipLibCheck": true
 	},
 	"include": [
-		"src/**/*.ts",
-		"src/**/*.d.ts",
-		"src/**/*.tsx",
-		"src/**/*.vue",
-		"src/**/*.js",
+		"frontend/**/*.ts",
+		"frontend/**/*.d.ts",
+		"frontend/**/*.tsx",
+		"frontend/**/*.vue",
+		"frontend/**/*.js",
 		"vite.config.ts",
 		"types/auto-imports.d.ts"
 	],

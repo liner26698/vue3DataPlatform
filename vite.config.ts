@@ -2,7 +2,7 @@ import { defineConfig, loadEnv, ConfigEnv, UserConfig } from "vite";
 import { createHtmlPlugin } from "vite-plugin-html";
 import vue from "@vitejs/plugin-vue";
 import { resolve } from "path";
-import { wrapperEnv } from "./src/utils/getEnv";
+import { wrapperEnv } from "./frontend/utils/getEnv";
 import { visualizer } from "rollup-plugin-visualizer";
 import viteCompression from "vite-plugin-compression";
 import VueSetupExtend from "vite-plugin-vue-setup-extend";
@@ -20,11 +20,11 @@ export default defineConfig((mode: ConfigEnv): UserConfig => {
 	const viteEnv = wrapperEnv(env);
 	console.log("viteEnv :>> ", viteEnv);
 	return {
-		resolve: {
-			alias: {
-				"@": resolve(__dirname, "./src"),
-				"@images": resolve(__dirname, "./src/assets/images"),
-				"vue-i18n": "vue-i18n/dist/vue-i18n.cjs.js"
+	resolve: {
+		alias: {
+			"@": resolve(__dirname, "./frontend"),
+			"@images": resolve(__dirname, "./frontend/assets/images"),
+			"vue-i18n": "vue-i18n/dist/vue-i18n.cjs.js"
 			}
 		},
 		// base: "/test/",
