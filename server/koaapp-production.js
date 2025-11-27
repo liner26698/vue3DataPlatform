@@ -1,14 +1,14 @@
 const Koa = require("koa");
 const bodyParser = require("koa-bodyparser");
 const cors = require("koa-cors");
-const { ERROR } = require("./server/utils/common");
+const { ERROR } = require("./utils/common");
 
 // 清除路由缓存，确保每次启动都加载最新版本
-delete require.cache[require.resolve("./server/routes")];
-delete require.cache[require.resolve("./server/routes/bookApi")];
+delete require.cache[require.resolve("./routes")];
+delete require.cache[require.resolve("./routes/bookApi")];
 
-const router = require("./server/routes");
-const bookApi = require("./server/routes/bookApi");
+const router = require("./routes");
+const bookApi = require("./routes/bookApi");
 
 const app = new Koa();
 const port = 3001;

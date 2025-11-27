@@ -254,7 +254,7 @@ router.get("/statistics/chatGpt2", async ctx => {
 router.post("/statistics/getHotTopics", async ctx => {
 	try {
 		// 从数据库获取所有平台的热门话题（每个平台最多20条）
-		// 修改排序逻辑：按平台分组，每个平台按最新时间排序
+		// 排序：按平台分组，每个平台按最新时间排序
 		const sql = `
 			SELECT 
 				id, platform, \`rank\`, title, category, heat, trend, tags, url, description, created_at
