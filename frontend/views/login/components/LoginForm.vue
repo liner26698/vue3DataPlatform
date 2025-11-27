@@ -80,70 +80,21 @@ const loginForm = reactive<Login.ReqLoginForm>({
 const formVisible = ref(false);
 
 onMounted(() => {
-	const { userInfo, token } = globalStore;
-	// 如果已有 token 和 userInfo，尝试恢复表单并自动登录
-	if (token && userInfo && userInfo.userName) {
+	const { userInfo } = globalStore;
+	// 尝试恢复表单
+	if (userInfo && userInfo.userName) {
 		loginForm.username = userInfo.userName;
 		// 恢复密码（已加密存储）
 		if (userInfo.userPwd) {
 			loginForm.password = userInfo.userPwd;
 		}
-		// 延迟显示表单以触发动画
-		setTimeout(() => {
-			formVisible.value = true;
-			// 如果有完整的登录信息和 token，自动登录
-			if (loginForm.username && loginForm.password) {
-				// 延迟自动登录，让用户看到表单加载
-				setTimeout(() => {
-					autoLogin();
-				}, 500);
-			}
-		}, 100);
-	} else {
-		// 没有缓存时直接显示表单
-		if (userInfo && userInfo.userName) {
-			loginForm.username = userInfo.userName;
-		}
-		setTimeout(() => {
-			formVisible.value = true;
-		}, 100);
 	}
+	// 延迟显示表单以触发动画
+	setTimeout(() => {
+		formVisible.value = true;
+	}, 100);
 });
 
-// 自动登录函数
-const autoLogin = async () => {
-	if (!loginForm.username || !loginForm.password) return;
-	loading.value = true;
-	try {
-		// 密码已经是 MD5 加密形式（从 store 恢复）
-		const requestLoginForm: Login.ReqLoginForm = {
-			username: loginForm.username,
-			password: loginForm.password
-		};
-		const res: any = await loginApi(requestLoginForm);
-		if (res?.data) {
-			ElMessage.success("自动登录成功！");
-			globalStore.setToken(res.data!.token);
-			menuStore.setMenuList([]);
-			tabStore.closeMultipleTab();
-			globalStore.setUserInfo({
-				userName: requestLoginForm.username,
-				userPwd: requestLoginForm.password
-			});
-			router.push({ name: "dataScreen" });
-		} else {
-			ElMessage.warning("登录已过期，请重新登录");
-			// 清除过期的登录信息
-			globalStore.setToken("");
-			globalStore.setUserInfo({ userName: "", userPwd: "" });
-		}
-	} catch (error) {
-		console.error("自动登录失败:", error);
-		ElMessage.error("自动登录失败，请手动登录");
-	} finally {
-		loading.value = false;
-	}
-};
 const loading = ref<boolean>(false);
 const router = useRouter();
 // 登录按钮点击事件
@@ -169,7 +120,8 @@ const login = (formEl: FormInstance | undefined) => {
 						userName: requestLoginForm.username,
 						userPwd: requestLoginForm.password
 					});
-					router.push({ name: "dataScreen" });
+					// 使用 replace 替换当前历史记录，防止后退回到登录页
+					router.replace({ name: "dataScreen" });
 					console.log("router :>> ", router);
 				} else {
 					ElMessage.error(res!.message);

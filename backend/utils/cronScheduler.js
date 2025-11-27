@@ -34,20 +34,8 @@ const { runGameSpiders } = require("./gameSpider");
 // 任务配置
 const TASKS = [
 	{
-		name: "热门话题爬虫 - 每天凌晨",
-		schedule: "0 0 0 * * *", // 每天 00:00:00 执行
-		enabled: true,
-		handler: runAllSpiders
-	},
-	{
-		name: "热门话题爬虫 - 每天中午",
-		schedule: "0 0 12 * * *", // 每天 12:00:00 执行
-		enabled: true,
-		handler: runAllSpiders
-	},
-	{
-		name: "热门话题爬虫 - 每天傍晚",
-		schedule: "0 0 18 * * *", // 每天 18:00:00 执行
+		name: "热门话题爬虫 - 每2小时",
+		schedule: "0 0 */2 * * *", // 每隔2小时执行一次 (0:00, 2:00, 4:00...)
 		enabled: true,
 		handler: runAllSpiders
 	},

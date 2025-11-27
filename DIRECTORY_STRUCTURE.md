@@ -1,6 +1,7 @@
 # 项目目录结构规范
 
 ## 🎯 目标
+
 统一本地和生产环境的目录结构，避免路径混乱和缓存问题。
 
 ## 📁 标准化目录结构
@@ -153,23 +154,25 @@ vue3DataPlatform/
 
 ### 本地 ✅ vs 生产 ❌ 对比
 
-| 文件/配置 | 本地位置 | 生产位置 | 标准位置 | 状态 |
-|----------|--------|--------|--------|------|
-| `ecosystem.config.js` | 根目录 ✅ | server/ ❌ | 根目录 | 需修复 |
-| `koaapp.js` | 根目录 ✅ | server/ ❌ | 根目录 | 需删除 |
-| `package.json` | 根目录 ✅ | server/ ❌ | 根目录 | 需删除 |
-| `tsconfig.json` | 根目录 ✅ | server/ ❌ | 根目录 | 需删除 |
-| `commitlint.config.js` | 根目录 ✅ | server/ ❌ | 根目录 | 需删除 |
-| `koaapp-production.js` | server/ ✅ | server/ ✅ | server/ | ✅ |
+| 文件/配置              | 本地位置   | 生产位置   | 标准位置 | 状态   |
+| ---------------------- | ---------- | ---------- | -------- | ------ |
+| `ecosystem.config.js`  | 根目录 ✅  | server/ ❌ | 根目录   | 需修复 |
+| `koaapp.js`            | 根目录 ✅  | server/ ❌ | 根目录   | 需删除 |
+| `package.json`         | 根目录 ✅  | server/ ❌ | 根目录   | 需删除 |
+| `tsconfig.json`        | 根目录 ✅  | server/ ❌ | 根目录   | 需删除 |
+| `commitlint.config.js` | 根目录 ✅  | server/ ❌ | 根目录   | 需删除 |
+| `koaapp-production.js` | server/ ✅ | server/ ✅ | server/  | ✅     |
 
 ## 🚀 规范化行动计划
 
 ### 第 1 步：清理本地项目
+
 1. ❌ 删除 `./koaapp.js`（已弃用，用 koaapp-production.js 替代）
 2. ❌ 删除 `./pc-game2.js` 和 `./ps5-game2.js`（测试脚本）
 3. ⚙️ 移动 `./src/loopDebugger.js` → `./src/utils/loopDebugger.js`
 
 ### 第 2 步：清理生产服务器
+
 1. 删除 `/home/dataPlatform/server/commitlint.config.js`
 2. 删除 `/home/dataPlatform/server/ecosystem.config.js`
 3. 删除 `/home/dataPlatform/server/lint-staged.config.js`
@@ -181,28 +184,33 @@ vue3DataPlatform/
 9. 重新同步根目录的配置文件
 
 ### 第 3 步：更新启动脚本
+
 - 修改 `ecosystem.config.js` 中的路径为：
   ```javascript
-  script: "/home/dataPlatform/server/koaapp-production.js"
+  script: "/home/dataPlatform/server/koaapp-production.js";
   ```
 
 ## 📋 规范命名约定
 
 ### 配置文件位置
+
 - **项目根目录**：所有项目级别的配置
 - **server/** ：只放置 Node.js 后端源代码和服务器特定的脚本
 
 ### 文件命名
+
 - **生产专用文件**：使用 `-production` 后缀，如 `koaapp-production.js`
 - **通用文件**：不需要后缀
 
 ### 路由引用
+
 - 从 `server/koaapp-production.js` 中引用：`require("./routes")`
 - 从 `server/scheduleCrawler.js` 中引用：`require("./utils/cronScheduler")`
 
 ## ✅ 验证清单
 
 部署后验证：
+
 - [ ] PM2 进程正常启动
 - [ ] 所有 API 端点正常工作
 - [ ] 热门话题定时任务正常执行

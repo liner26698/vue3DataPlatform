@@ -402,8 +402,12 @@ timer = setInterval(() => {
 
 /* 跳转home */
 const router = useRouter();
-const handleTo = (): void => {
-	router.push(HOME_URL);
+const handleTo = async (): Promise<void> => {
+	try {
+		await router.replace(HOME_URL);
+	} catch (e) {
+		console.warn("跳转首页失败:", e);
+	}
 };
 
 const getRealTimeVisitorApi = async () => {
@@ -504,7 +508,11 @@ onBeforeUnmount(() => {
 	clearInterval(timer);
 	// 每次离开页面时，清空echarts实例，不然会出现无法显示的问题
 	Object.values(dataScreen).forEach(val => {
-		val?.dispose();
+		try {
+			val?.dispose();
+		} catch (e) {
+			console.warn("ECharts dispose error:", e);
+		}
 	});
 });
 </script>

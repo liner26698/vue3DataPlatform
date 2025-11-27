@@ -86,6 +86,13 @@ router.beforeEach((to, from, next) => {
 		return;
 	}
 
+	// * 如果有 Token 访问登录页，重定向到首页
+	if (to.path === "/login") {
+		next(HOME_URL);
+		NProgress.done();
+		return;
+	}
+
 	const authStore = AuthStore();
 	// * Dynamic Router(动态路由，根据后端返回的菜单数据生成的一维数组)
 	const dynamicRouter = authStore.dynamicRouter;

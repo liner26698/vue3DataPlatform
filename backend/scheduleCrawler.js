@@ -15,9 +15,8 @@ try {
   startScheduledTasks();
   console.log("✅ 定时任务已启动！\n");
   console.log("📅 定时计划:");
-  console.log("  - 每天 00:00:00 (凌晨执行一次)");
-  console.log("  - 每天 12:00:00 (中午执行一次)");
-  console.log("  - 每天 18:00:00 (傍晚执行一次)\n");
+  console.log("  - 热门话题: 每隔2小时执行一次 (0:00, 2:00, 4:00...)");
+  console.log("  - 游戏数据: 每天 03:00:00 执行\n");
   console.log("💾 爬取数据将保存到: hot_topics 表");
   console.log("📝 执行日志将记录到: crawler_logs 表\n");
   console.log("按 Ctrl+C 可停止服务\n");

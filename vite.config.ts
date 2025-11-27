@@ -20,11 +20,11 @@ export default defineConfig((mode: ConfigEnv): UserConfig => {
 	const viteEnv = wrapperEnv(env);
 	console.log("viteEnv :>> ", viteEnv);
 	return {
-	resolve: {
-		alias: {
-			"@": resolve(__dirname, "./frontend"),
-			"@images": resolve(__dirname, "./frontend/assets/images"),
-			"vue-i18n": "vue-i18n/dist/vue-i18n.cjs.js"
+		resolve: {
+			alias: {
+				"@": resolve(__dirname, "./frontend"),
+				"@images": resolve(__dirname, "./frontend/assets/images"),
+				"vue-i18n": "vue-i18n/dist/vue-i18n.cjs.js"
 			}
 		},
 		// base: "/test/",

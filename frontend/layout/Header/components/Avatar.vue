@@ -35,8 +35,13 @@ const logout = () => {
 		cancelButtonText: "取消",
 		type: "warning"
 	}).then(() => {
-		router.push({ name: "login" });
+		// 1. 清除 Token 和用户信息
 		globalStore.setToken("");
+		globalStore.setUserInfo({ userName: "", userPwd: "" });
+
+		// 2. 跳转到登录页 (使用 replace 防止后退)
+		router.replace({ name: "login" });
+
 		ElMessage({
 			type: "success",
 			message: "退出登录成功！"
