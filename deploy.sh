@@ -146,6 +146,7 @@ EOF
     print_info "3️⃣  重启后端服务..."
     ssh -p $PROD_PORT $PROD_USER@$PROD_SERVER << EOF
 pm2 restart koa-server
+pm2 restart scheduler
 sleep 2
 pm2 list
 EOF
