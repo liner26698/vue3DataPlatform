@@ -642,31 +642,31 @@ onBeforeUnmount(() => {
 	// 模式切换器
 	.mode-switcher {
 		display: flex;
-		gap: 12px;
-		margin-bottom: 15px;
+		gap: 10px;
+		margin-bottom: 10px;
 		justify-content: center;
-		padding: 0 20px;
+		padding: 0 15px;
 
 		.mode-btn {
 			display: flex;
 			align-items: center;
-			gap: 6px;
-			padding: 8px 16px;
+			gap: 5px;
+			padding: 6px 14px;
 			background: rgba(0, 255, 255, 0.08);
 			border: 1px solid rgba(0, 255, 255, 0.2);
 			color: #7a9fb5;
 			cursor: pointer;
 			transition: all 0.3s ease;
 			border-radius: 4px;
-			font-size: 13px;
+			font-size: 12px;
 			font-weight: 500;
 
 			.mode-icon {
-				font-size: 16px;
+				font-size: 14px;
 			}
 
 			.mode-label {
-				letter-spacing: 1px;
+				letter-spacing: 0.5px;
 			}
 
 			&:hover {
@@ -695,7 +695,7 @@ onBeforeUnmount(() => {
 	.mode-content {
 		flex: 1;
 		overflow: hidden;
-		padding-right: 10px;
+		padding-right: 8px;
 
 		.scroll-wrapper {
 			height: 100%;
@@ -725,14 +725,14 @@ onBeforeUnmount(() => {
 		.topic-list {
 			display: flex;
 			flex-direction: column;
-			gap: 12px;
+			gap: 8px;
 		}
 
 		.topic-item {
 			display: flex;
 			align-items: center;
-			gap: 15px;
-			padding: 12px 15px;
+			gap: 12px;
+			padding: 8px 12px;
 			background: linear-gradient(135deg, rgba(0, 255, 255, 0.05) 0%, rgba(255, 107, 53, 0.02) 100%);
 			border: 1px solid rgba(0, 255, 255, 0.15);
 			border-radius: 4px;
@@ -742,6 +742,7 @@ onBeforeUnmount(() => {
 			animation-delay: var(--delay);
 			position: relative;
 			overflow: hidden;
+			min-height: auto;
 
 			// 背景发光效果
 			&::before {
@@ -777,44 +778,49 @@ onBeforeUnmount(() => {
 				flex-direction: column;
 				align-items: center;
 				justify-content: center;
-				min-width: 50px;
-				height: 50px;
+				min-width: 40px;
+				height: 40px;
 				background: radial-gradient(circle, rgba(255, 107, 53, 0.3) 0%, rgba(255, 107, 53, 0.1) 100%);
 				border: 2px solid rgba(255, 107, 53, 0.5);
-				border-radius: 8px;
+				border-radius: 6px;
 				transition: all 0.3s ease;
 				position: relative;
 				z-index: 1;
+				flex-shrink: 0;
 
 				.rank-value {
-					font-size: 22px;
+					font-size: 18px;
 					font-weight: 700;
 					color: #ff6b35;
 					font-family: "Orbitron", monospace;
 					text-shadow: 0 0 8px rgba(255, 107, 53, 0.6);
+					line-height: 1;
 				}
 
 				.rank-icon {
-					font-size: 12px;
-					margin-top: 2px;
+					font-size: 10px;
+					margin-top: 1px;
 				}
 			}
 
-			// 话题内容
+			// 话题内容 - 简化版本
 			.topic-content {
 				flex: 1;
 				min-width: 0;
 				position: relative;
 				z-index: 1;
+				display: flex;
+				flex-direction: column;
+				gap: 4px;
 
 				.topic-header {
 					display: flex;
 					align-items: center;
-					gap: 12px;
-					margin-bottom: 8px;
+					gap: 10px;
+					margin-bottom: 0;
 
 					.topic-title {
-						font-size: 14px;
+						font-size: 13px;
 						font-weight: 600;
 						color: #e0f7ff;
 						margin: 0;
@@ -823,19 +829,20 @@ onBeforeUnmount(() => {
 						text-overflow: ellipsis;
 						flex: 1;
 						text-shadow: 0 0 5px rgba(0, 255, 255, 0.3);
+						line-height: 1.2;
 					}
 
 					.topic-meta {
 						display: flex;
 						align-items: center;
-						gap: 8px;
+						gap: 6px;
 						flex-shrink: 0;
 
 						.meta-item {
 							display: flex;
 							align-items: center;
-							gap: 3px;
-							font-size: 12px;
+							gap: 2px;
+							font-size: 11px;
 							white-space: nowrap;
 
 							i {
@@ -861,87 +868,33 @@ onBeforeUnmount(() => {
 
 							&.source {
 								color: #7a9fb5;
-								font-size: 11px;
+								font-size: 10px;
 								background: rgba(0, 255, 255, 0.1);
-								padding: 2px 8px;
+								padding: 1px 6px;
 								border-radius: 2px;
 							}
 						}
 					}
 				}
 
+				// 隐藏描述和详细信息，只在悬停时显示
 				.topic-description {
-					font-size: 12px;
-					color: #7a9fb5;
-					margin: 0 0 8px 0;
-					line-height: 1.4;
-					overflow: hidden;
-					text-overflow: ellipsis;
-					display: -webkit-box;
-					-webkit-line-clamp: 1;
-					line-clamp: 1;
-					-webkit-box-orient: vertical;
+					display: none;
 				}
 
 				.topic-progress {
-					height: 6px;
-					background: rgba(0, 0, 0, 0.4);
-					border-radius: 3px;
-					overflow: hidden;
-					margin-bottom: 8px;
-					position: relative;
-
-					.progress-fill {
-						height: 100%;
-						display: flex;
-						align-items: center;
-						justify-content: center;
-						transition: width 0.6s ease;
-						box-shadow: 0 0 10px currentColor;
-						position: relative;
-
-						.progress-text {
-							font-size: 10px;
-							color: #fff;
-							font-weight: 600;
-							opacity: 0;
-							position: absolute;
-						}
-
-						&::after {
-							content: "";
-							position: absolute;
-							top: 0;
-							right: 0;
-							width: 20px;
-							height: 100%;
-							background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.5));
-							animation: shimmer 1.5s infinite;
-						}
-					}
+					display: none;
 				}
 
 				.topic-tags {
-					display: flex;
-					gap: 6px;
-					flex-wrap: wrap;
-
-					.tag {
-						font-size: 11px;
-						padding: 2px 8px;
-						background: rgba(0, 255, 255, 0.1);
-						border: 1px solid rgba(0, 255, 255, 0.2);
-						border-radius: 2px;
-						color: #00ffff;
-						white-space: nowrap;
-					}
+					display: none;
 				}
 			}
 
-			// 右侧数据卡
+			// 右侧数据卡 - 仅显示关键指标
 			.topic-stats {
 				display: flex;
-				gap: 12px;
+				gap: 8px;
 				flex-shrink: 0;
 				position: relative;
 				z-index: 1;
@@ -950,27 +903,37 @@ onBeforeUnmount(() => {
 					display: flex;
 					flex-direction: column;
 					align-items: center;
-					gap: 2px;
-					min-width: 60px;
-					padding: 8px 10px;
+					gap: 1px;
+					min-width: 50px;
+					padding: 6px 8px;
 					background: rgba(0, 255, 255, 0.08);
 					border: 1px solid rgba(0, 255, 255, 0.2);
-					border-radius: 4px;
+					border-radius: 3px;
 					text-align: center;
 
 					.stat-label {
-						font-size: 11px;
+						font-size: 9px;
 						color: #7a9fb5;
 						text-transform: uppercase;
+						line-height: 1;
 					}
 
 					.stat-value {
-						font-size: 13px;
+						font-size: 12px;
 						font-weight: 700;
 						color: #00ffff;
 						font-family: "Orbitron", monospace;
 						text-shadow: 0 0 5px rgba(0, 255, 255, 0.5);
+						line-height: 1;
 					}
+				}
+			}
+
+			// 悬停时展开详细信息
+			&:hover {
+				.topic-description,
+				.topic-progress {
+					display: block;
 				}
 			}
 		}
