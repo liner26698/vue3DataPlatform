@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS crawler_config (
     cron_expression VARCHAR(100) COMMENT 'Cron 表达式',
     source_code_path VARCHAR(200) COMMENT '源代码文件路径',
     platform_name VARCHAR(100) COMMENT '数据源平台',
+    source_url VARCHAR(500) COMMENT '爬虫源地址',
     description TEXT COMMENT '爬虫描述',
     enabled TINYINT DEFAULT 1 COMMENT '是否启用（1=启用，0=禁用）',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
@@ -22,7 +23,7 @@ CREATE TABLE IF NOT EXISTS crawler_config (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='爬虫配置表';
 
 -- 插入默认配置数据
-INSERT INTO crawler_config (spider_name, table_name, schedule_time, schedule_frequency, cron_expression, source_code_path, platform_name, description, enabled)
+INSERT INTO crawler_config (spider_name, table_name, schedule_time, schedule_frequency, cron_expression, source_code_path, platform_name, source_url, description, enabled)
 VALUES 
     (
         '游戏爬虫',
@@ -32,6 +33,7 @@ VALUES
         '0 0 3 * * *',
         'server/utils/gameSpider.js',
         'PS5/PC Game',
+        'https://ku.gamersky.com',
         '爬取游戏平台数据',
         1
     ),
@@ -43,6 +45,7 @@ VALUES
         '0 0 0/12 * * *',
         'server/utils/hotTopicsSpider.js',
         'Baidu/Weibo/Bilibili',
+        '/',
         '爬取热门话题数据',
         1
     ),
@@ -54,6 +57,7 @@ VALUES
         '',
         'server/utils/aiToolsSpider.js',
         '多源AI工具聚合',
+        '/',
         '爬取AI工具信息',
         1
     )
@@ -64,6 +68,7 @@ ON DUPLICATE KEY UPDATE
     cron_expression = VALUES(cron_expression),
     source_code_path = VALUES(source_code_path),
     platform_name = VALUES(platform_name),
+    source_url = VALUES(source_url),
     description = VALUES(description),
     enabled = VALUES(enabled),
     updated_at = CURRENT_TIMESTAMP;

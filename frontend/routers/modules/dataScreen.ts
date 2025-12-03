@@ -1,16 +1,10 @@
 import { RouteRecordRaw } from "vue-router";
 
-// 数据大屏模块
+// 数据大屏模块 - 自动重定向到新的墨青色数据大屏
 const dataScreenRouter: Array<RouteRecordRaw> = [
 	{
 		path: "/dataScreen",
-		name: "dataScreen",
-		meta: {
-			requireAuth: false,
-			title: "数据大屏",
-			key: "dataScreen"
-		},
-		component: () => import("@/views/dataScreen/index.vue")
+		redirect: "/dataScreenInk"
 	}
 ];
 

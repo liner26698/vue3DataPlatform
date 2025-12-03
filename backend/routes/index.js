@@ -1154,6 +1154,380 @@ router.post("/bookMicroservices/book/searchFromKanshuhou", async (ctx, next) => 
 });
 
 /**
+ * 获取爬虫倒计时数据接口
+ * 返回所有爬虫的下次运行时间、倒计时等信息
+ * author: kris
+ * date: 2025年11月28日
+ */
+/**
+ * 将Cron表达式转换为中文描述
+ * 格式: 秒 分 时 日 月 周 (0-59 0-59 0-23 1-31 1-12 0-6)
+ */
+function parseCronToChinese(cronExpr, scheduleTime) {
+	if (!cronExpr) {
+		return scheduleTime || "未配置";
+	}
+
+	// 解析 Cron 表达式 (格式: 秒 分 时 日 月 周)
+	const parts = cronExpr.trim().split(/\s+/);
+	if (parts.length < 5) {
+		return cronExpr;
+	}
+
+	const [sec, min, hour, day, month, dow] = parts;
+
+	// ==================== 精准的Cron表达式匹配 ====================
+
+	// 每N小时执行 (格式: 0 0 */N * * * 或 0 0 0/N * * *)
+	if (
+		(hour.startsWith("*/") || hour.startsWith("0/")) &&
+		min === "0" &&
+		sec === "0" &&
+		day === "*" &&
+		month === "*" &&
+		(dow === "*" || dow === "?")
+	) {
+		const intervalStr = hour.includes("/") ? hour.split("/")[1] : null;
+		if (intervalStr) {
+			const interval = parseInt(intervalStr);
+			if (!isNaN(interval)) {
+				return `每${interval}小时执行一次`;
+			}
+		}
+	}
+
+	// 每日指定时间 (格式: 0 M H * * *)
+	if (day === "*" && month === "*" && (dow === "*" || dow === "?")) {
+		if (sec === "0" && !hour.includes("/") && !hour.includes(",")) {
+			const hourNum = parseInt(hour);
+			const minNum = parseInt(min);
+
+			if (!isNaN(hourNum) && !isNaN(minNum)) {
+				const hourStr = String(hourNum).padStart(2, "0");
+				const minStr = String(minNum).padStart(2, "0");
+				return `每日${hourStr}:${minStr}执行`;
+			}
+		}
+	}
+
+	// 每小时N分钟执行
+	if (hour === "*" && day === "*" && month === "*" && (dow === "*" || dow === "?")) {
+		if (sec === "0") {
+			const minNum = parseInt(min);
+			if (!isNaN(minNum)) {
+				const minStr = String(minNum).padStart(2, "0");
+				return `每小时${minStr}分执行`;
+			}
+		}
+	}
+
+	// 每N分钟执行
+	if (min.startsWith("*/") && hour === "*" && day === "*" && month === "*" && (dow === "*" || dow === "?")) {
+		if (sec === "0") {
+			const interval = parseInt(min.substring(2));
+			if (!isNaN(interval)) {
+				return `每${interval}分钟执行一次`;
+			}
+		}
+	}
+
+	// 每N秒执行
+	if (sec.startsWith("*/") && min === "*" && hour === "*" && day === "*" && month === "*") {
+		const interval = parseInt(sec.substring(2));
+		if (!isNaN(interval)) {
+			return `每${interval}秒执行一次`;
+		}
+	}
+
+	// 每月指定日期
+	if (month === "*" && (dow === "*" || dow === "?")) {
+		if (sec === "0" && !day.startsWith("*")) {
+			const dayNum = parseInt(day);
+			if (!isNaN(dayNum)) {
+				const hourNum = parseInt(hour);
+				const minNum = parseInt(min);
+				if (!isNaN(hourNum) && !isNaN(minNum)) {
+					const hourStr = String(hourNum).padStart(2, "0");
+					const minStr = String(minNum).padStart(2, "0");
+					return `每月${dayNum}号${hourStr}:${minStr}执行`;
+				}
+			}
+		}
+	}
+
+	// 每周指定日期
+	const dayOfWeekMap = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
+	if (dow !== "*" && dow !== "?" && day === "*" && month === "*") {
+		if (sec === "0") {
+			const daysArr = dow.split(",").map(d => {
+				const dayNum = parseInt(d);
+				return dayOfWeekMap[dayNum] || d;
+			});
+			const hourNum = parseInt(hour);
+			const minNum = parseInt(min);
+			if (!isNaN(hourNum) && !isNaN(minNum)) {
+				const hourStr = String(hourNum).padStart(2, "0");
+				const minStr = String(minNum).padStart(2, "0");
+				return `每周${daysArr.join("、")}${hourStr}:${minStr}执行`;
+			}
+		}
+	}
+
+	// 默认返回原始表达式
+	return cronExpr;
+}
+
+router.post("/statistics/getCrawlerCountdown", async (ctx, next) => {
+	try {
+		// 从 crawler_config 表查询爬虫配置
+		let configs = [];
+
+		try {
+			// 尝试查询 source_url 字段（新表结构）
+			const configSqlWithUrl = `
+				SELECT 
+					id,
+					spider_name,
+					table_name,
+					schedule_time,
+					schedule_frequency,
+					cron_expression,
+					source_code_path,
+					platform_name,
+					source_url,
+					description,
+					enabled,
+					created_at,
+					updated_at
+				FROM crawler_config 
+				WHERE enabled = 1
+				ORDER BY id ASC
+			`;
+			configs = await db.query(configSqlWithUrl);
+		} catch (e) {
+			// 如果 source_url 字段不存在，使用旧表结构查询
+			console.warn("source_url 字段不存在，使用备用查询方案");
+			const configSqlWithoutUrl = `
+				SELECT 
+					id,
+					spider_name,
+					table_name,
+					schedule_time,
+					schedule_frequency,
+					cron_expression,
+					source_code_path,
+					platform_name,
+					NULL as source_url,
+					description,
+					enabled,
+					created_at,
+					updated_at
+				FROM crawler_config 
+				WHERE enabled = 1
+				ORDER BY id ASC
+			`;
+			configs = await db.query(configSqlWithoutUrl);
+		}
+
+		if (!configs || configs.length === 0) {
+			ERROR(ctx, "未找到爬虫配置");
+			return;
+		}
+
+		// 从 crawler_logs 查询最近的运行记录
+		let logs = [];
+
+		if (configs && configs.length > 0) {
+			const logSql = `
+				SELECT 
+					spider_type,
+					status,
+					total_count,
+					created_at,
+					duration_ms as duration
+				FROM crawler_logs 
+				WHERE spider_type IN (${configs.map(() => "?").join(",")})
+				ORDER BY created_at DESC
+			`;
+
+			const logParams = configs.map(c => {
+				// 映射表名到 spider_type
+				if (c.table_name === "game_info") return "game";
+				if (c.table_name === "hot_topics") return "hot_topics";
+				if (c.table_name === "ai_info") return "ai_info";
+				return c.spider_name;
+			});
+
+			try {
+				logs = await db.query(logSql, logParams);
+			} catch (e) {
+				console.warn("爬虫日志查询失败，使用默认数据", e.message);
+			}
+		}
+
+		// 预先查询各爬虫的实际数据数量
+		let dataCountMap = {
+			game: 0,
+			hot_topics: 0,
+			ai_info: 0
+		};
+
+		try {
+			const gameCountResult = await db.query("SELECT COUNT(*) as count FROM game_info");
+			dataCountMap.game = gameCountResult[0]?.count || 0;
+		} catch (e) {
+			console.warn("game_info 计数失败:", e.message);
+		}
+
+		try {
+			const topicsCountResult = await db.query("SELECT COUNT(*) as count FROM hot_topics WHERE is_active = 1");
+			dataCountMap.hot_topics = topicsCountResult[0]?.count || 0;
+		} catch (e) {
+			console.warn("hot_topics 计数失败:", e.message);
+		}
+
+		try {
+			const aiCountResult = await db.query("SELECT COUNT(*) as count FROM ai_info");
+			dataCountMap.ai_info = aiCountResult[0]?.count || 0;
+		} catch (e) {
+			console.warn("ai_info 计数失败:", e.message);
+		}
+
+		// 为每个配置生成倒计时数据
+		const crawlerData = configs.map((config, index) => {
+			// 根据表名确定spider_type
+			let spiderType = config.spider_name;
+			if (config.table_name === "game_info") spiderType = "game";
+			else if (config.table_name === "hot_topics") spiderType = "hot_topics";
+			else if (config.table_name === "ai_info") spiderType = "ai_info";
+
+			// 查找该爬虫的最近运行记录
+			const recentLogs = logs.filter(log => log.spider_type === spiderType);
+			const lastLog = recentLogs[0];
+
+			// 计算下次运行时间和倒计时
+			let nextRunTime = 0;
+			let lastRunTime = lastLog ? new Date(lastLog.created_at) : new Date(Date.now() - 1000 * 60 * 60);
+			let status = "waiting";
+			let successRate = 95.0;
+			let totalRuns = recentLogs.length;
+			let lastStatus = "success";
+			let dataCount = 0;
+			let avgDuration = 0;
+
+			// 根据 cron 表达式计算下次运行时间
+			const scheduleTime = config.schedule_time || "";
+			const now = new Date();
+
+			if (scheduleTime.includes(",")) {
+				// 多个时间点（如 00:00, 12:00, 18:00）
+				const times = scheduleTime.split(",").map(t => t.trim());
+				let nextTime = null;
+
+				for (const time of times) {
+					const [hours, minutes] = time.split(":").map(Number);
+					const scheduleDate = new Date(now);
+					scheduleDate.setHours(hours, minutes, 0, 0);
+
+					if (scheduleDate > now) {
+						if (!nextTime || scheduleDate < nextTime) {
+							nextTime = scheduleDate;
+						}
+					}
+				}
+
+				// 如果今天没有未来的时间点，使用明天的第一个时间点
+				if (!nextTime) {
+					const [hours, minutes] = times[0].split(":").map(Number);
+					nextTime = new Date(now);
+					nextTime.setDate(nextTime.getDate() + 1);
+					nextTime.setHours(hours, minutes, 0, 0);
+				}
+
+				nextRunTime = Math.floor((nextTime - now) / 1000);
+			} else if (scheduleTime.match(/^\d{2}:\d{2}$/)) {
+				// 单个时间点（如 03:00）
+				const [hours, minutes] = scheduleTime.split(":").map(Number);
+				const scheduleDate = new Date(now);
+				scheduleDate.setHours(hours, minutes, 0, 0);
+
+				if (scheduleDate <= now) {
+					scheduleDate.setDate(scheduleDate.getDate() + 1);
+				}
+
+				nextRunTime = Math.floor((scheduleDate - now) / 1000);
+			} else {
+				// 默认1小时后
+				nextRunTime = 3600;
+			}
+
+			// 从日志计算成功率、数据量和平均耗时
+			if (recentLogs.length > 0) {
+				const successCount = recentLogs.filter(log => log.status === "success").length;
+				successRate = parseFloat(((successCount / recentLogs.length) * 100).toFixed(1));
+				lastStatus = lastLog.status === "success" ? "success" : "error";
+				status = lastLog.status === "success" ? "waiting" : "error";
+
+				// 数据量从实际数据表中获取
+				dataCount = dataCountMap[spiderType] || 0;
+
+				// 计算平均耗时（毫秒转秒）
+				if (recentLogs.length > 0) {
+					const totalDuration = recentLogs.reduce((sum, log) => sum + (log.duration || 0), 0);
+					avgDuration = parseFloat((totalDuration / recentLogs.length / 1000).toFixed(2)); // 转为秒
+				}
+			} else {
+				// 没有日志的情况下，仍然从数据表获取数据量
+				dataCount = dataCountMap[spiderType] || 0;
+			}
+
+			// 图标映射
+			const iconMap = {
+				游戏爬虫: "🎮",
+				热门话题: "🔥",
+				AI工具库: "🤖",
+				小说爬虫: "📚"
+			};
+
+			// 颜色映射
+			const colorMap = {
+				游戏爬虫: "#00ffff",
+				热门话题: "#ff6b35",
+				AI工具库: "#ffff00",
+				小说爬虫: "#ff0080"
+			};
+
+			return {
+				id: config.id,
+				name: config.spider_name,
+				icon: iconMap[config.spider_name] || "🕷️",
+				color: colorMap[config.spider_name] || "#00ffff",
+				status: status,
+				nextRunTime: nextRunTime,
+				lastRunTime: lastRunTime,
+				interval: config.schedule_frequency || "未知",
+				type: config.platform_name || "数据采集",
+				url: config.source_url || "/",
+				cron: parseCronToChinese(config.cron_expression, scheduleTime),
+				successRate: successRate,
+				totalRuns: totalRuns,
+				lastStatus: lastStatus,
+				dataCount: dataCount,
+				avgDuration: avgDuration
+			};
+		});
+
+		SUCCESS(ctx, true, "成功获取爬虫倒计时数据", {
+			crawlers: crawlerData,
+			timestamp: new Date()
+		});
+	} catch (error) {
+		console.error("[API] 获取爬虫倒计时数据错误:", error);
+		ERROR(ctx, "获取爬虫倒计时数据失败");
+	}
+});
+
+/**
  * 获取爬虫统计数据接口
  * 返回所有爬虫的统计信息：总条数、成功率、最后更新时间等
  * author: kris
@@ -1235,7 +1609,7 @@ router.post("/statistics/getCrawlerStats", async (ctx, next) => {
 			const aiToolsStats = await db.query(aiToolsCountSql);
 			aiToolsTotalCount = aiToolsStats[0]?.total || 0;
 
-			const aiTimeSql = `SELECT MAX(updated_at) as lastUpdate FROM ai_info`;
+			const aiTimeSql = `SELECT MAX(update_time) as lastUpdate FROM ai_info`;
 			const aiTimeResult = await db.query(aiTimeSql);
 			aiLastUpdate = aiTimeResult[0]?.lastUpdate;
 
@@ -1306,6 +1680,51 @@ router.post("/statistics/getCrawlerStats", async (ctx, next) => {
 		// 5. 计算总数（只统计三种爬虫）
 		const totalCount = gameTotalCount + hotTopicsTotalCount + aiToolsTotalCount;
 
+		// 5.5. 计算每个爬虫的平均执行时间（duration）和执行次数（runCount）
+		let gameDuration = 0;
+		let topicsDuration = 0;
+		let aiDuration = 0;
+
+		let gameRunCount = 0;
+		let topicsRunCount = 0;
+		let aiRunCount = 0;
+
+		try {
+			const gameDurationSql = `
+				SELECT AVG(duration_ms) as avg_duration, COUNT(*) as run_count FROM crawler_logs 
+				WHERE spider_type = 'game'
+			`;
+			const gameDurationResult = await db.query(gameDurationSql);
+			gameDuration = gameDurationResult[0]?.avg_duration ? Math.round(gameDurationResult[0].avg_duration) : 0;
+			gameRunCount = gameDurationResult[0]?.run_count || 0;
+		} catch (e) {
+			console.warn("游戏爬虫 duration 查询失败", e.message);
+		}
+
+		try {
+			const topicsDurationSql = `
+				SELECT AVG(duration_ms) as avg_duration, COUNT(*) as run_count FROM crawler_logs 
+				WHERE spider_type = 'hot_topics'
+			`;
+			const topicsDurationResult = await db.query(topicsDurationSql);
+			topicsDuration = topicsDurationResult[0]?.avg_duration ? Math.round(topicsDurationResult[0].avg_duration) : 0;
+			topicsRunCount = topicsDurationResult[0]?.run_count || 0;
+		} catch (e) {
+			console.warn("热门话题 duration 查询失败", e.message);
+		}
+
+		try {
+			const aiDurationSql = `
+				SELECT AVG(duration_ms) as avg_duration, COUNT(*) as run_count FROM crawler_logs 
+				WHERE spider_type IN ('ai_tools', 'ai_info')
+			`;
+			const aiDurationResult = await db.query(aiDurationSql);
+			aiDuration = aiDurationResult[0]?.avg_duration ? Math.round(aiDurationResult[0].avg_duration) : 0;
+			aiRunCount = aiDurationResult[0]?.run_count || 0;
+		} catch (e) {
+			console.warn("AI 工具 duration 查询失败", e.message);
+		}
+
 		// 6. 构建爬虫统计数据（从配置和数据库查询结果组合）
 		const crawlerStats = [
 			{
@@ -1313,6 +1732,8 @@ router.post("/statistics/getCrawlerStats", async (ctx, next) => {
 				platformName: configMap["游戏爬虫"]?.platformName || "PS5/PC Game",
 				totalCount: gameTotalCount,
 				successRate: gameTotalCount > 0 ? gameSuccessRate : 0,
+				duration: gameDuration,
+				runCount: gameRunCount,
 				lastUpdateTime: gameLastUpdate || new Date(),
 				status: "active",
 				sourceCode: configMap["游戏爬虫"]?.sourceCode || "server/utils/gameSpider.js",
@@ -1326,6 +1747,8 @@ router.post("/statistics/getCrawlerStats", async (ctx, next) => {
 				platformName: configMap["热门话题"]?.platformName || "Baidu/Weibo/Bilibili",
 				totalCount: hotTopicsTotalCount,
 				successRate: hotTopicsTotalCount > 0 ? hotTopicsSuccessRate : 0,
+				duration: topicsDuration,
+				runCount: topicsRunCount,
 				lastUpdateTime: topicsLastUpdate || new Date(),
 				status: "active",
 				sourceCode: configMap["热门话题"]?.sourceCode || "server/utils/hotTopicsSpider.js",
@@ -1339,6 +1762,8 @@ router.post("/statistics/getCrawlerStats", async (ctx, next) => {
 				platformName: configMap["AI工具库"]?.platformName || "多源AI工具聚合",
 				totalCount: aiToolsTotalCount,
 				successRate: aiToolsTotalCount > 0 ? aiSuccessRate : 0,
+				duration: aiDuration,
+				runCount: aiRunCount,
 				lastUpdateTime: aiLastUpdate || new Date(),
 				status: "active",
 				sourceCode: configMap["AI工具库"]?.sourceCode || "server/utils/aiToolsSpider.js",
@@ -1361,27 +1786,12 @@ router.post("/statistics/getCrawlerStats", async (ctx, next) => {
 			dailyUpdateFreq: 3
 		};
 
-		// 8. 从 crawler_logs 查询最近7日的真实趋势数据（按爬虫类型分类）
+		// 8. 从 crawler_logs 查询所有历史趋势数据（按爬虫类型分类）
 		let trendData = [];
 		try {
 			const trendMap = {};
 
-			// 首先初始化所有日期
-			const startDate = new Date();
-			startDate.setDate(startDate.getDate() - 6);
-
-			for (let i = 0; i < 7; i++) {
-				const checkDate = new Date(startDate);
-				checkDate.setDate(checkDate.getDate() + i);
-				const dateStr = checkDate.toISOString().split("T")[0];
-				trendMap[dateStr] = {
-					date: dateStr,
-					timestamp: Math.floor(checkDate.getTime() / 1000),
-					spiders: {}
-				};
-			}
-
-			// 1. 从 crawler_logs 获取 hot_topics 的数据
+			// 1. 从 crawler_logs 获取 hot_topics 的数据（包括所有数据，不只是7天）
 			const hotTopicsSql = `
 				SELECT 
 					DATE_FORMAT(created_at, '%Y-%m-%d') as date,
@@ -1390,13 +1800,19 @@ router.post("/statistics/getCrawlerStats", async (ctx, next) => {
 					COUNT(*) as run_count
 				FROM crawler_logs 
 				WHERE spider_type = 'hot_topics'
-					AND created_at >= DATE_SUB(NOW(), INTERVAL 6 DAY)
 				GROUP BY DATE_FORMAT(created_at, '%Y-%m-%d')
 				ORDER BY date ASC
 			`;
 
 			const hotTopicsResult = await db.query(hotTopicsSql);
 			hotTopicsResult.forEach(row => {
+				if (!trendMap[row.date]) {
+					trendMap[row.date] = {
+						date: row.date,
+						timestamp: Math.floor(new Date(row.date).getTime() / 1000),
+						spiders: {}
+					};
+				}
 				if (trendMap[row.date]) {
 					trendMap[row.date].spiders["hot_topics"] = {
 						dataCount: parseInt(row.total_data) || 0,
@@ -1406,84 +1822,73 @@ router.post("/statistics/getCrawlerStats", async (ctx, next) => {
 				}
 			});
 
-			// 2. 从游戏表获取 game 的数据（查询所有日期的游戏更新记录并按日期分组）
+			// 2. 从游戏爬虫日志获取 game 的数据（只查询有爬虫执行记录的日期）
 			const gameCountByDateSql = `
-			SELECT 
-				DATE_FORMAT(update_time, '%Y-%m-%d') as date,
-				COUNT(*) as count
-			FROM game_info
-			WHERE update_time IS NOT NULL
-			GROUP BY DATE_FORMAT(update_time, '%Y-%m-%d')
-		`;
+				SELECT 
+					DATE_FORMAT(created_at, '%Y-%m-%d') as date,
+					SUM(total_count) as total_data,
+					SUM(CASE WHEN status = 'success' THEN total_count ELSE 0 END) as success_count,
+					COUNT(*) as run_count
+				FROM crawler_logs
+				WHERE spider_type = 'game'
+				GROUP BY DATE_FORMAT(created_at, '%Y-%m-%d')
+				ORDER BY date ASC
+			`;
 			try {
 				const gameResult = await db.query(gameCountByDateSql);
 				gameResult.forEach(row => {
-					// 对于游戏数据，如果日期在查询范围内则添加到 trendMap
-					if (trendMap[row.date]) {
-						trendMap[row.date].spiders["game"] = {
-							dataCount: parseInt(row.count) || 0,
-							successCount: parseInt(row.count) || 0, // 游戏爬虫没有失败记录，视为全部成功
-							runCount: 1 // 每天视为运行1次
-						};
-					} else {
-						// 如果是历史数据（不在7天范围内），仍然需要显示，所以创建新项
+					if (!trendMap[row.date]) {
 						trendMap[row.date] = {
 							date: row.date,
 							timestamp: Math.floor(new Date(row.date).getTime() / 1000),
-							spiders: {
-								game: {
-									dataCount: parseInt(row.count) || 0,
-									successCount: parseInt(row.count) || 0,
-									runCount: 1
-								}
-							}
+							spiders: {}
 						};
 					}
+					trendMap[row.date].spiders["game"] = {
+						dataCount: parseInt(row.total_data) || 0,
+						successCount: parseInt(row.success_count) || 0,
+						runCount: row.run_count || 0
+					};
 				});
 			} catch (e) {
 				console.warn("游戏数据趋势查询失败", e.message);
 			}
 
-			// 3. 从 AI 工具表获取 ai_info 的数据（查询所有日期的 AI 更新记录并按日期分组）
+			// 3. 从 AI 爬虫日志获取 ai_info 的数据（只查询有爬虫执行记录的日期）
 			const aiCountByDateSql = `
 				SELECT 
-					DATE_FORMAT(update_time, '%Y-%m-%d') as date,
-					COUNT(*) as count
-				FROM ai_info
-				WHERE update_time IS NOT NULL
-				GROUP BY DATE_FORMAT(update_time, '%Y-%m-%d')
+					DATE_FORMAT(created_at, '%Y-%m-%d') as date,
+					SUM(total_count) as total_data,
+					SUM(CASE WHEN status = 'success' THEN total_count ELSE 0 END) as success_count,
+					COUNT(*) as run_count
+				FROM crawler_logs
+				WHERE spider_type = 'ai_info'
+				GROUP BY DATE_FORMAT(created_at, '%Y-%m-%d')
+				ORDER BY date ASC
 			`;
 
 			try {
 				const aiResult = await db.query(aiCountByDateSql);
 				aiResult.forEach(row => {
 					// 对于 AI 数据，检查日期是否已在 trendMap 中
-					if (trendMap[row.date]) {
-						trendMap[row.date].spiders["ai_info"] = {
-							dataCount: parseInt(row.count) || 0,
-							successCount: parseInt(row.count) || 0, // AI 爬虫没有失败记录，视为全部成功
-							runCount: 1 // 每天视为运行1次
-						};
-					} else {
-						// 如果是历史数据（不在7天范围内），创建新项
+					if (!trendMap[row.date]) {
 						trendMap[row.date] = {
 							date: row.date,
 							timestamp: Math.floor(new Date(row.date).getTime() / 1000),
-							spiders: {
-								ai_info: {
-									dataCount: parseInt(row.count) || 0,
-									successCount: parseInt(row.count) || 0,
-									runCount: 1
-								}
-							}
+							spiders: {}
 						};
 					}
+					trendMap[row.date].spiders["ai_info"] = {
+						dataCount: parseInt(row.total_data) || 0,
+						successCount: parseInt(row.success_count) || 0,
+						runCount: row.run_count || 0
+					};
 				});
 			} catch (e) {
 				console.warn("AI数据趋势查询失败", e.message);
 			}
 
-			// 转换为数组格式（包括最近7天的完整日期），并计算该天的总数据
+			// 转换为数组格式（显示所有有数据的日期，按日期排序），并计算该天的总数据
 			trendData = Object.values(trendMap)
 				.sort((a, b) => new Date(a.date) - new Date(b.date))
 				.map(item => {
@@ -1498,6 +1903,11 @@ router.post("/statistics/getCrawlerStats", async (ctx, next) => {
 						spiders: item.spiders
 					};
 				});
+
+			// 打印趋势数据用于调试
+			console.log("🔍 [趋势数据] 返回的数据条数:", trendData.length);
+			console.log("🔍 [趋势数据] 日期范围:", trendData.length > 0 ? `${trendData[0].date} 到 ${trendData[trendData.length - 1].date}` : "无数据");
+			console.log("🔍 [趋势数据] 最后 5 天数据:", trendData.slice(-5).map(d => `${d.date}: ${d.total}条`));
 		} catch (e) {
 			console.warn("趋势数据查询失败，使用基础结构", e.message);
 
@@ -1525,6 +1935,131 @@ router.post("/statistics/getCrawlerStats", async (ctx, next) => {
 	} catch (error) {
 		console.error("[API] 获取爬虫统计数据错误:", error);
 		ERROR(ctx, "获取爬虫统计数据失败");
+	}
+});
+
+// 快速版本的爬虫倒计时 API（简化版，防止卡顿）
+router.post("/statistics/getCrawlerCountdownFast", async (ctx, next) => {
+	try {
+		// 快速查询：只查爬虫配置和统计数据，不进行复杂计算
+		let configs = [];
+		try {
+			const sql = `SELECT id, spider_name, table_name, schedule_time, schedule_frequency, cron_expression, source_url FROM crawler_config WHERE enabled = 1 LIMIT 10`;
+			configs = await db.query(sql);
+		} catch (e) {
+			console.warn("快速查询爬虫配置失败:", e.message);
+		}
+
+		if (!configs || configs.length === 0) {
+			ERROR(ctx, "未找到爬虫配置");
+			return;
+		}
+
+		// 计算下次运行时间(以秒为单位)的辅助函数
+		const calculateNextRunTime = scheduleTime => {
+			const now = new Date();
+			let nextRunTime = 0;
+
+			if (!scheduleTime || scheduleTime === "未配置") {
+				return 3600; // 默认1小时后
+			}
+
+			if (scheduleTime.includes(",")) {
+				// 多个时间点（如 00:00, 12:00, 18:00）
+				const times = scheduleTime.split(",").map(t => t.trim());
+				let nextTime = null;
+
+				for (const time of times) {
+					const [hours, minutes] = time.split(":").map(Number);
+					const scheduleDate = new Date(now);
+					scheduleDate.setHours(hours, minutes, 0, 0);
+
+					if (scheduleDate > now) {
+						if (!nextTime || scheduleDate < nextTime) {
+							nextTime = scheduleDate;
+						}
+					}
+				}
+
+				// 如果今天没有未来的时间点，使用明天的第一个时间点
+				if (!nextTime) {
+					const [hours, minutes] = times[0].split(":").map(Number);
+					nextTime = new Date(now);
+					nextTime.setDate(nextTime.getDate() + 1);
+					nextTime.setHours(hours, minutes, 0, 0);
+				}
+
+				nextRunTime = Math.floor((nextTime - now) / 1000);
+			} else if (scheduleTime.match(/^\d{2}:\d{2}$/)) {
+				// 单个时间点（如 03:00）
+				const [hours, minutes] = scheduleTime.split(":").map(Number);
+				const scheduleDate = new Date(now);
+				scheduleDate.setHours(hours, minutes, 0, 0);
+
+				if (scheduleDate <= now) {
+					scheduleDate.setDate(scheduleDate.getDate() + 1);
+				}
+
+				nextRunTime = Math.floor((scheduleDate - now) / 1000);
+			} else {
+				nextRunTime = 3600; // 默认1小时
+			}
+
+			return nextRunTime;
+		};
+
+		// 快速查询统计信息
+		const crawlerData = [];
+		for (const config of configs) {
+			const spiderType = config.table_name === "game_info" ? "game" : config.table_name;
+
+			try {
+				// 并行查询日志和数据计数
+				const [logResult, countResult] = await Promise.all([
+					db.query(
+						`SELECT AVG(duration_ms) as avg_duration, COUNT(*) as run_count FROM crawler_logs WHERE spider_type = ? LIMIT 100`,
+						[spiderType]
+					),
+					db.query(`SELECT COUNT(*) as count FROM ${config.table_name}`)
+				]);
+
+				const avgDuration = logResult[0]?.avg_duration ? parseFloat((logResult[0].avg_duration / 1000).toFixed(2)) : 0;
+				const runCount = logResult[0]?.run_count || 0;
+				const dataCount = countResult[0]?.count || 0;
+
+				// 正确计算倒计时
+				const nextRunTime = calculateNextRunTime(config.schedule_time);
+
+				crawlerData.push({
+					id: config.id,
+					name: config.spider_name,
+					icon: { 游戏爬虫: "🎮", 热门话题: "🔥", AI工具库: "🤖" }[config.spider_name] || "🕷️",
+					color: { 游戏爬虫: "#00ffff", 热门话题: "#ff6b35", AI工具库: "#ffff00" }[config.spider_name] || "#00ffff",
+					status: "waiting",
+					nextRunTime: nextRunTime,
+					lastRunTime: new Date(),
+					interval: config.schedule_frequency || "未知",
+					type: "数据采集",
+					url: config.source_url || "/",
+					cron: config.schedule_time || "未配置",
+					successRate: 100,
+					totalRuns: runCount,
+					lastStatus: "success",
+					dataCount: dataCount,
+					avgDuration: avgDuration
+				});
+			} catch (e) {
+				console.warn(`查询 ${config.spider_name} 失败:`, e.message);
+			}
+		}
+
+		SUCCESS(ctx, true, "成功获取爬虫倒计时数据", {
+			crawlers: crawlerData,
+			timestamp: new Date()
+		});
+	} catch (error) {
+		console.error("[API] 快速获取爬虫倒计时数据错误:", error);
+		ERROR(ctx, "获取爬虫倒计时数据失败");
 	}
 });
 

@@ -121,7 +121,7 @@ const login = (formEl: FormInstance | undefined) => {
 						userPwd: requestLoginForm.password
 					});
 					// 使用 replace 替换当前历史记录，防止后退回到登录页
-					router.replace({ name: "dataScreen" });
+					router.replace({ name: "dataScreenInk" });
 					console.log("router :>> ", router);
 				} else {
 					ElMessage.error(res!.message);

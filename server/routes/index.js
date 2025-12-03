@@ -1235,7 +1235,7 @@ router.post("/statistics/getCrawlerStats", async (ctx, next) => {
 			const aiToolsStats = await db.query(aiToolsCountSql);
 			aiToolsTotalCount = aiToolsStats[0]?.total || 0;
 
-			const aiTimeSql = `SELECT MAX(updated_at) as lastUpdate FROM ai_info`;
+			const aiTimeSql = `SELECT MAX(update_time) as lastUpdate FROM ai_info`;
 			const aiTimeResult = await db.query(aiTimeSql);
 			aiLastUpdate = aiTimeResult[0]?.lastUpdate;
 

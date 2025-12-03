@@ -1,26 +1,46 @@
-/* 墨青色主题变量定义 */
-$ink-bg-color: #08131a; // 深墨底色 - 整体背景
-$ink-panel-bg: rgba(12, 38, 48, 0.65); // 面板背景 - 半透明墨青
-$ink-panel-border: rgba(30, 79, 94, 0.5); // 面板边框
-$ink-primary: #00ffd5; // 主色 - 青色荧光 (用于高亮、关键数据)
-$ink-secondary: #177ddc; // 辅助色 - 科技蓝 (用于图表、次要元素)
-$ink-text-main: #e0f7fa; // 主要文字 - 淡青白
-$ink-text-sub: #8daeb8; // 次要文字 - 灰青色
-$ink-gold: #ffd700; // 点缀色 - 金色 (用于强调、排名)
+/* 赛博朋克 + 辉光管主题变量 */
+$cyber-bg: #0a0e1a; // 深邃太空蓝
+$cyber-panel-bg: rgba(10, 18, 30, 0.85); // 面板背景
+$cyber-panel-border: rgba(0, 255, 255, 0.3); // 霓虹青边框
+$cyber-glow-orange: #ff6b35; // 辉光管橙
+$cyber-glow-cyan: #00ffff; // 霓虹青
+$cyber-glow-pink: #ff0080; // 霓虹粉
+$cyber-glow-yellow: #ffff00; // 警告黄
+$cyber-text-main: #e0f7ff; // 主文字
+$cyber-text-sub: #7a9fb5; // 次文字
+$cyber-grid: rgba(0, 255, 255, 0.05); // 网格线
 
 /* 字体 */
-$font-family-main: "Helvetica Neue", Helvetica, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "微软雅黑", Arial, sans-serif;
-$font-family-number: "DIN", sans-serif; // 数字专用字体
+$font-family-main: "Helvetica Neue", Helvetica, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "微软雅黑", Arial,
+	sans-serif;
+$font-family-number: "DIN", sans-serif;
 
 .dataScreen-container {
 	width: 100%;
 	height: 100%;
-	background: $ink-bg-color;
-	background-image: radial-gradient(circle at 50% 50%, #0d242e 0%, #08131a 100%); // 增加一点径向渐变，更有质感
-	background-size: cover;
-	background-position: center;
+	background-color: $cyber-bg;
+	// 赛博朋克网格背景
+	background-image: linear-gradient(rgba(0, 255, 255, 0.05) 1px, transparent 1px),
+		linear-gradient(90deg, rgba(0, 255, 255, 0.05) 1px, transparent 1px),
+		repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255, 107, 53, 0.03) 2px, rgba(255, 107, 53, 0.03) 4px);
+	background-size: 50px 50px, 50px 50px, 100% 100%;
+	background-position: -1px -1px, -1px -1px, 0 0;
 	position: relative;
 	overflow: hidden;
+
+	// 扫描线效果
+	&::before {
+		content: "";
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.15) 1px, transparent 1px, transparent 2px);
+		pointer-events: none;
+		z-index: 1;
+		opacity: 0.3;
+	}
 
 	.dataScreen {
 		position: fixed;
@@ -33,15 +53,47 @@ $font-family-number: "DIN", sans-serif; // 数字专用字体
 		transition: all 0.3s;
 		transform-origin: left top;
 
-		/* 头部样式 */
+		/* 头部样式 - 赛博朋克机械风 */
 		.dataScreen-header {
 			display: flex;
 			width: 100%;
-			height: 80px;
-			background: linear-gradient(to bottom, rgba(12, 38, 48, 0.9) 0%, rgba(12, 38, 48, 0) 100%);
-			border-bottom: 1px solid rgba($ink-primary, 0.2);
+			height: 100px;
 			position: relative;
 			z-index: 10;
+			background: linear-gradient(to bottom, rgba(10, 18, 30, 0.95) 0%, rgba(10, 18, 30, 0.7) 100%);
+			border-bottom: 2px solid rgba($cyber-glow-cyan, 0.3);
+
+			// 顶部霓虹装饰线
+			&::before {
+				content: "";
+				position: absolute;
+				top: 0;
+				left: 0;
+				right: 0;
+				height: 3px;
+				background: linear-gradient(
+					90deg,
+					$cyber-glow-orange 0%,
+					$cyber-glow-cyan 25%,
+					$cyber-glow-pink 50%,
+					$cyber-glow-cyan 75%,
+					$cyber-glow-orange 100%
+				);
+				box-shadow: 0 0 15px rgba($cyber-glow-cyan, 0.6);
+				opacity: 0.8;
+			}
+
+			// 底部发光线
+			&::after {
+				content: "";
+				position: absolute;
+				bottom: -2px;
+				left: 0;
+				width: 100%;
+				height: 1px;
+				background: $cyber-glow-cyan;
+				box-shadow: 0 0 10px $cyber-glow-cyan, 0 0 20px rgba($cyber-glow-cyan, 0.5);
+			}
 
 			.header-lf,
 			.header-rg {
@@ -49,6 +101,7 @@ $font-family-number: "DIN", sans-serif; // 数字专用字体
 				display: flex;
 				align-items: center;
 				padding: 0 40px;
+				position: relative;
 			}
 
 			.header-ct {
@@ -57,24 +110,43 @@ $font-family-number: "DIN", sans-serif; // 数字专用字体
 				justify-content: center;
 				align-items: center;
 				flex-direction: column;
+				position: relative;
 
 				.header-ct-title {
-					font-size: 36px;
-					font-weight: bold;
-					color: $ink-text-main;
-					letter-spacing: 4px;
-					text-shadow: 0 0 10px rgba($ink-primary, 0.5);
-					background: linear-gradient(to bottom, #fff, $ink-primary);
-					background-clip: text;
-					-webkit-background-clip: text;
-					-webkit-text-fill-color: transparent;
+					font-size: 40px;
+					font-weight: 900;
+					color: $cyber-text-main;
+					letter-spacing: 8px;
+					text-transform: uppercase;
+					// 辉光管文字效果
+					text-shadow: 0 0 5px $cyber-glow-cyan, 0 0 10px $cyber-glow-cyan, 0 0 20px rgba($cyber-glow-cyan, 0.8),
+						0 0 30px rgba($cyber-glow-orange, 0.6), 0 2px 5px rgba(0, 0, 0, 0.8);
+					font-family: "Arial Black", "Microsoft YaHei", sans-serif;
+					animation: flicker 3s infinite alternate;
 				}
 
 				.header-ct-subtitle {
-					font-size: 14px;
-					color: $ink-text-sub;
-					margin-top: 5px;
-					letter-spacing: 2px;
+					font-size: 12px;
+					color: $cyber-glow-orange;
+					margin-top: 8px;
+					letter-spacing: 4px;
+					text-transform: uppercase;
+					font-family: "Courier New", monospace;
+					text-shadow: 0 0 8px rgba($cyber-glow-orange, 0.8);
+				}
+			}
+
+			// 辉光管闪烁动画
+			@keyframes flicker {
+				0%,
+				100% {
+					opacity: 1;
+				}
+				50% {
+					opacity: 0.95;
+				}
+				75% {
+					opacity: 0.98;
 				}
 			}
 
@@ -82,16 +154,24 @@ $font-family-number: "DIN", sans-serif; // 数字专用字体
 				justify-content: flex-start;
 				.header-btn {
 					cursor: pointer;
-					color: $ink-text-main;
-					font-size: 16px;
-					padding: 8px 20px;
-					background: rgba($ink-primary, 0.1);
-					border: 1px solid rgba($ink-primary, 0.3);
-					border-radius: 4px;
+					color: $cyber-glow-cyan;
+					font-size: 14px;
+					padding: 8px 24px;
+					background: rgba(0, 255, 255, 0.05);
+					border: 1px solid rgba($cyber-glow-cyan, 0.4);
+					// 机械切角
+					clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
 					transition: all 0.3s;
+					font-family: $font-family-main;
+					letter-spacing: 2px;
+					text-transform: uppercase;
+					font-weight: bold;
+
 					&:hover {
-						background: rgba($ink-primary, 0.2);
-						box-shadow: 0 0 10px rgba($ink-primary, 0.3);
+						background: rgba($cyber-glow-cyan, 0.15);
+						border-color: $cyber-glow-cyan;
+						box-shadow: 0 0 15px rgba($cyber-glow-cyan, 0.5), inset 0 0 10px rgba($cyber-glow-cyan, 0.2);
+						text-shadow: 0 0 8px $cyber-glow-cyan;
 					}
 				}
 			}
@@ -99,9 +179,17 @@ $font-family-number: "DIN", sans-serif; // 数字专用字体
 			.header-rg {
 				justify-content: flex-end;
 				.header-time {
-					font-family: $font-family-number;
-					font-size: 20px;
-					color: $ink-primary;
+					font-family: "Orbitron", "Courier New", $font-family-number;
+					font-size: 24px;
+					color: $cyber-glow-orange;
+					// 辉光管数字效果
+					text-shadow: 0 0 5px $cyber-glow-orange, 0 0 10px $cyber-glow-orange, 0 0 20px rgba($cyber-glow-orange, 0.6);
+					letter-spacing: 3px;
+					font-weight: 700;
+					background: rgba(255, 107, 53, 0.1);
+					padding: 6px 16px;
+					border: 1px solid rgba($cyber-glow-orange, 0.3);
+					clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
 				}
 			}
 		}
@@ -110,74 +198,152 @@ $font-family-number: "DIN", sans-serif; // 数字专用字体
 		.dataScreen-main {
 			flex: 1;
 			display: flex;
-			padding: 20px;
+			padding: 25px 30px 30px 30px;
 			box-sizing: border-box;
 			overflow: hidden;
+			gap: 25px;
 
-			/* 通用面板样式 */
-			.ink-panel {
-				background: $ink-panel-bg;
-				border: 1px solid $ink-panel-border;
-				border-radius: 8px;
-				box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
-				backdrop-filter: blur(10px); // 磨砂玻璃效果
+			/* 赛博朋克面板样式 */
+			.cyber-panel {
+				background: $cyber-panel-bg;
+				border: 2px solid rgba($cyber-glow-cyan, 0.3);
+				box-shadow: 0 0 20px rgba($cyber-glow-cyan, 0.1), inset 0 0 30px rgba(0, 255, 255, 0.03);
+				backdrop-filter: blur(8px);
 				display: flex;
 				flex-direction: column;
 				margin-bottom: 20px;
 				position: relative;
 				overflow: hidden;
+				// 机械切角
+				clip-path: polygon(
+					0 12px,
+					12px 0,
+					calc(100% - 12px) 0,
+					100% 12px,
+					100% calc(100% - 12px),
+					calc(100% - 12px) 100%,
+					12px 100%,
+					0 calc(100% - 12px)
+				);
 
+				// 扫描线动画
 				&::before {
+					content: "";
+					position: absolute;
+					top: -100%;
+					left: 0;
+					width: 100%;
+					height: 100%;
+					background: linear-gradient(180deg, transparent 0%, rgba($cyber-glow-cyan, 0.1) 50%, transparent 100%);
+					animation: scan 4s linear infinite;
+					pointer-events: none;
+					z-index: 1;
+				}
+
+				// 边框发光效果
+				&::after {
 					content: "";
 					position: absolute;
 					top: 0;
 					left: 0;
-					width: 100%;
-					height: 2px;
-					background: linear-gradient(90deg, transparent, $ink-primary, transparent);
-					opacity: 0.5;
+					right: 0;
+					bottom: 0;
+					border: 1px solid rgba($cyber-glow-cyan, 0.2);
+					clip-path: inherit;
+					pointer-events: none;
+					z-index: 2;
 				}
 
 				&:last-child {
 					margin-bottom: 0;
 				}
 
-				.ink-panel-title {
-					height: 40px;
-					line-height: 40px;
-					padding-left: 20px;
-					font-size: 18px;
-					color: $ink-text-main;
-					font-weight: bold;
-					border-bottom: 1px solid rgba($ink-text-sub, 0.1);
+				&:hover {
+					border-color: rgba($cyber-glow-cyan, 0.5);
+					box-shadow: 0 0 30px rgba($cyber-glow-cyan, 0.2), inset 0 0 40px rgba(0, 255, 255, 0.05);
+				}
+
+				.cyber-panel-title {
+					height: 45px;
+					line-height: 45px;
+					padding: 0 20px;
+					font-size: 15px;
+					color: $cyber-text-main;
+					font-weight: 700;
+					letter-spacing: 2px;
+					text-transform: uppercase;
+					background: linear-gradient(90deg, rgba($cyber-glow-cyan, 0.15) 0%, transparent 100%);
 					display: flex;
 					align-items: center;
+					position: relative;
+					border-bottom: 1px solid rgba($cyber-glow-cyan, 0.2);
+					z-index: 3;
+					font-family: "Arial", "Microsoft YaHei", sans-serif;
 
+					// 标题发光效果
+					text-shadow: 0 0 10px rgba($cyber-glow-cyan, 0.5);
+
+					.title-icon {
+						margin-right: 10px;
+						font-size: 18px;
+						filter: drop-shadow(0 0 5px $cyber-glow-orange);
+					}
+
+					// 标题左侧装饰条
 					&::before {
 						content: "";
-						display: inline-block;
+						position: absolute;
+						left: 0;
+						top: 50%;
+						transform: translateY(-50%);
 						width: 4px;
-						height: 16px;
-						background: $ink-primary;
-						margin-right: 10px;
-						border-radius: 2px;
+						height: 20px;
+						background: linear-gradient(180deg, $cyber-glow-orange, $cyber-glow-pink);
+						box-shadow: 0 0 8px $cyber-glow-orange;
 					}
 				}
 
-				.ink-panel-content {
+				.cyber-panel-content {
 					flex: 1;
-					padding: 15px;
+					padding: 20px;
 					box-sizing: border-box;
 					position: relative;
+					z-index: 3;
+					overflow: visible;
+
+					// 自定义滚动条
+					&::-webkit-scrollbar {
+						width: 6px;
+					}
+					&::-webkit-scrollbar-track {
+						background: rgba(0, 0, 0, 0.2);
+					}
+					&::-webkit-scrollbar-thumb {
+						background: rgba($cyber-glow-cyan, 0.3);
+						border-radius: 3px;
+						&:hover {
+							background: rgba($cyber-glow-cyan, 0.5);
+						}
+					}
+				}
+			}
+
+			// 扫描动画
+			@keyframes scan {
+				0% {
+					top: -100%;
+				}
+				100% {
+					top: 100%;
 				}
 			}
 
 			.dataScreen-lf,
 			.dataScreen-rg {
-				width: 450px;
+				width: 420px;
 				display: flex;
 				flex-direction: column;
-				justify-content: space-between;
+				justify-content: flex-start;
 				z-index: 10;
 			}
 
@@ -185,34 +351,7 @@ $font-family-number: "DIN", sans-serif; // 数字专用字体
 				flex: 1;
 				display: flex;
 				flex-direction: column;
-				margin: 0 20px;
 				position: relative;
-
-				.dataScreen-map {
-					flex: 1;
-					width: 100%;
-					position: relative;
-					// 地图容器不需要背景色，直接透出底色
-					border-radius: 8px;
-					overflow: hidden;
-					
-					.map-title {
-						position: absolute;
-						top: 20px;
-						left: 20px;
-						z-index: 20;
-						color: $ink-text-main;
-						font-size: 20px;
-						font-weight: bold;
-						text-shadow: 0 2px 4px rgba(0,0,0,0.5);
-					}
-				}
-				
-				.dataScreen-cb {
-					height: 280px;
-					margin-top: 20px;
-					// 底部中间的图表区域
-				}
 			}
 		}
 	}
