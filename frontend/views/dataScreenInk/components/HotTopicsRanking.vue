@@ -288,13 +288,14 @@
 					</div>
 				</vue3-seamless-scroll>
 			</div>
-		</transition>
+		</transition>``
 	</div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount } from "vue";
 import { Vue3SeamlessScroll } from "vue3-seamless-scroll";
+import { getHotTopicsApi } from "@/api/dataScreen";
 
 interface Topic {
 	id: number;
@@ -310,6 +311,17 @@ interface Topic {
 	color: string;
 	colorLight: string;
 	sparkline: number[]; // 趋势数据
+}
+
+interface HotTopicsPlatformData {
+	[key: string]: Array<{
+		title: string;
+		heat: number;
+		trend: string;
+		description: string;
+		tags: string[];
+		platform: string;
+	}>;
 }
 
 // 虚拟数据
@@ -437,11 +449,77 @@ const mockTopics = (): Topic[] => [
 ];
 
 // 响应式数据
-const topics = ref<Topic[]>(mockTopics());
+const topics = ref<Topic[]>([]);
+const isLoading = ref(true);
 const currentMode = ref("流动列表");
 const modeDirection = ref("left"); // 'left' 或 'right' - 控制切换动画方向
 let autoSwitchTimer: ReturnType<typeof setInterval> | null = null;
 const modes = ["流动列表", "网格卡片", "对比分析"];
+
+// 生成颜色配置
+const getTopicColor = (index: number): { color: string; colorLight: string } => {
+	const colors = [
+		{ color: "#ff6b35", colorLight: "#ff9966" },
+		{ color: "#00ffff", colorLight: "#66ffff" },
+		{ color: "#ffd60a", colorLight: "#ffed4e" },
+		{ color: "#a900e6", colorLight: "#d966ff" },
+		{ color: "#ff00ff", colorLight: "#ff66ff" },
+		{ color: "#00ddff", colorLight: "#66eeff" },
+		{ color: "#ff9900", colorLight: "#ffbb33" },
+		{ color: "#00ff88", colorLight: "#66ff99" }
+	];
+	return colors[index % colors.length];
+};
+
+// 获取热门话题数据
+const fetchTopicsData = async () => {
+	try {
+		isLoading.value = true;
+		const response: any = await getHotTopicsApi();
+		
+		// 处理 API 响应，数据包含在 data.topics 中
+		if (response && response.data && response.data.topics) {
+			const groupedTopics = response.data.topics as HotTopicsPlatformData;
+			const convertedTopics: Topic[] = [];
+			let topicId = 1;
+			
+			// 遍历所有平台数据，转换为组件需要的格式
+			Object.entries(groupedTopics).forEach(([platform, platformTopics]) => {
+				if (Array.isArray(platformTopics)) {
+					platformTopics.forEach((topic: any) => {
+						const { color, colorLight } = getTopicColor(convertedTopics.length);
+						convertedTopics.push({
+							id: topicId++,
+							title: topic.title || "未命名话题",
+							hotValue: topic.heat || 0, // 后端字段是 heat，转换为 hotValue
+							trend: topic.trend === "up" ? 45 : topic.trend === "down" ? -15 : 0,
+							source: platform.charAt(0).toUpperCase() + platform.slice(1), // 平台名称
+							description: topic.description || "",
+							discussions: Math.floor(Math.random() * 100000) + 10000, // 无此字段，生成随机值
+							shares: Math.floor(Math.random() * 50000) + 5000,      // 无此字段，生成随机值
+							participants: Math.floor(Math.random() * 500000) + 50000, // 无此字段，生成随机值
+							tags: (topic.tags && Array.isArray(topic.tags)) ? topic.tags : [],
+							color,
+							colorLight,
+							sparkline: Array.from({ length: 10 }, (_, i) => Math.floor(Math.random() * 100) + 20)
+						});
+					});
+				}
+			});
+			
+			topics.value = convertedTopics;
+		} else {
+			console.warn("热门话题数据为空，使用模拟数据", response);
+			topics.value = mockTopics();
+		}
+	} catch (error) {
+		console.error("获取热门话题数据失败:", error);
+		// 发生错误时使用模拟数据降级
+		topics.value = mockTopics();
+	} finally {
+		isLoading.value = false;
+	}
+};
 
 // 自动切换模式
 const autoSwitchMode = () => {
@@ -537,8 +615,10 @@ const generateSparklinePoints = (data: number[]): string => {
 };
 
 // 生命周期
-onMounted(() => {
-	// 启动 20 秒自动切换
+onMounted(async () => {
+	// 首先获取实时数据
+	await fetchTopicsData();
+	// 然后启动 20 秒自动切换
 	autoSwitchTimer = setInterval(autoSwitchMode, 20000);
 });
 
@@ -799,6 +879,7 @@ onBeforeUnmount(() => {
 					text-overflow: ellipsis;
 					display: -webkit-box;
 					-webkit-line-clamp: 1;
+					line-clamp: 1;
 					-webkit-box-orient: vertical;
 				}
 
@@ -1033,6 +1114,7 @@ onBeforeUnmount(() => {
 					line-height: 1.3;
 					display: -webkit-box;
 					-webkit-line-clamp: 2;
+					line-clamp: 2;
 					-webkit-box-orient: vertical;
 					overflow: hidden;
 					text-shadow: 0 0 4px rgba(0, 255, 255, 0.3);
