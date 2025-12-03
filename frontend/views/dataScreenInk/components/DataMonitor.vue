@@ -349,8 +349,8 @@ let dataRefreshInterval: ReturnType<typeof setInterval> | null = null;
 
 onMounted(() => {
 	fetchData();
-	// 每 30 秒刷新一次数据
-	dataRefreshInterval = setInterval(fetchData, 30000);
+	// 每 90 秒刷新一次数据
+	dataRefreshInterval = setInterval(fetchData, 90000);
 
 	window.addEventListener("resize", handleResize);
 });

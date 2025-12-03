@@ -231,8 +231,8 @@ const fetchCrawlerStats = async () => {
 
 onMounted(() => {
 	fetchCrawlerStats();
-	// 每30秒刷新一次
-	setInterval(fetchCrawlerStats, 30000);
+	// 每90秒刷新一次
+	setInterval(fetchCrawlerStats, 90000);
 });
 </script>
 
