@@ -288,7 +288,7 @@
 					</div>
 				</vue3-seamless-scroll>
 			</div>
-		</transition>``
+		</transition>
 	</div>
 </template>
 
@@ -476,13 +476,13 @@ const fetchTopicsData = async () => {
 	try {
 		isLoading.value = true;
 		const response: any = await getHotTopicsApi();
-		
+
 		// 处理 API 响应，数据包含在 data.topics 中
 		if (response && response.data && response.data.topics) {
 			const groupedTopics = response.data.topics as HotTopicsPlatformData;
 			const convertedTopics: Topic[] = [];
 			let topicId = 1;
-			
+
 			// 遍历所有平台数据，转换为组件需要的格式
 			Object.entries(groupedTopics).forEach(([platform, platformTopics]) => {
 				if (Array.isArray(platformTopics)) {
@@ -496,17 +496,17 @@ const fetchTopicsData = async () => {
 							source: platform.charAt(0).toUpperCase() + platform.slice(1), // 平台名称
 							description: topic.description || "",
 							discussions: Math.floor(Math.random() * 100000) + 10000, // 无此字段，生成随机值
-							shares: Math.floor(Math.random() * 50000) + 5000,      // 无此字段，生成随机值
+							shares: Math.floor(Math.random() * 50000) + 5000, // 无此字段，生成随机值
 							participants: Math.floor(Math.random() * 500000) + 50000, // 无此字段，生成随机值
-							tags: (topic.tags && Array.isArray(topic.tags)) ? topic.tags : [],
+							tags: topic.tags && Array.isArray(topic.tags) ? topic.tags : [],
 							color,
 							colorLight,
-							sparkline: Array.from({ length: 10 }, (_, i) => Math.floor(Math.random() * 100) + 20)
+							sparkline: Array.from({ length: 10 }, () => Math.floor(Math.random() * 100) + 20)
 						});
 					});
 				}
 			});
-			
+
 			topics.value = convertedTopics;
 		} else {
 			console.warn("热门话题数据为空，使用模拟数据", response);
