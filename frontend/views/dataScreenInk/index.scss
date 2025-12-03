@@ -341,6 +341,7 @@ $font-family-number: "DIN", sans-serif;
 			.dataScreen-lf,
 			.dataScreen-rg {
 				width: 420px;
+				min-width: 340px;
 				display: flex;
 				flex-direction: column;
 				justify-content: flex-start;
@@ -349,6 +350,7 @@ $font-family-number: "DIN", sans-serif;
 
 			.dataScreen-ct {
 				flex: 1;
+				min-width: 340px;
 				display: flex;
 				flex-direction: column;
 				position: relative;
