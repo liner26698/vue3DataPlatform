@@ -13,7 +13,7 @@
 **验证命令**:
 
 ```bash
-mysql -h 8.166.130.216 -u vue3 -p vue3 -e "
+mysql -h 47.110.66.121 -u vue3 -p vue3 -e "
 SELECT 'game_info' as table_name, COUNT(*) as count FROM game_info;
 SELECT 'ps5_game' as table_name, COUNT(*) as count FROM ps5_game;
 SELECT 'pc_game' as table_name, COUNT(*) as count FROM pc_game;
@@ -64,14 +64,14 @@ npm list cheerio node-cron puppeteer | head -20
 
 ```bash
 # 备份旧表 (可选安全措施)
-mysql -h 8.166.130.216 -u vue3 -p vue3 << EOF
+mysql -h 47.110.66.121 -u vue3 -p vue3 << EOF
 ALTER TABLE ps5_game RENAME TO ps5_game_backup_20251126;
 ALTER TABLE pc_game RENAME TO pc_game_backup_20251126;
 EOF
 
 # 或者只备份数据
-mysqldump -h 8.166.130.216 -u vue3 -p vue3 ps5_game > ps5_game_backup.sql
-mysqldump -h 8.166.130.216 -u vue3 -p vue3 pc_game > pc_game_backup.sql
+mysqldump -h 47.110.66.121 -u vue3 -p vue3 ps5_game > ps5_game_backup.sql
+mysqldump -h 47.110.66.121 -u vue3 -p vue3 pc_game > pc_game_backup.sql
 ```
 
 ### 第 2 步: 部署代码
@@ -169,7 +169,7 @@ curl -X POST http://localhost:3000/bookMicroservices/game/getGameList \
 
 ```bash
 # 查询爬虫日志
-mysql -h 8.166.130.216 -u vue3 -p vue3 -e "
+mysql -h 47.110.66.121 -u vue3 -p vue3 -e "
 SELECT COUNT(*) FROM crawler_logs WHERE spider_type = 'game' ORDER BY created_at DESC LIMIT 5;
 "
 
@@ -205,7 +205,7 @@ node -e "const db = require('./server/db.js'); console.log('连接成功')"
 node server/utils/gameSpider.js
 
 # 5. 检查定时任务是否真的执行
-mysql -h 8.166.130.216 -u vue3 -p vue3 -e "
+mysql -h 47.110.66.121 -u vue3 -p vue3 -e "
 SELECT * FROM crawler_logs WHERE spider_type = 'game' ORDER BY created_at DESC LIMIT 1;
 "
 ```
@@ -218,10 +218,10 @@ SELECT * FROM crawler_logs WHERE spider_type = 'game' ORDER BY created_at DESC L
 
 ```bash
 # 1. 确认表已创建
-mysql -h 8.166.130.216 -u vue3 -p vue3 -e "SHOW TABLES LIKE 'game_info';"
+mysql -h 47.110.66.121 -u vue3 -p vue3 -e "SHOW TABLES LIKE 'game_info';"
 
 # 2. 如果不存在，重新运行迁移脚本
-mysql -h 8.166.130.216 -u vue3 -p vue3 < server/sql/game_info_migration.sql
+mysql -h 47.110.66.121 -u vue3 -p vue3 < server/sql/game_info_migration.sql
 
 # 3. 重启 Node.js 服务
 pm2 restart app
@@ -240,7 +240,7 @@ pm2 restart app
 node server/utils/gameSpider.js
 
 # 2. 检查日志
-mysql -h 8.166.130.216 -u vue3 -p vue3 -e "
+mysql -h 47.110.66.121 -u vue3 -p vue3 -e "
 SELECT * FROM crawler_logs WHERE spider_type = 'game';
 "
 
@@ -281,7 +281,7 @@ SELECT COUNT(*) FROM game_info
 
 ```bash
 # 1. 恢复旧数据库表
-mysql -h 8.166.130.216 -u vue3 -p vue3 << EOF
+mysql -h 47.110.66.121 -u vue3 -p vue3 << EOF
 ALTER TABLE ps5_game_backup_20251126 RENAME TO ps5_game;
 ALTER TABLE pc_game_backup_20251126 RENAME TO pc_game;
 EOF

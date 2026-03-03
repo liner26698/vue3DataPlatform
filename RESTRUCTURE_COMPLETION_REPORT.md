@@ -83,7 +83,7 @@ PID  Name             Status    Uptime
 259182  scheduler       errored   (依赖问题，非路径问题)
 
 # API 验证
-curl -X POST http://8.166.130.216/statistics/getHotTopics
+curl -X POST http://47.110.66.121/statistics/getHotTopics
 # Response: ✅ HTTP 200
 # Data: Baidu topics: 20 items
 #       Weibo topics: 20 items
@@ -244,7 +244,7 @@ $ pm2 list
 koa-server    online    PID: 259084    uptime: 21s+  ✓
 
 # API 测试
-$ curl -X POST http://8.166.130.216/statistics/getHotTopics
+$ curl -X POST http://47.110.66.121/statistics/getHotTopics
 HTTP/1.1 200 OK
 {
   "code": 200,

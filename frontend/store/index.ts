@@ -12,6 +12,8 @@ export const GlobalStore = defineStore({
 	state: (): GlobalState => ({
 		// token
 		token: "",
+		// token 过期时间（时间戳）
+		tokenExpireTime: 0,
 		// userInfo
 		userInfo: {
 			userName: "",
@@ -63,6 +65,10 @@ export const GlobalStore = defineStore({
 		// setToken
 		setToken(token: string) {
 			this.token = token;
+		},
+		// setTokenExpireTime
+		setTokenExpireTime(expireTime: number) {
+			this.tokenExpireTime = expireTime;
 		},
 		// setUserInfo
 		setUserInfo(userInfo: UserInfoState) {

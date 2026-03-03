@@ -58,10 +58,12 @@ class RequestHttp {
 				// * 在请求结束后，移除本次请求
 				axiosCanceler.removePending(config);
 				tryHideFullScreenLoading();
-				// * 登陆失效（code == 599）
-				if (data.code == ResultEnum.OVERDUE) {
-					ElMessage.error(data.msg || data.message);
+				// * 登陆失效（code == 599）或 token 过期
+				const isTokenExpired = globalStore.tokenExpireTime && Date.now() > globalStore.tokenExpireTime;
+				if (data.code == ResultEnum.OVERDUE || isTokenExpired) {
+					ElMessage.error(isTokenExpired ? "登录已过期，请重新登录" : data.msg || data.message);
 					globalStore.setToken("");
+					globalStore.setTokenExpireTime(0);
 					router.replace({
 						path: "/login"
 					});

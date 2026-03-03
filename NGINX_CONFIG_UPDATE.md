@@ -70,20 +70,20 @@
 npm run build
 
 # 2. 上传 dist 文件到生产服务器
-scp -P 443 -r dist/ root@8.166.130.216:/home/dataPlatform/frontend/
+scp -P 443 -r dist/ root@47.110.66.121:/home/dataPlatform/frontend/
 
 # 3. 验证文件
-ssh -p 443 root@8.166.130.216 "ls -la /home/dataPlatform/frontend/dist/"
+ssh -p 443 root@47.110.66.121 "ls -la /home/dataPlatform/frontend/dist/"
 
 # 4. 刷新浏览器缓存
-curl -I http://8.166.130.216/
+curl -I http://47.110.66.121/
 ```
 
 ### API 验证（不受影响）
 
 ```bash
 # API 路由继续正常工作
-curl -X POST http://8.166.130.216/statistics/getHotTopics
+curl -X POST http://47.110.66.121/statistics/getHotTopics
 # 返回: HTTP 200 OK ✓
 ```
 

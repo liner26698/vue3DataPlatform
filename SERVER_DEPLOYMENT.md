@@ -3,7 +3,7 @@
 ## 📋 服务器信息
 
 ```
-服务器 IP: 8.166.130.216
+服务器 IP: 47.110.66.121
 SSH 端口: 443
 远程路径: /home/dataPlatform/server
 当前用户: root
@@ -15,7 +15,7 @@ SSH 端口: 443
 
 ```bash
 # SSH 连接到服务器
-ssh -p 443 root@8.166.130.216
+ssh -p 443 root@47.110.66.121
 
 # 检查 Node.js 版本
 node -v          # 应为 v21.7.3+
@@ -40,10 +40,10 @@ cd /path/to/vue3DataPlatform
 ./deploy.sh --full
 
 # 方案 B: 手动上传 (如果脚本失败)
-scp -P 443 -r . root@8.166.130.216:/home/dataPlatform/server/
+scp -P 443 -r . root@47.110.66.121:/home/dataPlatform/server/
 
 # 方案 C: Git 拉取 (如果已有仓库)
-ssh -p 443 root@8.166.130.216
+ssh -p 443 root@47.110.66.121
 cd /home/dataPlatform/server
 git pull origin main
 ```
@@ -52,7 +52,7 @@ git pull origin main
 
 ```bash
 # SSH 登录到服务器
-ssh -p 443 root@8.166.130.216
+ssh -p 443 root@47.110.66.121
 
 # 进入项目目录
 cd /home/dataPlatform/server
@@ -484,7 +484,7 @@ pm2 restart all
 mysqldump -u root -p data_platform > /home/dataPlatform/backup/data_platform_$(date +%Y%m%d_%H%M%S).sql
 
 # 备份上传到云存储或本地
-scp -P 443 root@8.166.130.216:/home/dataPlatform/backup/*.sql ./local/backup/
+scp -P 443 root@47.110.66.121:/home/dataPlatform/backup/*.sql ./local/backup/
 ```
 
 ### 日志管理
@@ -607,7 +607,7 @@ grep "ERROR" /var/log/pm2/*.log | wc -l
 
 ```bash
 # SSH 连接
-ssh -p 443 root@8.166.130.216
+ssh -p 443 root@47.110.66.121
 
 # 进入项目目录
 cd /home/dataPlatform/server
@@ -642,6 +642,6 @@ pm2 monit
 
 ---
 
-**服务器地址:** 8.166.130.216:443  
+**服务器地址:** 47.110.66.121:443  
 **最后更新:** 2025年11月26日  
 **版本:** 1.0.0

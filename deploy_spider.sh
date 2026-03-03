@@ -6,7 +6,7 @@
 
 set -e
 
-SERVER_IP="8.166.130.216"
+SERVER_IP="47.110.66.121"
 SERVER_USER="root"
 SERVER_PORT="443"
 REMOTE_PATH="/home/dataPlatform/server"

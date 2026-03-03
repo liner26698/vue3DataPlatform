@@ -8,11 +8,21 @@
 						<el-form-item label="分类">
 							<el-select v-model="searchForm.category" placeholder="请选择分类" clearable class="w-full" @change="handleSearch">
 								<el-option label="全部" value="所有" />
-								<el-option label="热门" value="hot" />
-								<el-option label="文本处理" value="文本处理" />
-								<el-option label="图像生成" value="图像生成" />
-								<el-option label="代码助手" value="代码助手" />
-								<el-option label="内容创作" value="内容创作" />
+								<el-option label="AI聊天助手" value="AI聊天助手" />
+								<el-option label="AI写作工具" value="AI写作工具" />
+								<el-option label="AI图像工具" value="AI图像工具" />
+								<el-option label="AI视频工具" value="AI视频工具" />
+								<el-option label="AI办公工具" value="AI办公工具" />
+								<el-option label="AI编程工具" value="AI编程工具" />
+								<el-option label="AI设计工具" value="AI设计工具" />
+								<el-option label="AI音频工具" value="AI音频工具" />
+								<el-option label="AI搜索引擎" value="AI搜索引擎" />
+								<el-option label="AI智能体" value="AI智能体" />
+								<el-option label="AI开发平台" value="AI开发平台" />
+								<el-option label="AI训练模型" value="AI训练模型" />
+								<el-option label="AI内容检测" value="AI内容检测" />
+								<el-option label="AI提示指令" value="AI提示指令" />
+								<el-option label="AI学习网站" value="AI学习网站" />
 							</el-select>
 						</el-form-item>
 					</el-col>

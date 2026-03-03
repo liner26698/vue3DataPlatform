@@ -81,14 +81,12 @@ const formVisible = ref(false);
 
 onMounted(() => {
 	const { userInfo } = globalStore;
-	// 尝试恢复表单
+	// 只恢复用户名，不恢复密码（密码不应该被缓存）
 	if (userInfo && userInfo.userName) {
 		loginForm.username = userInfo.userName;
-		// 恢复密码（已加密存储）
-		if (userInfo.userPwd) {
-			loginForm.password = userInfo.userPwd;
-		}
 	}
+	// 密码框始终为空
+	loginForm.password = "";
 	// 延迟显示表单以触发动画
 	setTimeout(() => {
 		formVisible.value = true;
@@ -111,14 +109,17 @@ const login = (formEl: FormInstance | undefined) => {
 				const res: any = await loginApi(requestLoginForm);
 				if (res?.data) {
 					ElMessage.success("登录成功！");
-					// * 存储 token
-					// * 登录成功之后清除上个账号的 menulist 和 tabs 数据
+					// * 存储 token 和过期时间（1天有效期）
+					const tokenExpireTime = Date.now() + 24 * 60 * 60 * 1000; // 1天后过期
 					globalStore.setToken(res.data!.token);
+					globalStore.setTokenExpireTime(tokenExpireTime);
+					// * 登录成功之后清除上个账号的 menulist 和 tabs 数据
 					menuStore.setMenuList([]);
 					tabStore.closeMultipleTab();
+					// * 只保存用户名，不保存密码
 					globalStore.setUserInfo({
 						userName: requestLoginForm.username,
-						userPwd: requestLoginForm.password
+						userPwd: "" // 不保存密码
 					});
 					// 使用 replace 替换当前历史记录，防止后退回到登录页
 					router.replace({ name: "dataScreenInk" });

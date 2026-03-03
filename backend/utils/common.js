@@ -100,7 +100,7 @@ const buttonsList = {
 };
 
 // 图片路径
-const imgPath = "http://8.166.130.216:3000/images/";
+const imgPath = "http://47.110.66.121:3000/images/";
 
 // JWT 验证
 class Auth {

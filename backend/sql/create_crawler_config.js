@@ -8,7 +8,7 @@ async function createTable() {
 		conn = await mysql.createConnection({
 			host: "localhost",
 			user: "admin",
-			password: "Admin@2025!",
+			password: "Admin@2026!",
 			database: "vue3_data_platform"
 		});
 

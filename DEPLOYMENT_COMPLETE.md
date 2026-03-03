@@ -2,7 +2,7 @@
 
 **部署日期**: 2025年11月26日  
 **部署状态**: ✅ **完全完成**  
-**服务器**: `8.166.130.216:443`
+**服务器**: `47.110.66.121:443`
 
 ---
 
@@ -42,7 +42,7 @@
 ### 2. API 服务部署
 - ✅ Koa 应用启动 (koaapp.js)
 - ✅ 端口绑定: 3001
-- ✅ 数据库连接: ✅ 成功 (admin/Admin@2025!)
+- ✅ 数据库连接: ✅ 成功 (admin/Admin@2026!)
 - ✅ API 端点测试: ✅ 可用
 
 ### 3. 爬虫微服务部署
@@ -106,7 +106,7 @@ curl -X POST http://localhost:3001/statistics/getHotTopics \
 ```env
 DB_HOST=localhost
 DB_USER=admin
-DB_PASSWORD=Admin@2025!
+DB_PASSWORD=Admin@2026!
 DB_NAME=vue3
 DB_PORT=3306
 ```
@@ -147,7 +147,7 @@ pm2 start spider-service/app.js --name spider
 ### 问题 3: MySQL 连接失败 (root/root)
 **状态**: ✅ **已解决**
 - **原因**: 本地 .env 使用错误凭证 (root/root)
-- **解决**: 更新为正确的生产环境凭证 (admin/Admin@2025!)
+- **解决**: 更新为正确的生产环境凭证 (admin/Admin@2026!)
 
 ---
 

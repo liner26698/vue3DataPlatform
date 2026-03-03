@@ -13,7 +13,7 @@ echo ""
 # 读取 MySQL 配置
 DB_HOST="${1:-localhost}"
 DB_USER="${2:-admin}"
-DB_PASS="${3:-Admin@2025!}"
+DB_PASS="${3:-Admin@2026!}"
 DB_NAME="${4:-vue3_data_platform}"
 
 echo "📋 数据库配置:"
@@ -72,7 +72,7 @@ async function init() {
     conn = await mysql.createConnection({
       host: process.env.DB_HOST || 'localhost',
       user: process.env.DB_USER || 'admin',
-      password: process.env.DB_PASS || 'Admin@2025!',
+      password: process.env.DB_PASS || 'Admin@2026!',
       database: process.env.DB_NAME || 'vue3_data_platform'
     });
 

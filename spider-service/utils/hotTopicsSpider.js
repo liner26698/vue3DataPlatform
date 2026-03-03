@@ -41,20 +41,21 @@ const SPIDER_CONFIG = {
 };
 
 /**
- * 1. 爬取百度热搜
+ * 1. 爬取百度热搜 - 使用百度内部 JSON API（无需 JS 渲染）
  */
 async function crawlBaiduTrending() {
 	try {
 		console.log("🔍 正在爬取百度热搜...");
-		const url = "https://top.baidu.com/board?tab=realtime";
+		// 百度热搜内部 JSON API，直接返回结构化数据
+		const url = "https://top.baidu.com/api/board?platform=wise&tab=realtime";
 
 		const response = await axios.get(url, {
 			timeout: 12000,
 			headers: {
 				"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
+				"Accept": "application/json, text/plain, */*",
 				"Accept-Language": "zh-CN,zh;q=0.9",
-				"Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-				"Referer": "https://www.baidu.com/"
+				"Referer": "https://top.baidu.com/board?tab=realtime"
 			}
 		});
 
@@ -63,34 +64,35 @@ async function crawlBaiduTrending() {
 			return [];
 		}
 
-		const $ = cheerio.load(response.data);
+		const json = response.data;
+		// API 返回结构: { data: { cards: [{ content: [...] }] } }
+		const cards = json?.data?.cards;
+		if (!cards || !cards.length) {
+			console.warn("⚠️  百度 API 返回数据结构异常");
+			return [];
+		}
+
+		// 实际结构: cards[0].content[0].content 才是话题列表
+		const items = cards[0]?.content?.[0]?.content || cards[0]?.content || [];
 		const topics = [];
 
-		// 从表格中提取热搜数据
-		$('tbody tr').each((index, element) => {
+		items.forEach((item, index) => {
 			if (topics.length >= 15) return;
+			const title = item.word || item.query || "";
+			if (!title || title.length < 2) return;
 
-			const cells = $(element).find('td');
-			if (cells.length >= 2) {
-				const rankText = $(cells[0]).text().trim();
-				const titleText = $(cells[1]).text().trim();
-				const heatText = $(cells[2]).text().trim();
-
-				if (titleText && titleText.length > 2 && titleText.length < 100) {
-					topics.push({
-						platform: "baidu",
-						rank: parseInt(rankText) || topics.length + 1,
-						title: titleText,
-						category: "热搜",
-						heat: parseInt(heatText) || (100 - topics.length) * 100000,
-						trend: "stable",
-						tags: ["百度", "热搜"],
-						url: `https://www.baidu.com/s?wd=${encodeURIComponent(titleText)}`,
-						description: titleText,
-						is_active: 1
-					});
-				}
-			}
+			topics.push({
+				platform: "baidu",
+				rank: index + 1,
+				title: title,
+				category: item.category || "热搜",
+				heat: parseInt(item.hotScore) || (100 - index) * 100000,
+				trend: "stable",
+				tags: ["百度", "热搜"],
+				url: `https://www.baidu.com/s?wd=${encodeURIComponent(title)}`,
+				description: item.desc || title,
+				is_active: 1
+			});
 		});
 
 		if (topics.length > 0) {
@@ -234,88 +236,69 @@ async function crawlWeiboTrendingWithPuppeteer() {
 }
 
 /**
- * 微博爬虫 - HTTP 备选模式（无需浏览器）
+ * 微博爬虫 - HTTP 备选模式，使用微博 AJAX API（无需登录）
  */
 async function crawlWeiboTrendingWithHttp() {
 	try {
-		console.log("🌐 正在爬取微博热搜（HTTP 模式）...");
-		
-		// 尝试使用微博搜索 API 获取热搜数据
-		try {
-			const response = await axios.get('https://s.weibo.com/top/summary', {
-				timeout: 8000,
-				headers: {
-					'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
-					'Accept-Language': 'zh-CN,zh;q=0.9',
-					'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-					'Referer': 'https://s.weibo.com/'
-				}
-			});
-			
-			if (response.status === 200 && response.data) {
-				const $ = cheerio.load(response.data);
-				const topics = [];
-				
-				// 提取热搜标题
-				$('table tbody tr').each((index, element) => {
-					if (topics.length >= 15) return;
-					
-					const $row = $(element);
-					const $link = $row.find('a').first();
-					const title = $link.text().trim();
-					
-					if (title && title.length > 2 && title.length < 100 && !title.includes('javascript')) {
-						topics.push({
-							platform: "weibo",
-							rank: topics.length + 1,
-							title: title,
-							category: "热搜",
-							heat: (100 - topics.length) * 100000,
-							trend: "stable",
-							tags: ["微博", "热搜"],
-							url: `https://s.weibo.com/weibo?q=${encodeURIComponent(title)}`,
-							description: title,
-							is_active: 1
-						});
-					}
-				});
-				
-				if (topics.length > 0) {
-					console.log(`✅ 微博热搜爬取成功: ${topics.length} 条 (HTTP 模式)`);
-					return topics;
-				}
+		console.log("🌐 正在爬取微博热搜（AJAX API 模式）...");
+
+		// 微博公开热搜 AJAX 接口，无需登录
+		const response = await axios.get('https://weibo.com/ajax/side/hotSearch', {
+			timeout: 10000,
+			headers: {
+				'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+				'Accept': 'application/json, text/plain, */*',
+				'Accept-Language': 'zh-CN,zh;q=0.9',
+				'Referer': 'https://weibo.com/',
+				'X-Requested-With': 'XMLHttpRequest'
 			}
-		} catch (httpError) {
-			console.warn("⚠️  HTTP 请求失败:", httpError.message);
+		});
+
+		if (response.status !== 200 || !response.data) {
+			console.warn("⚠️  微博 API 返回异常");
+			return [];
 		}
-		
-		// HTTP 失败，使用默认数据
-		console.log("💡 使用示例数据（如需实时数据，请在服务器安装更新的 Chrome）");
-		const mockData = [
-			{ title: "重大新闻事件", heat: 1500000 },
-			{ title: "热门话题讨论", heat: 1400000 },
-			{ title: "明星娱乐八卦", heat: 1300000 },
-			{ title: "体育赛事直播", heat: 1200000 },
-			{ title: "经济金融资讯", heat: 1100000 },
-			{ title: "科技产品发布", heat: 1000000 },
-			{ title: "社会热点评论", heat: 900000 },
-			{ title: "影视剧集推荐", heat: 800000 },
-			{ title: "旅游景点攻略", heat: 700000 },
-			{ title: "美食餐厅推荐", heat: 600000 }
-		];
-		
-		return mockData.map((item, idx) => ({
-			platform: "weibo",
-			rank: idx + 1,
-			title: item.title,
-			category: "热搜",
-			heat: item.heat,
-			trend: "stable",
-			tags: ["微博", "热搜"],
-			url: `https://s.weibo.com/weibo?q=${encodeURIComponent(item.title)}`,
-			description: item.title,
-			is_active: 1
-		}));
+
+		// 返回结构: { data: { realtime: [ { word, num, category, ... } ] } }
+		const realtime = response.data?.data?.realtime;
+		if (!realtime || !realtime.length) {
+			console.warn("⚠️  微博 API 数据结构异常");
+			return [];
+		}
+
+		const topics = [];
+		realtime.forEach((item, index) => {
+			if (topics.length >= 20) return;
+			const title = item.word || item.query || "";
+			if (!title || title.length < 2) return;
+
+			// num 是热度数字（万为单位），转换成整数
+			const heatRaw = item.num || "";
+			const heat = heatRaw
+				? Math.round(parseFloat(String(heatRaw).replace(/[^0-9.]/g, "")) * 10000)
+				: (100 - index) * 100000;
+
+			topics.push({
+				platform: "weibo",
+				rank: index + 1,
+				title: title,
+				category: item.category || "热搜",
+				heat: heat,
+				trend: "stable",
+				tags: ["微博", "热搜"],
+				url: `https://s.weibo.com/weibo?q=${encodeURIComponent(title)}`,
+				description: item.note || title,
+				is_active: 1
+			});
+		});
+
+		if (topics.length > 0) {
+			console.log(`✅ 微博热搜爬取成功: ${topics.length} 条（AJAX API）`);
+			return topics;
+		}
+
+		console.warn("⚠️  微博暂无数据");
+		return [];
 		
 	} catch (error) {
 		console.error("❌ 微博热搜爬取异常:", error.message);

@@ -118,10 +118,6 @@
 
 						<!-- 底部信息 -->
 						<div class="tool-footer">
-							<div class="tool-stats">
-								<span class="stat">👥 {{ tool.users }}位用户</span>
-								<span class="stat">📈 热度: {{ tool.popularity }}</span>
-							</div>
 							<el-button type="primary" link size="small" @click="visitTool(tool)"> 访问 → </el-button>
 						</div>
 					</div>

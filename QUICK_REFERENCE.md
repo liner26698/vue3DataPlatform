@@ -18,7 +18,7 @@
 前端代码位置:      ./src/
 脚本位置:          ./scripts/
 
-生产服务器:        8.166.130.216:3001
+生产服务器:        47.110.66.121:3001
 服务器项目路径:    /home/dataPlatform
 PM2 配置文件:      /home/dataPlatform/ecosystem.config.js
 Koa 启动文件:      /home/dataPlatform/server/koaapp-production.js
@@ -64,16 +64,16 @@ Koa 启动文件:      /home/dataPlatform/server/koaapp-production.js
 ## 🌐 常用 API 端点
 
 ```
-POST http://8.166.130.216/statistics/getHotTopics
+POST http://47.110.66.121/statistics/getHotTopics
   -> 获取所有平台的热门话题
 
-POST http://8.166.130.216/statistics/getHotTopicsByPlatform
+POST http://47.110.66.121/statistics/getHotTopicsByPlatform
   -> 获取指定平台的热门话题 (需要 platform 参数)
 
-GET  http://8.166.130.216/menu/getMenuList
+GET  http://47.110.66.121/menu/getMenuList
   -> 获取菜单列表
 
-POST http://8.166.130.216/login
+POST http://47.110.66.121/login
   -> 用户登录
 ```
 
@@ -108,7 +108,7 @@ git push origin main
 #### SSH 登录
 
 ```bash
-ssh -p 443 root@8.166.130.216
+ssh -p 443 root@47.110.66.121
 ```
 
 #### 查看 PM2 进程
@@ -154,7 +154,7 @@ tail -f /root/.pm2/logs/scheduler-error.log
 #### 验证热门话题爬虫是否运行
 
 ```bash
-curl -X POST http://8.166.130.216/statistics/getHotTopics \
+curl -X POST http://47.110.66.121/statistics/getHotTopics \
   -H 'Content-Type: application/json'
 ```
 
@@ -264,7 +264,7 @@ require("./server/utils/common")  ❌
 - [ ] 检查 `ecosystem.config.js` 中的路径是否正确
 - [ ] `pm2 restart all` 重启所有进程
 - [ ] 验证 PM2 进程状态：`pm2 list`
-- [ ] 测试 API：`curl -X POST http://8.166.130.216/statistics/getHotTopics`
+- [ ] 测试 API：`curl -X POST http://47.110.66.121/statistics/getHotTopics`
 - [ ] 检查日志：`tail -f /root/.pm2/logs/koa-server-out.log`
 
 ---
@@ -320,7 +320,7 @@ require("./server/utils/common")  ❌
 
    ```bash
    # 测试 API 或重新检查日志
-   curl http://8.166.130.216/...
+   curl http://47.110.66.121/...
    ```
 
 6. **如果问题持续**

@@ -298,7 +298,7 @@ const spiderColors = {
 # 源: /server/sql/game_info_migration.sql
 
 # 检查迁移状态
-mysql -h 8.166.130.216 -u vue3 -p vue3 -e "
+mysql -h 47.110.66.121 -u vue3 -p vue3 -e "
 SELECT COUNT(*) as total FROM game_info;
 SELECT targetgametype, COUNT(*) FROM game_info GROUP BY targetgametype;
 "

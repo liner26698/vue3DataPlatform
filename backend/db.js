@@ -3,9 +3,9 @@ const mysql = require("mysql2");
 
 // 创建连接池
 const pool = mysql.createPool({
-	host: "8.166.130.216",
+	host: "47.110.66.121",
 	user: "admin", //用户名
-	password: "Admin@2025!", //密码
+	password: "Admin@2026!", //密码
 	database: "vue3", // 数据库名称
 	port: "3306" //端口号
 });

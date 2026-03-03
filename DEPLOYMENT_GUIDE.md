@@ -1,7 +1,7 @@
 # 📦 代码同步与部署指南
 
 **最后更新**: 2025-11-27  
-**环境**: 本地开发 → GitHub → 生产服务器 (8.166.130.216)
+**环境**: 本地开发 → GitHub → 生产服务器 (47.110.66.121)
 
 ---
 
@@ -81,7 +81,7 @@ git push origin main
 
 ```bash
 # 登录到生产服务器
-ssh -p 443 root@8.166.130.216
+ssh -p 443 root@47.110.66.121
 
 # 进入项目目录
 cd /home/dataPlatform
@@ -100,7 +100,7 @@ pm2 list
 
 ```bash
 # 检查后端是否正常运行
-curl -X POST http://8.166.130.216/statistics/getHotTopics
+curl -X POST http://47.110.66.121/statistics/getHotTopics
 # 应该返回 HTTP 200 和数据
 
 # 或查看日志
@@ -159,10 +159,10 @@ ls -la dist/ | head -20
 tar -czf dist.tar.gz dist/
 
 # 上传到生产服务器
-scp -P 443 dist.tar.gz root@8.166.130.216:/tmp/
+scp -P 443 dist.tar.gz root@47.110.66.121:/tmp/
 
 # 登录到生产服务器
-ssh -p 443 root@8.166.130.216
+ssh -p 443 root@47.110.66.121
 
 # 在服务器上执行以下命令
 cd /home/dataPlatform/frontend/dist
@@ -179,11 +179,11 @@ ls -la | head -15
 
 ```bash
 # 访问首页
-curl -s http://8.166.130.216/ | head -20
+curl -s http://47.110.66.121/ | head -20
 # 应该返回 HTML 内容
 
 # 访问登录页面
-# 浏览器访问: http://8.166.130.216/#/login
+# 浏览器访问: http://47.110.66.121/#/login
 ```
 
 **注意**: Nginx 已配置缓存，新版本可能需要 Ctrl+Shift+R 硬刷新浏览器缓存。
@@ -231,7 +231,7 @@ npm run build
 tar -czf backend.tar.gz backend/
 
 # 上传
-scp -P 443 backend.tar.gz root@8.166.130.216:/tmp/
+scp -P 443 backend.tar.gz root@47.110.66.121:/tmp/
 ```
 
 **4.2 上传前端编译文件**
@@ -241,13 +241,13 @@ scp -P 443 backend.tar.gz root@8.166.130.216:/tmp/
 tar -czf dist.tar.gz dist/
 
 # 上传
-scp -P 443 dist.tar.gz root@8.166.130.216:/tmp/
+scp -P 443 dist.tar.gz root@47.110.66.121:/tmp/
 ```
 
 #### 步骤 5：在生产服务器上部署
 
 ```bash
-ssh -p 443 root@8.166.130.216
+ssh -p 443 root@47.110.66.121
 
 # 更新后端
 cd /home/dataPlatform
@@ -272,10 +272,10 @@ pm2 list
 
 ```bash
 # 后端 API
-curl -X POST http://8.166.130.216/statistics/getHotTopics
+curl -X POST http://47.110.66.121/statistics/getHotTopics
 
 # 前端页面
-curl -s http://8.166.130.216/ | head -20
+curl -s http://47.110.66.121/ | head -20
 ```
 
 ---
@@ -285,7 +285,7 @@ curl -s http://8.166.130.216/ | head -20
 ### 查看后端日志
 
 ```bash
-ssh -p 443 root@8.166.130.216
+ssh -p 443 root@47.110.66.121
 pm2 logs koa-server
 
 # 查看特定错误
@@ -296,16 +296,16 @@ pm2 logs koa-server --err
 
 ```bash
 # 检查 dist 文件是否存在
-ssh -p 443 root@8.166.130.216 "ls -la /home/dataPlatform/frontend/dist/ | head -15"
+ssh -p 443 root@47.110.66.121 "ls -la /home/dataPlatform/frontend/dist/ | head -15"
 
 # 检查 index.html 是否存在
-ssh -p 443 root@8.166.130.216 "file /home/dataPlatform/frontend/dist/index.html"
+ssh -p 443 root@47.110.66.121 "file /home/dataPlatform/frontend/dist/index.html"
 ```
 
 ### 手动重启 Nginx
 
 ```bash
-ssh -p 443 root@8.166.130.216
+ssh -p 443 root@47.110.66.121
 nginx -t              # 测试配置
 systemctl reload nginx # 重新加载
 ```
@@ -313,7 +313,7 @@ systemctl reload nginx # 重新加载
 ### 查看实时请求日志（后端）
 
 ```bash
-ssh -p 443 root@8.166.130.216
+ssh -p 443 root@47.110.66.121
 pm2 logs koa-server --lines 100
 ```
 
@@ -328,7 +328,7 @@ git reset --hard <commit-hash>
 git push origin main -f  # 强制推送（谨慎使用！）
 
 # 在生产环境重新部署
-ssh -p 443 root@8.166.130.216
+ssh -p 443 root@47.110.66.121
 cd /home/dataPlatform
 git pull origin main
 pm2 restart all
@@ -352,7 +352,7 @@ git commit -m "update: 后端代码更新"
 git push origin main
 
 echo "📤 同步到生产环境..."
-ssh -p 443 root@8.166.130.216 << 'EOF'
+ssh -p 443 root@47.110.66.121 << 'EOF'
 cd /home/dataPlatform
 git pull origin main
 pm2 restart koa-server
@@ -382,10 +382,10 @@ echo "📦 打包..."
 tar -czf dist.tar.gz dist/
 
 echo "📤 上传到服务器..."
-scp -P 443 dist.tar.gz root@8.166.130.216:/tmp/
+scp -P 443 dist.tar.gz root@47.110.66.121:/tmp/
 
 echo "🚀 部署到生产环境..."
-ssh -p 443 root@8.166.130.216 << 'EOF'
+ssh -p 443 root@47.110.66.121 << 'EOF'
 cd /home/dataPlatform/frontend/dist
 rm -rf *
 tar -xzf /tmp/dist.tar.gz
@@ -422,9 +422,9 @@ chmod +x deploy-frontend.sh
 部署后验证：
 
 - [ ] 后端：API 请求返回 HTTP 200
-- [ ] 前端：首页加载正常 (`curl http://8.166.130.216/`)
+- [ ] 前端：首页加载正常 (`curl http://47.110.66.121/`)
 - [ ] 日志：`pm2 logs` 中没有明显错误
-- [ ] 浏览器：能访问 http://8.166.130.216/#/login
+- [ ] 浏览器：能访问 http://47.110.66.121/#/login
 
 ---
 
@@ -436,7 +436,7 @@ chmod +x deploy-frontend.sh
 
 ```bash
 # 检查 dist 文件是否存在
-ssh -p 443 root@8.166.130.216 "ls -la /home/dataPlatform/frontend/dist/"
+ssh -p 443 root@47.110.66.121 "ls -la /home/dataPlatform/frontend/dist/"
 
 # 如果为空，需要重新上传 dist
 # 参考 "前端部署流程" 的步骤 4
@@ -448,13 +448,13 @@ ssh -p 443 root@8.166.130.216 "ls -la /home/dataPlatform/frontend/dist/"
 
 ```bash
 # 检查 PM2 进程状态
-ssh -p 443 root@8.166.130.216 "pm2 list"
+ssh -p 443 root@47.110.66.121 "pm2 list"
 
 # 查看错误日志
-ssh -p 443 root@8.166.130.216 "pm2 logs koa-server --err"
+ssh -p 443 root@47.110.66.121 "pm2 logs koa-server --err"
 
 # 手动重启
-ssh -p 443 root@8.166.130.216 "pm2 restart koa-server"
+ssh -p 443 root@47.110.66.121 "pm2 restart koa-server"
 ```
 
 ### 问题：浏览器访问时缓存旧版本
@@ -499,7 +499,7 @@ git commit -m "perf: 优化数据查询性能"
 2. **定期备份数据库**
 
    ```bash
-   ssh -p 443 root@8.166.130.216
+   ssh -p 443 root@47.110.66.121
    # 备份数据库
    mysqldump -u root -p database_name > backup.sql
    ```
@@ -507,14 +507,14 @@ git commit -m "perf: 优化数据查询性能"
 3. **监控 PM2 进程**
 
    ```bash
-   ssh -p 443 root@8.166.130.216
+   ssh -p 443 root@47.110.66.121
    pm2 status
    pm2 monit  # 实时监控
    ```
 
 4. **定期检查日志**
    ```bash
-   ssh -p 443 root@8.166.130.216
+   ssh -p 443 root@47.110.66.121
    pm2 logs koa-server --lines 500 | grep "ERROR"
    ```
 

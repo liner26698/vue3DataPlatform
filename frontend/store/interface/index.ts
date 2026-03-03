@@ -21,6 +21,7 @@ export interface HeaderTabProp {
 /* GlobalState */
 export interface GlobalState {
 	token: string;
+	tokenExpireTime: number; // Token 过期时间（时间戳）
 	userInfo: UserInfoState;
 	assemblySize: string;
 	language: string;

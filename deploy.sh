@@ -28,7 +28,7 @@ set -e  # 任何错误都会停止脚本执行
 LOCAL_PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # 生产服务器配置
-PROD_SERVER="8.166.130.216"
+PROD_SERVER="47.110.66.121"
 PROD_PORT="443"
 PROD_USER="root"
 PROD_HOME="/home/dataPlatform"

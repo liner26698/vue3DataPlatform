@@ -5,7 +5,7 @@
 
 set -e
 
-PROD_SERVER="8.166.130.216"
+PROD_SERVER="47.110.66.121"
 PROD_PATH="/home/dataPlatform"
 PROD_SERVER_PATH="/home/dataPlatform/server"
 

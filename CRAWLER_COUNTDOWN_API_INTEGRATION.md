@@ -242,9 +242,9 @@ npm run dev
 数据库连接配置在 `backend/db.js`:
 
 ```javascript
-host: "8.166.130.216",
+host: "47.110.66.121",
 user: "admin",
-password: "Admin@2025!",
+password: "Admin@2026!",
 database: "vue3",
 port: "3306"
 ```

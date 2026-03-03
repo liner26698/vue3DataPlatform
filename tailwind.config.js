@@ -2,6 +2,7 @@
 module.exports = {
 	content: ["./index.html", "./src/**/*.{vue,js,ts,jsx,tsx}"],
 	// darkMode: false, // or 'media' or 'class'
+	safelist: [{ pattern: /.*/ }], // 禁用未使用类的警告
 	theme: {
 		extend: {
 			colors: {

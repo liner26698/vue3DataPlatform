@@ -20,6 +20,9 @@ function initializeStore() {
 			if (globalState.token) {
 				globalStore.setToken(globalState.token);
 			}
+			if (globalState.tokenExpireTime) {
+				globalStore.setTokenExpireTime(globalState.tokenExpireTime);
+			}
 			if (globalState.userInfo) {
 				globalStore.setUserInfo(globalState.userInfo);
 			}
@@ -71,10 +74,17 @@ router.beforeEach((to, from, next) => {
 	// * 判断当前路由是否需要访问权限
 	if (!to.matched.some(record => record.meta.requiresAuth)) return next();
 
-	// * 判断是否有Token
+	// * 判断是否有Token 以及 Token 是否过期
 	const globalStore = GlobalStore();
-	if (!globalStore.token) {
-		// 没有 token 时跳转到登录页
+	const isTokenExpired = globalStore.tokenExpireTime && Date.now() > globalStore.tokenExpireTime;
+
+	if (!globalStore.token || isTokenExpired) {
+		// 如果 token 过期，清除 token
+		if (isTokenExpired) {
+			globalStore.setToken("");
+			globalStore.setTokenExpireTime(0);
+		}
+		// 没有 token 或 token 过期时跳转到登录页
 		if (to.path !== "/login") {
 			next({
 				path: "/login"

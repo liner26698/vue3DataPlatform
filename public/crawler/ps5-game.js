@@ -13,9 +13,9 @@ const _myName = "Hola";
 
 // maowei 服务器 创建数据库连接池
 const pool = mysql.createPool({
-  host: "8.166.130.216",
+  host: "47.110.66.121",
 	user: "admin", //用户名
-	password: "Admin@2025!", //密码
+	password: "Admin@2026!", //密码
 	database: "vue3", // 数据库名称
 	port: "3306", //端口号
   waitForConnections: true, // 等待连接池中的连接可用

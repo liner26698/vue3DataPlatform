@@ -1,9 +1,9 @@
 const mysql = require("mysql2/promise");
 
 const pool = mysql.createPool({
-	host: "8.166.130.216",
+	host: "47.110.66.121",
 	user: "admin",
-	password: "Admin@2025!",
+	password: "Admin@2026!",
 	database: "vue3",
 	port: 3306,
 	waitForConnections: true,

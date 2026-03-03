@@ -369,16 +369,17 @@ router.post("/statistics/getHotTopicsByPlatform", async ctx => {
  */
 router.post("/crawlerStats/game/getGameStats", async ctx => {
 	const { name, targetgametype, type, releaseDate, page, size } = ctx.request.body;
-	let sql = `SELECT * FROM ${targetgametype}_game WHERE 1=1`;
-	let countSql = `SELECT COUNT(*) FROM ${targetgametype}_game WHERE 1=1`;
+	// 统一使用 game_info 表，大小写不敏感匹配 targetgametype
+	let sql = `SELECT * FROM game_info WHERE 1=1`;
+	let countSql = `SELECT COUNT(*) FROM game_info WHERE 1=1`;
 
 	if (name) {
 		sql += ` AND title LIKE '%${name}%'`;
 		countSql += ` AND title LIKE '%${name}%'`;
 	}
 	if (targetgametype) {
-		sql += ` AND targetgametype = '${targetgametype}'`;
-		countSql += ` AND targetgametype = '${targetgametype}'`;
+		sql += ` AND UPPER(targetgametype) = '${targetgametype.toUpperCase()}'`;
+		countSql += ` AND UPPER(targetgametype) = '${targetgametype.toUpperCase()}'`;
 	}
 	if (type) {
 		sql += ` AND game_type = '${type}'`;

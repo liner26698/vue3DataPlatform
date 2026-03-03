@@ -51,7 +51,7 @@
 
 ```bash
 # 1. 备份生产环境（可选）
-mysql -h 8.166.130.216 -u vue3 -p vue3 << EOF
+mysql -h 47.110.66.121 -u vue3 -p vue3 << EOF
 ALTER TABLE ps5_game RENAME TO ps5_game_backup_20251126;
 ALTER TABLE pc_game RENAME TO pc_game_backup_20251126;
 EOF

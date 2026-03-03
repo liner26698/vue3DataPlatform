@@ -87,6 +87,8 @@
 		"@vitejs/plugin-vue": "^4.0.0",
 		"@vitejs/plugin-vue-jsx": "^3.0.0",
 		"autoprefixer": "^10.4.13",
+		"browserslist": "^4.28.1",
+		"caniuse-lite": "^1.0.30001760",
 		"commitizen": "^4.3.0",
 		"cz-git": "^1.5.0",
 		"eslint": "^8.35.0",
@@ -125,5 +127,10 @@
 		"commitizen": {
 			"path": "node_modules/cz-git"
 		}
-	}
+	},
+	"browserslist": [
+		"> 1%",
+		"last 2 versions",
+		"not dead"
+	]
 }
